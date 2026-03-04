@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d5c30;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a3d62;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a8a47;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e6fa8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="coinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f9ca24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0932b;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#00000044"/>
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="195" fill="url(#bgGrad)"/>
+  <circle cx="200" cy="200" r="185" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+
+  <!-- Piggy bank body -->
+  <ellipse cx="200" cy="215" rx="90" ry="75" fill="url(#bodyGrad)" filter="url(#shadow)"/>
+
+  <!-- Piggy head -->
+  <circle cx="272" cy="175" r="42" fill="url(#bodyGrad)" filter="url(#shadow)"/>
+
+  <!-- Ear -->
+  <ellipse cx="268" cy="138" rx="12" ry="16" fill="#1a8a47"/>
+  <ellipse cx="268" cy="138" rx="7" ry="10" fill="#ff9aa2"/>
+
+  <!-- Snout -->
+  <ellipse cx="306" cy="185" rx="18" ry="14" fill="#1e6fa8"/>
+  <circle cx="300" cy="183" r="4" fill="#0a3d62"/>
+  <circle cx="312" cy="183" r="4" fill="#0a3d62"/>
+
+  <!-- Eye -->
+  <circle cx="282" cy="168" r="6" fill="white"/>
+  <circle cx="283" cy="169" r="3" fill="#0a3d62"/>
+  <circle cx="284" cy="167" r="1" fill="white"/>
+
+  <!-- Coin slot on top -->
+  <rect x="178" y="142" width="36" height="8" rx="4" fill="#0a3d62"/>
+
+  <!-- Legs -->
+  <rect x="148" y="278" width="22" height="28" rx="11" fill="#1565a0"/>
+  <rect x="178" y="282" width="22" height="24" rx="11" fill="#1565a0"/>
+  <rect x="208" y="282" width="22" height="24" rx="11" fill="#1565a0"/>
+  <rect x="238" y="278" width="22" height="28" rx="11" fill="#1565a0"/>
+
+  <!-- Tail -->
+  <path d="M112 210 Q95 195 100 178 Q105 161 118 168" fill="none" stroke="#1e6fa8" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Gold coin flying in -->
+  <circle cx="155" cy="148" r="22" fill="url(#coinGrad)" filter="url(#shadow)"/>
+  <circle cx="155" cy="148" r="17" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+  <text x="155" y="154" font-family="Arial Black" font-size="16" font-weight="900" fill="white" text-anchor="middle">KSh</text>
+
+  <!-- Motion lines for coin -->
+  <line x1="168" y1="143" x2="180" y2="141" stroke="rgba(249,202,36,0.6)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="167" y1="150" x2="179" y2="150" stroke="rgba(249,202,36,0.4)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="168" y1="157" x2="179" y2="159" stroke="rgba(249,202,36,0.3)" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Text: HELA -->
+  <text x="200" y="346" font-family="Arial Black, sans-serif" font-size="38" font-weight="900" fill="white" text-anchor="middle" letter-spacing="6">HELA</text>
+
+  <!-- Text: SMART SACCO -->
+  <text x="200" y="372" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="rgba(255,255,255,0.75)" text-anchor="middle" letter-spacing="4">SMART SACCO</text>
+
+  <!-- Decorative bottom arc -->
+  <path d="M80 385 Q200 400 320 385" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+</svg>
