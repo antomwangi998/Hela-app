@@ -190,21 +190,26 @@ async def login(request: Request):
     if not phone or not pw:
         raise HTTPException(400, "Phone and password required")
     p = _phone(phone)
-    # Accept phone, normalised phone, email, username, or member number
-    identifier = phone  # raw input (could be email/username/phone)
+    # Build all possible formats for the identifier
+    raw  = phone  # original input
+    norm = _phone(raw)  # 254XXXXXXXXX format
+    # Also try 0XXXXXXXXX format
+    local = "0" + norm[3:] if norm.startswith("254") and len(norm) == 12 else raw
+
     m = (db1(
             "SELECT u.id as uid, u.password_hash, u.salt, u.iterations, "
             "u.role, u.full_name, u.member_id, mem.member_no "
             "FROM users u LEFT JOIN members mem ON mem.id=u.member_id "
-            "WHERE (u.phone=? OR u.phone=? OR u.username=? OR u.username=? "
-            "       OR u.email=? OR mem.phone=? OR mem.phone=? OR mem.email=?) "
+            "WHERE (u.phone=? OR u.phone=? OR u.phone=? "
+            "    OR u.username=? OR u.username=? OR u.email=? "
+            "    OR mem.phone=? OR mem.phone=? OR mem.phone=? OR mem.email=?) "
             "AND u.is_active=1",
-            (identifier, p, identifier, p, identifier, identifier, p, identifier))
+            (raw, norm, local, raw, norm, raw, raw, norm, local, raw))
         or db1(
             "SELECT u.id as uid, u.password_hash, u.salt, u.iterations, "
             "u.role, u.full_name, u.member_id, mem.member_no "
             "FROM members mem JOIN users u ON u.member_id=mem.id "
-            "WHERE mem.member_no=? AND u.is_active=1", (identifier,)))
+            "WHERE mem.member_no=? AND u.is_active=1", (raw,)))
     if not m:
         raise HTTPException(401, "Phone number or password is incorrect")
     uid    = m["uid"]
@@ -417,6 +422,32 @@ async def stk_cb():
 @app.post("/mpesa/b2c_callback")
 async def b2c_cb():
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
+
+
+@app.post("/api/me/change_password")
+async def change_password(request: Request, u: dict = Depends(_auth_user)):
+    uid = u["sub"]
+    b   = await request.json()
+    old_pw = str(b.get("old_password","")).strip()
+    new_pw = str(b.get("new_password","")).strip()
+    if not old_pw or not new_pw:
+        raise HTTPException(400, "Both passwords required")
+    if len(new_pw) < 6:
+        raise HTTPException(400, "New password must be at least 6 characters")
+    user = db1("SELECT * FROM users WHERE id=?", (uid,))
+    if not user:
+        raise HTTPException(404, "User not found")
+    stored = user["password_hash"]
+    salt   = user["salt"]
+    iters  = int(user.get("iterations") or 10000)
+    check_h, _ = _hash(old_pw, salt, iters)
+    if check_h != stored:
+        raise HTTPException(401, "Current password is incorrect")
+    new_h, new_salt = _hash(new_pw)
+    now = datetime.datetime.now().isoformat()
+    dbx("UPDATE users SET password_hash=?,salt=?,iterations=?,updated_at=? WHERE id=?",
+        (new_h, new_salt, 10000, now, uid))
+    return {"status": "ok", "message": "Password changed successfully"}
 
 
 @app.post("/api/sync/push")
