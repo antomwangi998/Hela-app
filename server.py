@@ -447,6 +447,198 @@ async def sync_push(request: Request):
                 (a.get("balance_minor", 0), a.get("is_active", 1),
                  a.get("updated_at", ""), a["id"]))
         else:
+            dbx("INSERT INTO accounts (id,member_id,account_no,accounterations,"
+        "role,full_name,phone,member_id,is_active,created_at,updated_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,1,?,?)",
+        (uid, p, pw_h, salt, 10000, "member", full, p, mid, now, now))
+    dbx("INSERT INTO members (id,member_no,first_name,last_name,"
+        "full_name_search,phone,email,id_number,is_active,kyc_status,"
+        "membership_date,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,1,'pending',?,?,?)",
+        (mid, mno, first, last, full.lower(), p, email, id_no, now[:10], now, now))
+    dbx("INSERT INTO accounts (id,member_id,account_no,account_type,"
+        "balance_minor,is_active,opening_date,created_at,updated_at) "
+        "VALUES (?,?,?,'savings',0,1,?,?,?)",
+        (str(_uuid.uuid4()), mid, f"SAV{mno[3:]}", now[:10], now, now))
+    return {"token": sign_jwt({"sub": uid, "role": "member"}),
+            "role": "member", "name": full, "member_no": mno,
+            "message": "Account created! Visit a branch to complete KYC."}
+
+
+@app.get("/api/me")
+async def get_me(u: dict = Depends(_auth_user)):
+    uid = u["sub"]
+    m = db1("SELECT mem.*, u.username, u.role, u.full_name as u_name "
+            "FROM users u LEFT JOIN members mem ON mem.id=u.member_id WHERE u.id=?", (uid,))
+    if not m:
+        raise HTTPException(404, "Member not found")
+    mid = m.get("id") or _mid(uid)
+    acc = db1("SELECT * FROM accounts WHERE member_id=? "
+              "AND account_type='savings' ORDER BY opening_date LIMIT 1", (mid,))
+    loans = dba("SELECT id,principal_amount_minor,outstanding_principal_minor,status,"
+                "next_payment_date,next_payment_amount_minor FROM loans "
+                "WHERE member_id=? AND status IN ('active','disbursed','overdue') "
+                "ORDER BY created_at DESC", (mid,))
+    return {
+        "id": mid,
+        "name": m.get("full_name") or m.get("u_name") or m.get("username", ""),
+        "member_no": m.get("member_no", ""),
+        "phone": m.get("phone", ""),
+        "email": m.get("email", ""),
+        "kyc_status": m.get("kyc_status", "pending"),
+        "balance": (acc or {}).get("balance_minor", 0) / 100,
+        "account_no": (acc or {}).get("account_no", ""),
+        "account_id": (acc or {}).get("id", ""),
+        "loans": [{"id": l["id"],
+                   "principal": l["principal_amount_minor"] / 100,
+                   "outstanding": l["outstanding_principal_minor"] / 100,
+                   "status": l["status"],
+                   "next_due": str(l.get("next_payment_date", "") or ""),
+                   "installment": l.get("next_payment_amount_minor", 0) / 100}
+                  for l in loans],
+    }
+
+
+@app.get("/api/me/statement")
+async def get_statement(limit: int = 30, offset: int = 0,
+                        u: dict = Depends(_auth_user)):
+    mid  = _mid(u["sub"])
+    txns = dba("SELECT t.* FROM transactions t "
+               "JOIN accounts a ON a.id=t.account_id "
+               "WHERE a.member_id=? ORDER BY t.created_at DESC LIMIT ? OFFSET ?",
+               (mid, min(limit, 100), offset))
+    return {"transactions": [{"id": t["id"], "type": t["transaction_type"],
+                               "amount": t["amount_minor"] / 100, "balance": 0,
+                               "description": t.get("description", ""),
+                               "channel": t.get("channel", ""),
+                               "date": str(t.get("created_at", "")),
+                               "reference": t.get("reference_number", "")}
+                              for t in txns]}
+
+
+@app.get("/api/me/loans")
+async def get_loans(u: dict = Depends(_auth_user)):
+    mid   = _mid(u["sub"])
+    loans = dba("SELECT id,principal_amount_minor,outstanding_principal_minor,status,"
+                "next_payment_date,next_payment_amount_minor,term_months,"
+                "interest_rate,loan_purpose FROM loans "
+                "WHERE member_id=? ORDER BY created_at DESC", (mid,))
+    return {"loans": [{"id": l["id"],
+                        "amount": l["principal_amount_minor"] / 100,
+                        "outstanding": l.get("outstanding_principal_minor", 0) / 100,
+                        "status": l["status"],
+                        "next_due": str(l.get("next_payment_date", "") or ""),
+                        "installment": l.get("next_payment_amount_minor", 0) / 100,
+                        "term_months": l.get("term_months", 0),
+                        "interest_rate": l.get("interest_rate", 0),
+                        "purpose": l.get("loan_purpose", "")}
+                       for l in loans]}
+
+
+@app.get("/api/me/investments")
+async def get_investments(u: dict = Depends(_auth_user)):
+    mid  = _mid(u["sub"])
+    invs = dba("SELECT * FROM investments WHERE member_id=? "
+               "ORDER BY created_at DESC", (mid,))
+    return {"investments": [{"id": i["id"], "name": i.get("name", ""),
+                              "type": i.get("investment_type", ""),
+                              "principal": i.get("principal_minor", 0) / 100,
+                              "interest": i.get("interest_earned_minor", 0) / 100,
+                              "rate": i.get("interest_rate", 0),
+                              "start": str(i.get("start_date", "")),
+                              "maturity": str(i.get("maturity_date", "")),
+                              "status": i.get("status", "")}
+                             for i in invs]}
+
+
+@app.post("/api/me/loan_apply")
+async def loan_apply(request: Request, u: dict = Depends(_auth_user)):
+    mid  = _mid(u["sub"])
+    b    = await request.json()
+    amt  = float(b.get("amount", 0))
+    term = int(b.get("term_months", 12))
+    purp = str(b.get("purpose", "Personal")).strip()
+    if amt < 1000:
+        raise HTTPException(400, "Minimum loan is KSh 1,000")
+    if not 1 <= term <= 60:
+        raise HTTPException(400, "Term must be 1-60 months")
+    lid = str(_uuid.uuid4())
+    now = datetime.datetime.now().isoformat()
+    lno = f"LN{now[:10].replace('-','')}{lid[:6].upper()}"
+    dbx("INSERT INTO loans (id,loan_no,member_id,principal_amount_minor,"
+        "outstanding_principal_minor,term_months,loan_purpose,status,"
+        "interest_rate,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'pending',1.5,?,?)",
+        (lid, lno, mid, int(amt * 100), int(amt * 100), term, purp, now, now))
+    return {"status": "submitted", "loan_id": lid,
+            "message": "Application submitted. We'll contact you within 24 hours."}
+
+
+@app.post("/api/me/stk_deposit")
+async def stk_deposit(u: dict = Depends(_auth_user)):
+    raise HTTPException(503, "STK Push not available on web. Use the mobile app.")
+
+
+@app.post("/mpesa/stk_callback")
+async def stk_cb():
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
+
+
+@app.post("/mpesa/b2c_callback")
+async def b2c_cb():
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
+
+
+@app.post("/api/sync/push")
+async def sync_push(request: Request):
+    if request.headers.get("X-Sync-Secret") != SYNC_SECRET:
+        raise HTTPException(403, "Invalid sync secret")
+    data  = await request.json()
+    stats = {"members": 0, "users": 0, "accounts": 0,
+             "transactions": 0, "loans": 0}
+    for u in data.get("users", []):
+        if db1("SELECT id FROM users WHERE id=?", (u["id"],)):
+            dbx("UPDATE users SET username=?,full_name=?,phone=?,role=?,"
+                "member_id=?,is_active=?,updated_at=? WHERE id=?",
+                (u.get("username", ""), u.get("full_name", ""), u.get("phone", ""),
+                 u.get("role", "member"), u.get("member_id"),
+                 u.get("is_active", 1), u.get("updated_at", ""), u["id"]))
+        else:
+            dbx("INSERT INTO users (id,username,password_hash,salt,iterations,"
+                "role,full_name,phone,member_id,is_active,created_at,updated_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                (u["id"], u.get("username", ""), u.get("password_hash", ""),
+                 u.get("salt", ""), u.get("iterations", 10000),
+                 u.get("role", "member"), u.get("full_name", ""),
+                 u.get("phone", ""), u.get("member_id"),
+                 u.get("is_active", 1), u.get("created_at", ""),
+                 u.get("updated_at", "")))
+        stats["users"] += 1
+    for m in data.get("members", []):
+        if db1("SELECT id FROM members WHERE id=?", (m["id"],)):
+            dbx("UPDATE members SET member_no=?,first_name=?,last_name=?,"
+                "full_name_search=?,phone=?,email=?,id_number=?,"
+                "kyc_status=?,is_active=?,updated_at=? WHERE id=?",
+                (m.get("member_no", ""), m.get("first_name", ""),
+                 m.get("last_name", ""), m.get("full_name_search", ""),
+                 m.get("phone", ""), m.get("email", ""), m.get("id_number", ""),
+                 m.get("kyc_status", "pending"), m.get("is_active", 1),
+                 m.get("updated_at", ""), m["id"]))
+        else:
+            dbx("INSERT INTO members (id,member_no,first_name,last_name,"
+                "full_name_search,phone,email,id_number,kyc_status,is_active,"
+                "membership_date,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (m["id"], m.get("member_no", ""), m.get("first_name", ""),
+                 m.get("last_name", ""), m.get("full_name_search", ""),
+                 m.get("phone", ""), m.get("email", ""), m.get("id_number", ""),
+                 m.get("kyc_status", "pending"), m.get("is_active", 1),
+                 m.get("membership_date", ""), m.get("created_at", ""),
+                 m.get("updated_at", "")))
+        stats["members"] += 1
+    for a in data.get("accounts", []):
+        if db1("SELECT id FROM accounts WHERE id=?", (a["id"],)):
+            dbx("UPDATE accounts SET balance_minor=?,is_active=?,updated_at=? WHERE id=?",
+                (a.get("balance_minor", 0), a.get("is_active", 1),
+                 a.get("updated_at", ""), a["id"]))
+        else:
             dbx("INSERT INTO accounts (id,member_id,account_no,account_type,"
                 "balance_minor,is_active,opening_date,created_at,updated_at) "
                 "VALUES (?,?,?,?,?,?,?,?,?)",
