@@ -190,19 +190,21 @@ async def login(request: Request):
     if not phone or not pw:
         raise HTTPException(400, "Phone and password required")
     p = _phone(phone)
-    # Try every possible match: phone, normalised phone, username, member_no
+    # Accept phone, normalised phone, email, username, or member number
+    identifier = phone  # raw input (could be email/username/phone)
     m = (db1(
             "SELECT u.id as uid, u.password_hash, u.salt, u.iterations, "
-            "u.role, u.full_name, u.member_id, mem.member_no, mem.phone as mphone "
+            "u.role, u.full_name, u.member_id, mem.member_no "
             "FROM users u LEFT JOIN members mem ON mem.id=u.member_id "
             "WHERE (u.phone=? OR u.phone=? OR u.username=? OR u.username=? "
-            "       OR mem.phone=? OR mem.phone=?) "
-            "AND u.is_active=1", (phone, p, phone, p, phone, p))
+            "       OR u.email=? OR mem.phone=? OR mem.phone=? OR mem.email=?) "
+            "AND u.is_active=1",
+            (identifier, p, identifier, p, identifier, identifier, p, identifier))
         or db1(
             "SELECT u.id as uid, u.password_hash, u.salt, u.iterations, "
-            "u.role, u.full_name, u.member_id, mem.member_no, mem.phone as mphone "
+            "u.role, u.full_name, u.member_id, mem.member_no "
             "FROM members mem JOIN users u ON u.member_id=mem.id "
-            "WHERE mem.member_no=? AND u.is_active=1", (phone,)))
+            "WHERE mem.member_no=? AND u.is_active=1", (identifier,)))
     if not m:
         raise HTTPException(401, "Phone number or password is incorrect")
     uid    = m["uid"]
