@@ -243,6 +243,43 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .ms-val{font-size:14px;font-weight:700}
 .notif-dot{width:8px;height:8px;background:var(--r);border-radius:50%;
            display:inline-block;margin-left:4px;vertical-align:top;margin-top:2px}
+
+.notif-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;background:#e53935;border-radius:50%;display:none}
+.notif-dot.show{display:block}
+.pay-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.pay-btn{background:#fff;border:1.5px solid #e0e0e0;border-radius:14px;padding:16px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+  font-size:11px;font-weight:700;color:#333;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.pay-btn:active{transform:scale(.95)}
+.pay-btn .pi{font-size:26px}
+.ref-card{background:linear-gradient(135deg,#0d5c30,#1565a0);color:#fff;border-radius:18px;padding:22px;margin-bottom:16px;text-align:center}
+.ref-code{background:rgba(255,255,255,.2);border-radius:10px;padding:12px 20px;font-size:22px;font-weight:900;letter-spacing:4px;margin:12px 0;display:inline-block}
+.ref-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.ref-stat{background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center}
+.ref-stat-val{font-size:18px;font-weight:800}
+.ref-stat-lbl{font-size:10px;opacity:.8}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f0f0f0;cursor:pointer}
+.settings-row:last-child{border-bottom:none}
+.settings-row-left{display:flex;align-items:center;gap:12px}
+.settings-icon{font-size:20px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.settings-label{font-size:14px;font-weight:600}
+.settings-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.toggle{width:44px;height:24px;background:#ddd;border-radius:12px;position:relative;transition:background .2s;cursor:pointer}
+.toggle.on{background:var(--g)}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:23px}
+.notif-list{display:flex;flex-direction:column;gap:10px}
+.notif-item{background:#fff;border-radius:13px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.notif-item.unread{border-left:3px solid var(--g)}
+.ni-icon{font-size:22px;min-width:32px}
+.ni-body{flex:1}
+.ni-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.ni-msg{font-size:12px;color:var(--muted)}
+.ni-time{font-size:11px;color:#b0b0b0;margin-top:3px}
+.help-cat{background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.help-q{font-size:13px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.help-a{font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px;display:none}
+.help-a.open{display:block}
 </style>
 </head>
 <body>
@@ -343,6 +380,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div class="tbn" id="tbn">Member</div>
       <div class="tbs" id="tbs">HELA SMART SACCO</div>
     </div>
+    <button onclick="go('notifications')" style="background:none;border:none;cursor:pointer;font-size:20px;position:relative;padding:4px 8px;margin-right:2px">🔔</button>
     <button class="lbtn" onclick="doLogout()">Logout</button>
   </div>
   <div class="pc" id="pc"></div>
@@ -350,8 +388,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <button class="ni active" id="nav-home"      onclick="go('home')"><span class="ic">🏠</span>Home</button>
     <button class="ni"        id="nav-statement" onclick="go('statement')"><span class="ic">📄</span>Statement</button>
     <button class="ni"        id="nav-loans"     onclick="go('loans')"><span class="ic">💳</span>Loans</button>
-    <button class="ni"        id="nav-invest"    onclick="go('investments')"><span class="ic">📈</span>Invest</button>
-    <button class="ni"        id="nav-profile"   onclick="go('profile')"><span class="ic">👤</span>Profile</button>
+    <button class="ni"        id="nav-payments"  onclick="go('payments')"><span class="ic">💸</span>Pay</button>
+    <button class="ni"        id="nav-more"      onclick="go('more')" style="position:relative">
+      <span class="notif-dot show" id="notif-bell-dot" style="top:4px;right:8px"></span>
+      <span class="ic">☰</span>More</button>
   </nav>
 </div>
 
@@ -527,7 +567,17 @@ async function doRegister(){
   finally{btn.disabled=false;btn.textContent='Create My Account →';}
 }
 
-async function loadMe(){ME=await api('/api/me');localStorage.setItem('hm',JSON.stringify(ME));}
+async function loadMe(){
+  try{
+    ME=await api('/api/me');
+    localStorage.setItem('hm',JSON.stringify(ME));
+  }catch(e){
+    // Use cached data if available
+    const cached=localStorage.getItem('hm');
+    if(cached){ME=JSON.parse(cached);}
+    else{throw e;}
+  }
+}
 
 function showApp(){
   document.getElementById('auth').style.display='none';
@@ -537,6 +587,168 @@ function showApp(){
   document.getElementById('tbs').textContent=ME?.member_no?'Member No. '+ME.member_no:'Member Portal';
   document.getElementById('tba').textContent=n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   go('home');
+}
+
+
+function payments(){
+  const c=document.getElementById('pc');
+  c.innerHTML=`<div class="card"><div class="ct">💸 Pay Bills & Services</div>
+    <div class="pay-grid">
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">💡</span>Electricity</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">💧</span>Water</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">📺</span>TV/DSTV</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">📡</span>Internet</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">🎓</span>School Fees</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">🛡️</span>Insurance</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">🏠</span>Rent</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">📱</span>Airtime</div>
+      <div class="pay-btn" onclick="toast('Coming soon','ok')"><span class="pi">🔄</span>Send Money</div>
+    </div></div>
+    <div class="card" style="background:#fffbeb;border:1.5px solid #fde68a">
+      <div style="font-size:12px;color:#92400e;text-align:center;padding:4px">
+        ⚠️ Bill payments require M-Pesa integration. Contact your branch to activate.</div>
+    </div>`;
+}
+
+function notifications(){
+  const c=document.getElementById('pc');
+  const notifs=[
+    {icon:'🏦',title:'Welcome to HELA SMART SACCO',msg:'Your online account is ready. Visit a branch to complete KYC.',unread:true,time:'Just now'},
+    {icon:'💰',title:'Savings Tip',msg:'Members who save KSh 500/week earn up to 8% interest p.a.',unread:true,time:'Today'},
+    {icon:'💳',title:'Loan Offer Available',msg:'You may qualify for a loan of up to 3x your savings. Apply today!',unread:false,time:'This week'},
+    {icon:'📈',title:'Fixed Deposit Rates',msg:'Our FD rates are now up to 14% p.a. for 12-month deposits.',unread:false,time:'This week'},
+    {icon:'📣',title:'New Branch Opening',msg:'HELA SMART SACCO is opening a new branch soon. Stay tuned!',unread:false,time:'Last week'},
+  ];
+  c.innerHTML=`<div class="sh"><div class="sht">🔔 Notifications</div>
+    <div class="sha" onclick="toast('All marked as read','ok')">Mark all read</div></div>
+    <div class="notif-list">${notifs.map(n=>`
+      <div class="notif-item ${n.unread?'unread':''}">
+        <div class="ni-icon">${n.icon}</div>
+        <div class="ni-body"><div class="ni-title">${n.title}</div>
+          <div class="ni-msg">${n.msg}</div>
+          <div class="ni-time">${n.time}</div></div>
+      </div>`).join('')}</div>`;
+}
+
+async function referrals(){
+  const c=document.getElementById('pc');
+  const m=ME||{};
+  const refCode='HLS-'+(m.member_no||'XXXXX').replace('HLS','');
+  const refLink=window.location.origin+'/#ref='+refCode;
+  c.innerHTML=`<div class="ref-card">
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">🤝 Refer a Friend</div>
+    <div style="font-size:12px;opacity:.8;margin-bottom:12px">Earn KSh 200 for every member you refer who opens an account</div>
+    <div style="font-size:12px;opacity:.7">Your referral code</div>
+    <div class="ref-code">${refCode}</div>
+    <button onclick="navigator.clipboard.writeText('${refLink}').then(()=>toast('Link copied!','ok'))"
+      style="background:rgba(255,255,255,.25);border:none;border-radius:10px;color:#fff;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;width:100%">
+      📋 Copy Referral Link</button>
+    <div class="ref-stats">
+      <div class="ref-stat"><div class="ref-stat-val">0</div><div class="ref-stat-lbl">Referred</div></div>
+      <div class="ref-stat"><div class="ref-stat-val">0</div><div class="ref-stat-lbl">Joined</div></div>
+      <div class="ref-stat"><div class="ref-stat-val">KSh 0</div><div class="ref-stat-lbl">Earned</div></div>
+    </div></div>
+  <div class="card"><div class="ct">How it works</div>
+    <div class="ir"><span class="il">Step 1</span><span class="iv">Share your referral link</span></div>
+    <div class="ir"><span class="il">Step 2</span><span class="iv">Friend registers &amp; opens account</span></div>
+    <div class="ir"><span class="il">Step 3</span><span class="iv">Earn KSh 200 per successful referral</span></div>
+    <div class="ir"><span class="il">Step 4</span><span class="iv">Bonus credited within 7 days</span></div>
+  </div>
+  <button onclick="window.open('https://wa.me/?text='+encodeURIComponent('Join HELA SMART SACCO: ${refLink}'),'_blank')"
+    class="btn btn-g" style="border-radius:13px">📤 Share via WhatsApp</button>`;
+}
+
+function settings(){
+  const c=document.getElementById('pc');
+  c.innerHTML=`<div class="card"><div class="ct">⚙️ Account Settings</div>
+    <div class="settings-row" onclick="toast('Visit branch to change password','ok')">
+      <div class="settings-row-left"><div class="settings-icon" style="background:#e8f5e9">🔑</div>
+        <div><div class="settings-label">Change Password</div><div class="settings-sub">Update your login password</div></div></div>
+      <span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="toast('Transaction PIN coming soon','ok')">
+      <div class="settings-row-left"><div class="settings-icon" style="background:#eff6ff">🔐</div>
+        <div><div class="settings-label">Transaction PIN</div><div class="settings-sub">Set a 4-digit PIN</div></div></div>
+      <span style="color:#ccc">›</span></div>
+  </div>
+  <div class="card"><div class="ct">🔔 Notifications</div>
+    <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#e8f5e9">💰</div>
+      <div><div class="settings-label">Transaction Alerts</div><div class="settings-sub">Deposits &amp; withdrawals</div></div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#fffbeb">📢</div>
+      <div><div class="settings-label">Announcements</div><div class="settings-sub">News &amp; offers</div></div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#eff6ff">💳</div>
+      <div><div class="settings-label">Loan Reminders</div><div class="settings-sub">Before due dates</div></div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+  </div>
+  <button class="btn" style="background:var(--r);color:#fff;border-radius:13px;margin-bottom:24px" onclick="if(confirm('Sign out?'))doLogout()">
+    🚪 Sign Out</button>`;
+}
+
+function help(){
+  const c=document.getElementById('pc');
+  const faqs=[
+    {q:'How do I deposit money?',a:'Tap Deposit on the home screen. Enter your M-Pesa number and amount. You will receive a prompt on your phone to confirm.'},
+    {q:'How do I apply for a loan?',a:'Go to Loans tab and tap Apply for Loan. Fill in the amount, purpose and term. Our team will review within 24 hours.'},
+    {q:'What is KYC verification?',a:'KYC is a legal requirement. Visit any HELA branch with your National ID to verify and unlock full services.'},
+    {q:'How do I check my balance?',a:'Your current balance is shown on the Home screen. For details, go to Statement tab.'},
+    {q:'I forgot my password — what do I do?',a:'Visit any HELA SMART SACCO branch with your National ID or call +254 700 000 000.'},
+    {q:'What is the interest rate on savings?',a:'HELA SMART SACCO offers up to 8% interest per annum on savings accounts, paid annually.'},
+    {q:'How do fixed deposits work?',a:'Fixed deposits earn up to 14% p.a. for 12-month terms. Go to Invest tab to apply.'},
+  ];
+  c.innerHTML=`<div class="card" style="background:linear-gradient(135deg,#0d5c30,#1565a0);color:#fff;text-align:center;padding:20px">
+    <div style="font-size:28px">❓</div>
+    <div style="font-size:16px;font-weight:800;margin:6px 0">Help &amp; Support</div>
+    <div style="font-size:12px;opacity:.8">We are here to help you</div></div>
+  <div class="card"><div class="ct">📞 Contact Us</div>
+    <div class="mini-stat" onclick="window.open('tel:+254700000000')" style="cursor:pointer">
+      <div class="ms-icon" style="background:#e8f5e9">📞</div>
+      <div><div class="ms-label">Call Branch</div><div class="ms-val" style="color:var(--g)">+254 700 000 000</div></div></div>
+    <div class="mini-stat" onclick="window.open('mailto:support@helasacco.co.ke')" style="cursor:pointer">
+      <div class="ms-icon" style="background:#eff6ff">✉️</div>
+      <div><div class="ms-label">Email Us</div><div class="ms-val" style="color:#1565a0">support@helasacco.co.ke</div></div></div>
+    <div class="mini-stat" onclick="window.open('https://wa.me/254700000000')" style="cursor:pointer">
+      <div class="ms-icon" style="background:#e8f5e9">💬</div>
+      <div><div class="ms-label">WhatsApp</div><div class="ms-val" style="color:var(--g)">Chat with us</div></div></div>
+  </div>
+  <div class="sh"><div class="sht">Frequently Asked Questions</div></div>
+  ${faqs.map((f,i)=>`<div class="help-cat">
+    <div class="help-q" onclick="const a=document.getElementById('faq-${i}');a.classList.toggle('open');this.querySelector('span').textContent=a.classList.contains('open')?'－':'＋'">
+      ${f.q} <span>＋</span></div>
+    <div class="help-a" id="faq-${i}">${f.a}</div>
+  </div>`).join('')}`;
+}
+
+function more(){
+  const c=document.getElementById('pc');
+  c.innerHTML=`<div class="card"><div class="ct">More Services</div>
+    <div class="settings-row" onclick="go('investments')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#e8f5e9">📈</div>
+      <div><div class="settings-label">Investments</div><div class="settings-sub">Fixed deposits &amp; plans</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('referrals')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#fce4ec">🤝</div>
+      <div><div class="settings-label">Refer a Friend</div><div class="settings-sub">Earn KSh 200 per referral</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('notifications')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#e0f7fa">🔔</div>
+      <div><div class="settings-label">Notifications</div><div class="settings-sub">Alerts &amp; messages</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('profile')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#f3e5f5">👤</div>
+      <div><div class="settings-label">My Profile</div><div class="settings-sub">Account details &amp; KYC</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('settings')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#e8eaf6">⚙️</div>
+      <div><div class="settings-label">Settings</div><div class="settings-sub">Password, PIN, notifications</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('help')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#fff8e1">❓</div>
+      <div><div class="settings-label">Help &amp; Support</div><div class="settings-sub">FAQs, contact branch</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="downloadStatement()"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#ffebee">⬇️</div>
+      <div><div class="settings-label">Download Statement</div><div class="settings-sub">Export as CSV</div></div></div><span style="color:#ccc">›</span></div>
+  </div>
+  <div class="card" style="text-align:center;padding:20px">
+    <div style="font-size:12px;color:var(--muted)">HELA SMART SACCO v2.0</div>
+    <div style="font-size:11px;color:#bbb;margin-top:4px">Licensed by CBK • Audited &amp; Certified</div>
+  </div>
+  <button class="btn" style="background:var(--r);color:#fff;border-radius:13px;margin-bottom:24px" onclick="doLogout()">🚪 Log Out</button>`;
 }
 
 function doLogout(){
@@ -551,7 +763,7 @@ function doLogout(){
 function go(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
-  ({home,statement,loans,investments,profile})[page]?.();
+  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more})[page]?.();
 }
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
@@ -591,6 +803,14 @@ async function home(){
           <div class="qi" style="background:#eff6ff">📄</div><span class="ql">Statement</span></button>
         <button class="qa" onclick="openMo('goal-mo')">
           <div class="qi" style="background:#f5f3ff">🎯</div><span class="ql">Goal</span></button>
+        <button class="qa" onclick="go('payments')">
+          <div class="qi" style="background:#fff3e0">💸</div><span class="ql">Pay Bill</span></button>
+        <button class="qa" onclick="go('referrals')">
+          <div class="qi" style="background:#fce4ec">🤝</div><span class="ql">Refer</span></button>
+        <button class="qa" onclick="go('notifications')">
+          <div class="qi" style="background:#e0f7fa">🔔</div><span class="ql">Alerts</span></button>
+        <button class="qa" onclick="go('help')">
+          <div class="qi" style="background:#fff8e1">❓</div><span class="ql">Help</span></button>
       </div>
 
       ${goalHtml}
