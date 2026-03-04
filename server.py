@@ -279,20 +279,29 @@ async def register(request: Request):
 @app.get("/api/me")
 async def get_me(u: dict = Depends(_auth_user)):
     uid = u["sub"]
-    # First get user row
     user_row = db1("SELECT * FROM users WHERE id=?", (uid,))
     if not user_row:
-        raise HTTPException(404, "Member not found")
-    # Then get member via member_id
+        raise HTTPException(404, "User not found")
     member_id = user_row.get("member_id")
     mem_row = db1("SELECT * FROM members WHERE id=?", (member_id,)) if member_id else None
-    # Merge into one dict
-    m = {**(mem_row or {}), **{
-        "username": user_row.get("username",""),
-        "role": user_row.get("role","member"),
-        "u_name": user_row.get("full_name",""),
-    }}
-    mid = member_id or uid
+    if not mem_row:
+        # No member record yet — return basic info from users table
+        return {
+            "id": uid,
+            "name": user_row.get("full_name",""),
+            "member_no": "",
+            "phone": user_row.get("phone",""),
+            "email": user_row.get("email",""),
+            "kyc_status": "pending",
+            "balance": 0,
+            "account_no": "",
+            "account_id": "",
+            "loans": [],
+        }
+    m = {**mem_row, "username": user_row.get("username",""),
+         "role": user_row.get("role","member"),
+         "u_name": user_row.get("full_name","")}
+    mid = member_id
     acc = db1("SELECT * FROM accounts WHERE member_id=? "
               "AND account_type='savings' ORDER BY opening_date LIMIT 1", (mid,))
     loans = dba("SELECT id,principal_amount_minor,outstanding_principal_minor,status,"
