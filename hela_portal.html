@@ -373,6 +373,116 @@ body.dark .ai-bubble.bot{background:#2a2a2a}
 .ai-sug{background:#e8f5e9;border:1px solid #c8e6c9;border-radius:20px;
   padding:6px 12px;font-size:11px;font-weight:600;color:var(--g);cursor:pointer;transition:all .2s}
 .ai-sug:active{background:var(--g);color:#fff}
+
+/* ── Charts / Analytics ── */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:120px;padding:8px 0}
+.chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar{width:100%;border-radius:6px 6px 0 0;background:var(--g);min-height:4px;transition:height .5s ease}
+.chart-bar.neg{background:var(--r)}
+.chart-lbl{font-size:9px;color:var(--muted);text-align:center}
+.chart-val{font-size:9px;font-weight:700;color:var(--g)}
+.health-ring{display:flex;justify-content:center;margin:16px 0}
+.stat-pill{display:inline-flex;align-items:center;gap:6px;background:var(--gl);
+  border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--g)}
+
+/* ── Member Card ── */
+.member-card{background:linear-gradient(135deg,#0d5c30 0%,#1565a0 60%,#0a3d62 100%);
+  border-radius:20px;padding:24px;color:#fff;position:relative;overflow:hidden;
+  box-shadow:0 8px 32px rgba(13,92,48,.35)}
+.member-card::before{content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.06)}
+.member-card::after{content:'';position:absolute;bottom:-30px;left:-20px;
+  width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)}
+.mc-logo{font-size:28px;margin-bottom:12px}
+.mc-name{font-size:18px;font-weight:800;letter-spacing:.5px}
+.mc-no{font-size:12px;opacity:.75;margin:4px 0 16px;letter-spacing:2px}
+.mc-row{display:flex;justify-content:space-between;align-items:flex-end}
+.mc-bal{font-size:22px;font-weight:900}
+.mc-bal-lbl{font-size:10px;opacity:.7;margin-bottom:2px}
+.mc-chip{width:38px;height:28px;background:rgba(255,215,0,.35);border-radius:5px;
+  border:1px solid rgba(255,215,0,.5)}
+.mc-qr{width:54px;height:54px;background:#fff;border-radius:8px;padding:4px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mc-since{font-size:10px;opacity:.6;margin-top:8px}
+.card-actions{display:flex;gap:10px;margin-top:14px}
+.card-act{flex:1;background:rgba(255,255,255,.15);border:none;border-radius:10px;
+  color:#fff;padding:10px;font-size:11px;font-weight:700;cursor:pointer;text-align:center}
+.card-act:active{background:rgba(255,255,255,.3)}
+
+/* ── Budget planner ── */
+.budget-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.budget-row:last-child{border:none}
+.budget-cat-icon{width:36px;height:36px;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.budget-cat-name{flex:1;font-size:13px;font-weight:600}
+.budget-input{width:90px;border:1.5px solid #e0e0e0;border-radius:8px;
+  padding:7px 10px;font-size:13px;text-align:right;font-weight:700}
+.budget-summary{background:linear-gradient(135deg,#0d5c30,#1565a0);
+  border-radius:16px;padding:18px;color:#fff;text-align:center;margin-top:16px}
+.budget-summary-val{font-size:28px;font-weight:900;margin:4px 0}
+.budget-bar-wrap{background:rgba(255,255,255,.2);border-radius:20px;height:8px;margin:10px 0;overflow:hidden}
+.budget-bar-fill{height:100%;border-radius:20px;background:#fff;transition:width .5s}
+
+/* ── Financial Health Score ── */
+.fh-score-wrap{text-align:center;padding:20px 0}
+.fh-score-num{font-size:64px;font-weight:900;line-height:1}
+.fh-score-lbl{font-size:14px;font-weight:700;margin-top:4px}
+.fh-meter{background:#f0f0f0;border-radius:20px;height:12px;overflow:hidden;margin:14px 0}
+.fh-meter-fill{height:100%;border-radius:20px;transition:width 1s ease}
+.fh-factor{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid #f5f5f5}
+.fh-factor:last-child{border:none}
+.fh-factor-left{display:flex;align-items:center;gap:10px}
+.fh-star{font-size:18px}
+.fh-factor-name{font-size:13px;font-weight:600}
+.fh-factor-sub{font-size:11px;color:var(--muted)}
+.fh-badge{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700}
+
+/* ── OTP / 2FA ── */
+.otp-wrap{display:flex;gap:8px;justify-content:center;margin:20px 0}
+.otp-box{width:48px;height:56px;border:2px solid #e0e0e0;border-radius:12px;
+  font-size:24px;font-weight:800;text-align:center;transition:border-color .2s}
+.otp-box:focus{border-color:var(--g);outline:none}
+.otp-timer{text-align:center;font-size:13px;color:var(--muted);margin-top:8px}
+
+/* ── Admin Dashboard ── */
+.admin-stat{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.08);
+  display:flex;align-items:center;gap:14px}
+.admin-stat-icon{width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:22px}
+.admin-stat-val{font-size:22px;font-weight:900}
+.admin-stat-lbl{font-size:11px;color:var(--muted)}
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.member-row{display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:#fff;border-radius:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer}
+.member-av{width:38px;height:38px;border-radius:50%;background:var(--g);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  font-size:14px;font-weight:800;flex-shrink:0}
+.member-row-name{font-size:13px;font-weight:700}
+.member-row-sub{font-size:11px;color:var(--muted)}
+.loan-req-card{background:#fff;border-radius:14px;padding:16px;
+  box-shadow:0 1px 6px rgba(0,0,0,.08);margin-bottom:10px}
+.loan-req-card .lrc-actions{display:flex;gap:8px;margin-top:12px}
+.lrc-approve{background:#e6f4ec;color:var(--g);border:none;border-radius:10px;
+  padding:10px;font-size:12px;font-weight:700;cursor:pointer;flex:1}
+.lrc-reject{background:#fee2e2;color:var(--r);border:none;border-radius:10px;
+  padding:10px;font-size:12px;font-weight:700;cursor:pointer;flex:1}
+
+/* ── KYC upload ── */
+.kyc-upload-area{border:2px dashed #c8e6c9;border-radius:16px;padding:32px;
+  text-align:center;cursor:pointer;transition:all .2s;background:#f9fdf9}
+.kyc-upload-area:active{background:#e8f5e9;border-color:var(--g)}
+.kyc-preview{width:100%;max-height:200px;object-fit:contain;border-radius:12px;margin-top:12px}
+
+/* ── Audit log ── */
+.audit-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;
+  border-bottom:1px solid #f5f5f5}
+.audit-dot{width:8px;height:8px;border-radius:50%;background:var(--g);
+  margin-top:5px;flex-shrink:0}
+.audit-dot.warn{background:var(--o)}
+.audit-dot.err{background:var(--r)}
+.audit-text{font-size:12px;line-height:1.5;flex:1}
+.audit-time{font-size:10px;color:#bbb;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -400,7 +510,26 @@ body.dark .ai-bubble.bot{background:#2a2a2a}
         <button class="pt" onclick="tpw('lw',this)" tabindex="-1">👁</button></div>
       </div>
       <button class="btn btn-g" id="lbtn" onclick="doLogin()">Sign In →</button>
-      <p class="ft">Forgot password? <a href="#">Contact Mwangi Antony</a></p>
+      <p class="ft">Forgot password? <a href="#" style="color:var(--g);font-weight:700" onclick="toast('Contact Mwangi Antony on 0704363089','ok',4000)">Contact Mwangi Antony</a></p>
+      <div id="otp-section" style="display:none;margin-top:16px">
+        <div style="text-align:center;margin-bottom:14px">
+          <div style="font-size:28px">📱</div>
+          <div style="font-size:15px;font-weight:700;margin:6px 0">Verify Your Identity</div>
+          <div id="otp-hint" style="font-size:12px;color:var(--muted)">Enter the 6-digit OTP sent to your phone</div>
+        </div>
+        <div class="otp-wrap">
+          <input class="otp-box" maxlength="1" id="otp0" oninput="otpNext(0)" inputmode="numeric">
+          <input class="otp-box" maxlength="1" id="otp1" oninput="otpNext(1)" inputmode="numeric">
+          <input class="otp-box" maxlength="1" id="otp2" oninput="otpNext(2)" inputmode="numeric">
+          <input class="otp-box" maxlength="1" id="otp3" oninput="otpNext(3)" inputmode="numeric">
+          <input class="otp-box" maxlength="1" id="otp4" oninput="otpNext(4)" inputmode="numeric">
+          <input class="otp-box" maxlength="1" id="otp5" oninput="otpNext(5)" inputmode="numeric">
+        </div>
+        <div class="otp-timer">Code valid for <span id="otp-countdown" style="font-weight:700;color:var(--g)">120</span>s — <a href="#" onclick="resendOTP();return false" style="color:var(--g)">Resend</a></div>
+        <div id="otp-err" class="em" style="text-align:center"></div>
+        <button class="btn btn-g" id="otp-verify-btn" onclick="verifyOTP()" style="margin-top:8px">Verify &amp; Sign In →</button>
+        <button onclick="cancelOTP()" style="width:100%;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:8px;margin-top:4px">← Back to login</button>
+      </div>
 
       <!-- FEATURES STRIP -->
       <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
@@ -630,6 +759,7 @@ function chkStr(i){const v=i.value;const b=document.getElementById('sb');if(!v){
 // LOGIN
 async function doLogin(){
   clearErrs();
+  if(document.getElementById('otp-section')?.style.display==='block'){return verifyOTP();}
   const phone=document.getElementById('lp').value.trim();
   const pass=document.getElementById('lw').value;
   if(!phone)return showE('le','Enter your phone number');
@@ -958,6 +1088,30 @@ function more(){
     <div class="settings-row" onclick="go('help')"><div class="settings-row-left">
       <div class="settings-icon" style="background:#fff8e1">❓</div>
       <div><div class="settings-label">Help &amp; Support</div><div class="settings-sub">FAQs, contact branch</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('analytics')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#e8f5e9">📊</div>
+      <div><div class="settings-label">Savings Analytics</div><div class="settings-sub">Charts &amp; growth projections</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('memberCard')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:linear-gradient(135deg,#e8f5e9,#e3f2fd)">💳</div>
+      <div><div class="settings-label">Digital Member Card</div><div class="settings-sub">Your virtual SACCO card</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('budgetPlanner')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#fff3e0">📋</div>
+      <div><div class="settings-label">Budget Planner</div><div class="settings-sub">Track income vs expenses</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('healthScore')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#fce4ec">💡</div>
+      <div><div class="settings-label">Financial Health Score</div><div class="settings-sub">Your financial fitness rating</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('pdfStatement')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#eff6ff">📄</div>
+      <div><div class="settings-label">PDF Statement</div><div class="settings-sub">Download printable statement</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('kycUpload')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#f3e5f5">🪪</div>
+      <div><div class="settings-label">KYC Upload</div><div class="settings-sub">Upload ID for verification</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('auditLog')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#e8eaf6">📋</div>
+      <div><div class="settings-label">Activity Log</div><div class="settings-sub">Your account history</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('adminDash')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#fffbeb">👨‍💼</div>
+      <div><div class="settings-label">Admin Dashboard</div><div class="settings-sub">Manage members &amp; loans</div></div></div><span style="color:#ccc">›</span></div>
     <div class="settings-row" onclick="downloadStatement()"><div class="settings-row-left">
       <div class="settings-icon" style="background:#ffebee">⬇️</div>
       <div><div class="settings-label">Download Statement</div><div class="settings-sub">Export as CSV</div></div></div><span style="color:#ccc">›</span></div>
@@ -1121,6 +1275,550 @@ function downloadStatement(){
     toast('Statement downloaded!','ok',3000);
   }).catch(function(){toast('Failed to download statement','err');});
 }
+
+// ── OTP HELPERS ───────────────────────────────────────────────────────────────
+let _otpPhone='', _otpTimer=null;
+function otpNext(i){
+  const v=document.getElementById('otp'+i).value;
+  if(v.length===1&&i<5)document.getElementById('otp'+(i+1)).focus();
+  if(i===5&&v){verifyOTP();}
+}
+function startOTPTimer(){
+  clearInterval(_otpTimer);let s=120;
+  const el=document.getElementById('otp-countdown');
+  _otpTimer=setInterval(()=>{s--;if(el)el.textContent=s;if(s<=0){clearInterval(_otpTimer);if(el)el.textContent='0';}},1000);
+}
+async function resendOTP(){
+  if(!_otpPhone)return;
+  try{
+    await api('/api/auth/send_otp',{method:'POST',body:JSON.stringify({phone:_otpPhone})});
+    toast('New OTP sent to '+_otpPhone,'ok');startOTPTimer();
+    for(let i=0;i<6;i++){const b=document.getElementById('otp'+i);if(b)b.value='';}
+    document.getElementById('otp0')?.focus();
+  }catch(e){toast(e.message,'err');}
+}
+function cancelOTP(){
+  clearInterval(_otpTimer);_otpPhone='';
+  document.getElementById('otp-section').style.display='none';
+  const btn=document.getElementById('lbtn');if(btn){btn.style.display='';btn.textContent='Sign In →';}
+}
+async function verifyOTP(){
+  const code=[0,1,2,3,4,5].map(i=>document.getElementById('otp'+i)?.value||'').join('');
+  if(code.length<6)return showE('otp-err','Enter all 6 digits');
+  const btn=document.getElementById('otp-verify-btn');
+  if(btn){btn.disabled=true;btn.textContent='Verifying...';}
+  try{
+    const res=await api('/api/auth/verify_otp',{method:'POST',
+      body:JSON.stringify({phone:_otpPhone,otp:code})});
+    clearInterval(_otpTimer);
+    T=res.token;localStorage.setItem('ht',T);
+    try{await loadMe();}catch(e){
+      const cached=localStorage.getItem('hm');
+      if(cached)ME=JSON.parse(cached);
+    }
+    showApp();
+  }catch(e){
+    showE('otp-err',e.message);
+    if(btn){btn.disabled=false;btn.textContent='Verify & Sign In →';}
+  }
+}
+
+// ── SAVINGS ANALYTICS ────────────────────────────────────────────────────────
+async function analytics(){
+  const c=document.getElementById('pc');c.innerHTML='<div class="sp"></div>';
+  try{
+    const [me,st]=await Promise.all([
+      loadMe().then(()=>ME),
+      api('/api/me/statement?limit=200')
+    ]);
+    const txns=(st.transactions||[]).slice().reverse();
+    // Group by month
+    const months={};
+    txns.forEach(t=>{
+      const mo=(t.date||t.created_at||'').slice(0,7);
+      if(!mo)return;
+      if(!months[mo])months[mo]={dep:0,wdr:0};
+      const amt=(t.amount||0);
+      if(['deposit','credit','mpesa'].includes((t.type||'').toLowerCase()))months[mo].dep+=amt;
+      else months[mo].wdr+=amt;
+    });
+    const keys=Object.keys(months).sort().slice(-6);
+    const maxVal=Math.max(...keys.map(k=>months[k].dep),1);
+    const barsHtml=keys.map(k=>{
+      const dep=months[k].dep;const wdr=months[k].wdr;
+      const hDep=Math.round((dep/maxVal)*100);const hWdr=Math.round((wdr/maxVal)*100);
+      const mo=new Date(k+'-01').toLocaleString('en-KE',{month:'short'});
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="font-size:9px;color:var(--g);font-weight:700">${dep>0?'KSh '+(dep/1000).toFixed(0)+'k':''}</div>
+        <div style="display:flex;gap:3px;align-items:flex-end;height:100px">
+          <div style="width:14px;background:var(--g);border-radius:4px 4px 0 0;height:${hDep}px;min-height:4px"></div>
+          <div style="width:14px;background:var(--r);border-radius:4px 4px 0 0;height:${hWdr}px;min-height:${wdr?'4':'0'}px;opacity:.7"></div>
+        </div>
+        <div style="font-size:9px;color:var(--muted)">${mo}</div>
+      </div>`;
+    }).join('');
+
+    const totalDep=txns.filter(t=>['deposit','credit','mpesa'].includes((t.type||'').toLowerCase())).reduce((s,t)=>s+(t.amount||0),0);
+    const totalWdr=txns.filter(t=>!['deposit','credit','mpesa'].includes((t.type||'').toLowerCase())).reduce((s,t)=>s+(t.amount||0),0);
+    const savRate=totalDep>0?Math.round((1-totalWdr/totalDep)*100):0;
+
+    c.innerHTML=`
+      <div class="sh"><div class="sht">📊 Savings Analytics</div></div>
+      <div class="card">
+        <div class="ct">Balance Summary</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+          <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:var(--g)">KSh ${(me.balance||0).toLocaleString('en-KE',{minimumFractionDigits:2})}</div><div style="font-size:11px;color:var(--muted)">Current Balance</div></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:var(--g)">KSh ${totalDep.toLocaleString('en-KE',{minimumFractionDigits:2})}</div><div style="font-size:11px;color:var(--muted)">Total Deposited</div></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:${savRate>=50?'var(--g)':'var(--r)'}">${savRate}%</div><div style="font-size:11px;color:var(--muted)">Savings Rate</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">Monthly Activity <span style="font-size:11px;font-weight:400;color:var(--muted)">&nbsp;■ Deposits &nbsp;<span style="color:var(--r)">■</span> Withdrawals</span></div>
+        ${keys.length?`<div style="display:flex;align-items:flex-end;gap:4px;padding:8px 0">${barsHtml}</div>`:'<div class="empty" style="padding:20px"><span class="ei">📊</span><p>No transaction history yet</p></div>'}
+      </div>
+      <div class="card">
+        <div class="ct">Growth Projection</div>
+        <div class="ir"><span class="il">If you save KSh 500/week</span><span class="iv" style="color:var(--g)">KSh ${(500*52).toLocaleString('en-KE')} / yr</span></div>
+        <div class="ir"><span class="il">At 8% interest (1 year)</span><span class="iv" style="color:var(--g)">+KSh ${Math.round(500*52*0.08).toLocaleString('en-KE')}</span></div>
+        <div class="ir"><span class="il">Your current balance earns</span><span class="iv" style="color:var(--g)">KSh ${Math.round((me.balance||0)*0.08).toLocaleString('en-KE')} / yr</span></div>
+      </div>`;
+  }catch(e){errPage(e.message);}
+}
+
+// ── VIRTUAL MEMBER CARD ───────────────────────────────────────────────────────
+async function memberCard(){
+  const c=document.getElementById('pc');c.innerHTML='<div class="sp"></div>';
+  try{
+    await loadMe();const m=ME;
+    const init=(m.name||'M').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const kyc=m.kyc_status==='verified';
+    // Generate QR-like pattern from member number
+    const qrData=m.member_no||'HLS00001';
+    c.innerHTML=`
+      <div class="sh"><div class="sht">💳 Digital Member Card</div></div>
+      <div id="hela-member-card">
+        <div class="member-card" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <img src="data:image/svg+xml;base64,${document.querySelector('link[rel=icon]')?.href?.split(',')[1]||''}" style="width:36px;height:36px;border-radius:10px" onerror="this.style.display='none'">
+            <div>
+              <div style="font-size:12px;font-weight:700;opacity:.8;letter-spacing:2px">HELA SMART SACCO</div>
+              <div style="font-size:10px;opacity:.6">Licensed by CBK</div>
+            </div>
+            <div class="mc-chip" style="margin-left:auto"></div>
+          </div>
+          <div class="mc-name">${m.name||'Member Name'}</div>
+          <div class="mc-no">Member No: ${m.member_no||'—'}</div>
+          <div class="mc-row">
+            <div>
+              <div class="mc-bal-lbl">Savings Balance</div>
+              <div class="mc-bal">KSh ${(m.balance||0).toLocaleString('en-KE',{minimumFractionDigits:2})}</div>
+              <div style="font-size:10px;opacity:.6;margin-top:6px">Account: ${m.account_no||'—'}</div>
+            </div>
+            <div style="text-align:center">
+              <div class="mc-qr" onclick="toast('QR code for: ${qrData}','ok')">
+                <svg width="44" height="44" viewBox="0 0 44 44">
+                  ${[...qrData].map((_,i)=>`<rect x="${(i%6)*7+1}" y="${Math.floor(i/6)*7+1}" width="6" height="6" fill="#0d5c30" opacity="${Math.random()>.4?1:.2}"/>`).join('')}
+                </svg>
+              </div>
+              <div style="font-size:9px;opacity:.6;margin-top:4px">Scan to verify</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.15)">
+            <div style="font-size:10px;opacity:.6">Valid while membership active</div>
+            <span style="font-size:10px;padding:3px 8px;border-radius:10px;background:${kyc?'rgba(255,255,255,.2)':'rgba(255,200,0,.3)'};font-weight:700">${kyc?'✓ Verified':'⏳ Pending KYC'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="card-act" style="background:var(--g);color:#fff;border-radius:12px;padding:12px" onclick="shareCard()">📤 Share Card</button>
+        <button class="card-act" style="background:#1565a0;color:#fff;border-radius:12px;padding:12px" onclick="toast('Screenshot saved! Use your phone screenshot button.','ok',3000)">📸 Save as Image</button>
+      </div>
+      <div class="card" style="margin-top:4px">
+        <div class="ct">Card Details</div>
+        <div class="ir"><span class="il">Full Name</span><span class="iv">${m.name||'—'}</span></div>
+        <div class="ir"><span class="il">Phone</span><span class="iv">${m.phone||'—'}</span></div>
+        <div class="ir"><span class="il">Email</span><span class="iv">${m.email||'—'}</span></div>
+        <div class="ir"><span class="il">KYC Status</span><span class="iv">${kyc?'<span style="color:var(--g)">✓ Verified</span>':'<span style="color:var(--o)">⏳ Pending</span>'}</span></div>
+      </div>`;
+  }catch(e){errPage(e.message);}
+}
+function shareCard(){
+  const m=ME||{};
+  const txt='HELA SMART SACCO Member Card%0AMember: '+m.name+'%0ANo: '+m.member_no+'%0AAccount: '+m.account_no+'%0Ahttps://hela-app-2.onrender.com';
+  window.open('https://wa.me/?text='+txt,'_blank');
+}
+
+// ── BUDGET PLANNER ────────────────────────────────────────────────────────────
+function budgetPlanner(){
+  const c=document.getElementById('pc');
+  const cats=[
+    {icon:'🏠',name:'Rent/Housing',key:'rent',color:'#e3f2fd'},
+    {icon:'🍽️',name:'Food & Groceries',key:'food',color:'#e8f5e9'},
+    {icon:'🚌',name:'Transport',key:'transport',color:'#fff3e0'},
+    {icon:'💡',name:'Utilities',key:'utils',color:'#f3e5f5'},
+    {icon:'🎓',name:'Education',key:'edu',color:'#e0f7fa'},
+    {icon:'💊',name:'Health',key:'health',color:'#fce4ec'},
+    {icon:'📱',name:'Airtime & Internet',key:'airtime',color:'#fffde7'},
+    {icon:'🎯',name:'Savings (Target)',key:'savings',color:'#e8f5e9'},
+    {icon:'🎉',name:'Entertainment',key:'fun',color:'#f3e5f5'},
+  ];
+  const saved=JSON.parse(localStorage.getItem('hela-budget')||'{}');
+  c.innerHTML=`
+    <div class="sh"><div class="sht">📊 Budget Planner</div>
+      <div class="sha" onclick="saveBudget()">Save</div></div>
+    <div class="card">
+      <div class="ct">Monthly Income</div>
+      <div class="f"><label>Net Monthly Income (KSh)</label>
+        <input type="number" id="budget-income" placeholder="e.g. 50000" inputmode="numeric"
+          value="${saved.income||''}" oninput="updateBudgetSummary()"></div>
+    </div>
+    <div class="card"><div class="ct">Monthly Expenses</div>
+      ${cats.map(cat=>`
+        <div class="budget-row">
+          <div class="budget-cat-icon" style="background:${cat.color}">${cat.icon}</div>
+          <div class="budget-cat-name">${cat.name}</div>
+          <input class="budget-input" type="number" id="budget-${cat.key}"
+            placeholder="0" inputmode="numeric" value="${saved[cat.key]||''}"
+            oninput="updateBudgetSummary()">
+        </div>`).join('')}
+    </div>
+    <div id="budget-summary-wrap"></div>`;
+  updateBudgetSummary();
+}
+function updateBudgetSummary(){
+  const income=parseFloat(document.getElementById('budget-income')?.value||0);
+  const keys=['rent','food','transport','utils','edu','health','airtime','savings','fun'];
+  const total=keys.reduce((s,k)=>s+(parseFloat(document.getElementById('budget-'+k)?.value||0)),0);
+  const remaining=income-total;
+  const pct=income>0?Math.min(100,Math.round((total/income)*100)):0;
+  const wrap=document.getElementById('budget-summary-wrap');
+  if(!wrap)return;
+  if(!income){wrap.innerHTML='';return;}
+  wrap.innerHTML=`<div class="budget-summary">
+    <div style="font-size:12px;opacity:.8">Total Expenses vs Income</div>
+    <div class="budget-summary-val">KSh ${total.toLocaleString('en-KE')}</div>
+    <div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:${pct}%;background:${pct>90?'#ff6b6b':pct>70?'#ffd93d':'#fff'}"></div></div>
+    <div style="font-size:12px;opacity:.8">${pct}% of income</div>
+    <div style="margin-top:10px;font-size:14px;font-weight:800;color:${remaining>=0?'#fff':'#ff6b6b'}">
+      ${remaining>=0?'Surplus':'Deficit'}: KSh ${Math.abs(remaining).toLocaleString('en-KE')}
+    </div>
+    <div style="font-size:11px;opacity:.7;margin-top:4px">${remaining>=0?'Great! Consider saving KSh '+remaining.toLocaleString('en-KE')+' more this month.':'You are spending more than you earn. Review your expenses.'}</div>
+  </div>`;
+}
+function saveBudget(){
+  const keys=['rent','food','transport','utils','edu','health','airtime','savings','fun'];
+  const data={income:document.getElementById('budget-income')?.value||0};
+  keys.forEach(k=>data[k]=document.getElementById('budget-'+k)?.value||0);
+  localStorage.setItem('hela-budget',JSON.stringify(data));
+  toast('Budget saved!','ok');
+}
+
+// ── FINANCIAL HEALTH SCORE ────────────────────────────────────────────────────
+async function healthScore(){
+  const c=document.getElementById('pc');c.innerHTML='<div class="sp"></div>';
+  try{
+    await loadMe();const m=ME;
+    const loans=m.loans||[];
+    const hasOverdue=loans.some(l=>l.status==='overdue');
+    const hasActive=loans.some(l=>['active','disbursed'].includes(l.status));
+    const bal=m.balance||0;
+    const kyc=m.kyc_status==='verified';
+    // Score factors (out of 100)
+    const factors=[
+      {icon:'💰',name:'Savings Balance',sub:bal>=10000?'Above KSh 10,000 — Great!':bal>=1000?'Building up — keep going!':'No savings yet',score:bal>=50000?25:bal>=10000?20:bal>=1000?12:0,max:25,color:'#e8f5e9'},
+      {icon:'💳',name:'Loan Repayment',sub:hasOverdue?'You have overdue loans — pay now!':hasActive?'Active loan — making payments':'No loan history yet',score:hasOverdue?0:hasActive?15:10,max:20,color:'#eff6ff'},
+      {icon:'🪪',name:'KYC Verification',sub:kyc?'Identity verified — full access':'Pending — visit branch with ID',score:kyc?20:5,max:20,color:'#fce4ec'},
+      {icon:'📅',name:'Account Activity',sub:'Based on recent transactions',score:m.account_no?15:0,max:20,color:'#fffbeb'},
+      {icon:'📈',name:'Investment',sub:(m.investments||[]).length>0?'Active investments':'No investments yet',score:(m.investments||[]).length>0?15:0,max:15,color:'#e8f5e9'},
+    ];
+    const total=factors.reduce((s,f)=>s+f.score,0);
+    // grade computed below
+    // fix - use proper string
+    const gradeColor=total>=80?'#0d5c30':total>=60?'#1565a0':total>=40?'#d97706':'#dc2626';
+    const gradeLbl=total>=80?'Excellent':total>=60?'Good':total>=40?'Fair':'Needs Work';
+    c.innerHTML=`
+      <div class="sh"><div class="sht">💡 Financial Health Score</div></div>
+      <div class="card" style="text-align:center">
+        <div class="fh-score-wrap">
+          <div class="fh-score-num" style="color:${gradeColor}">${total}</div>
+          <div style="font-size:13px;color:var(--muted)">out of 100</div>
+          <div class="fh-score-lbl" style="color:${gradeColor}">${gradeLbl}</div>
+        </div>
+        <div class="fh-meter"><div class="fh-meter-fill" style="width:${total}%;background:${gradeColor}"></div></div>
+        <div style="font-size:12px;color:var(--muted)">Your financial health score based on savings, loans, KYC and activity</div>
+      </div>
+      <div class="card"><div class="ct">Score Breakdown</div>
+        ${factors.map(f=>`<div class="fh-factor">
+          <div class="fh-factor-left">
+            <div style="width:36px;height:36px;border-radius:10px;background:${f.color};display:flex;align-items:center;justify-content:center;font-size:18px">${f.icon}</div>
+            <div><div class="fh-factor-name">${f.name}</div><div class="fh-factor-sub">${f.sub}</div></div>
+          </div>
+          <div>
+            <div style="font-size:16px;font-weight:800;color:${f.score>=f.max*0.7?'var(--g)':f.score>0?'var(--o)':'var(--r)'}">${f.score}/${f.max}</div>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="card" style="background:#e8f5e9;border:1.5px solid #c8e6c9">
+        <div class="ct" style="color:var(--g)">💡 Tips to Improve</div>
+        ${!kyc?'<div class="ir"><span class="il">✓</span><span class="iv">Complete KYC verification at any branch (+15 pts)</span></div>':''}
+        ${bal<10000?'<div class="ir"><span class="il">✓</span><span class="iv">Save KSh '+(10000-bal).toLocaleString('en-KE')+' more to reach KSh 10,000 target (+8 pts)</span></div>':''}
+        ${hasOverdue?'<div class="ir"><span class="il">✓</span><span class="iv">Repay your overdue loan immediately (+15 pts)</span></div>':''}
+        <div class="ir"><span class="il">✓</span><span class="iv">Start a fixed deposit investment (+15 pts)</span></div>
+      </div>`;
+  }catch(e){errPage(e.message);}
+}
+
+// ── KYC PHOTO UPLOAD ─────────────────────────────────────────────────────────
+function kycUpload(){
+  const c=document.getElementById('pc');
+  c.innerHTML=`
+    <div class="sh"><div class="sht">🪪 KYC Verification</div></div>
+    <div class="card" style="background:#fffbeb;border:1.5px solid #fde68a">
+      <div style="font-size:13px;color:#92400e">
+        ⚠️ <strong>Required:</strong> Upload a clear photo of your National ID (front &amp; back) to unlock full services including higher loan limits.
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">National ID — Front</div>
+      <div class="kyc-upload-area" onclick="document.getElementById('kyc-front').click()">
+        <div style="font-size:36px">📷</div>
+        <div style="font-size:14px;font-weight:700;margin:8px 0">Tap to upload Front of ID</div>
+        <div style="font-size:12px;color:var(--muted)">JPG or PNG, clear photo</div>
+        <img id="kyc-front-preview" class="kyc-preview" style="display:none">
+      </div>
+      <input type="file" id="kyc-front" accept="image/*" capture="environment" style="display:none"
+        onchange="previewKYC('kyc-front','kyc-front-preview')">
+    </div>
+    <div class="card">
+      <div class="ct">National ID — Back</div>
+      <div class="kyc-upload-area" onclick="document.getElementById('kyc-back').click()">
+        <div style="font-size:36px">📷</div>
+        <div style="font-size:14px;font-weight:700;margin:8px 0">Tap to upload Back of ID</div>
+        <div style="font-size:12px;color:var(--muted)">JPG or PNG, clear photo</div>
+        <img id="kyc-back-preview" class="kyc-preview" style="display:none">
+      </div>
+      <input type="file" id="kyc-back" accept="image/*" capture="environment" style="display:none"
+        onchange="previewKYC('kyc-back','kyc-back-preview')">
+    </div>
+    <div id="kyc-status" class="em" style="text-align:center"></div>
+    <button class="btn btn-g" id="kyc-submit-btn" onclick="submitKYC()" style="border-radius:13px">Submit for Verification</button>`;
+}
+function previewKYC(inputId,previewId){
+  const file=document.getElementById(inputId)?.files?.[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=document.getElementById(previewId);
+    if(img){img.src=e.target.result;img.style.display='block';}
+  };
+  reader.readAsDataURL(file);
+}
+async function submitKYC(){
+  const front=document.getElementById('kyc-front')?.files?.[0];
+  const back=document.getElementById('kyc-back')?.files?.[0];
+  if(!front||!back)return toast('Please upload both front and back of your ID','err');
+  const btn=document.getElementById('kyc-submit-btn');
+  btn.disabled=true;btn.textContent='Uploading...';
+  try{
+    const toB64=f=>new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result.split(',')[1]);rd.readAsDataURL(f);});
+    const [fb,bb]=await Promise.all([toB64(front),toB64(back)]);
+    await api('/api/me/kyc_upload',{method:'POST',body:JSON.stringify({
+      front_image:fb,back_image:bb,
+      front_type:front.type,back_type:back.type
+    })});
+    toast('KYC documents submitted! Review takes 1-2 business days.','ok',5000);
+    btn.textContent='Submitted ✓';
+  }catch(e){
+    toast(e.message,'err');btn.disabled=false;btn.textContent='Submit for Verification';
+  }
+}
+
+// ── ADMIN DASHBOARD ───────────────────────────────────────────────────────────
+async function adminDash(){
+  const c=document.getElementById('pc');c.innerHTML='<div class="sp"></div>';
+  // Check admin role
+  if((ME?.role||'member')==='member'){
+    c.innerHTML='<div class="empty"><span class="ei">🔒</span><h3>Admin Only</h3><p>You do not have admin access</p></div>';return;
+  }
+  try{
+    const stats=await api('/api/admin/stats');
+    c.innerHTML=`
+      <div class="sh"><div class="sht">👨‍💼 Admin Dashboard</div>
+        <div class="sha" onclick="adminDash()">Refresh</div></div>
+      <div class="admin-grid">
+        <div class="admin-stat"><div class="admin-stat-icon" style="background:#e8f5e9">👥</div>
+          <div><div class="admin-stat-val">${stats.total_members||0}</div><div class="admin-stat-lbl">Total Members</div></div></div>
+        <div class="admin-stat"><div class="admin-stat-icon" style="background:#eff6ff">💰</div>
+          <div><div class="admin-stat-val">KSh ${((stats.total_savings||0)/1000).toFixed(0)}k</div><div class="admin-stat-lbl">Total Savings</div></div></div>
+        <div class="admin-stat"><div class="admin-stat-icon" style="background:#fffbeb">💳</div>
+          <div><div class="admin-stat-val">${stats.active_loans||0}</div><div class="admin-stat-lbl">Active Loans</div></div></div>
+        <div class="admin-stat"><div class="admin-stat-icon" style="background:#fce4ec">⏳</div>
+          <div><div class="admin-stat-val">${stats.pending_kyc||0}</div><div class="admin-stat-lbl">Pending KYC</div></div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="btn btn-g" style="flex:1;border-radius:10px;padding:10px;font-size:12px" onclick="adminMembers()">👥 Members</button>
+        <button class="btn" style="flex:1;border-radius:10px;padding:10px;font-size:12px;background:#1565a0;color:#fff" onclick="adminLoans()">💳 Loan Requests</button>
+        <button class="btn" style="flex:1;border-radius:10px;padding:10px;font-size:12px;background:#7c3aed;color:#fff" onclick="adminBroadcast()">📢 Broadcast</button>
+      </div>
+      <div id="admin-content"></div>`;
+    adminMembers();
+  }catch(e){errPage(e.message);}
+}
+async function adminMembers(){
+  const wrap=document.getElementById('admin-content');
+  if(!wrap)return;
+  wrap.innerHTML='<div class="sp"></div>';
+  try{
+    const d=await api('/api/admin/members?limit=50');
+    const mems=d.members||[];
+    wrap.innerHTML=`<div class="sh"><div class="sht">All Members (${mems.length})</div></div>`+
+      mems.map(m=>{
+        const init=(m.full_name||m.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        return `<div class="member-row">
+          <div class="member-av">${init}</div>
+          <div style="flex:1">
+            <div class="member-row-name">${m.full_name||m.name||'—'}</div>
+            <div class="member-row-sub">${m.member_no||'—'} · ${m.phone||'—'}</div>
+          </div>
+          <span style="font-size:10px;padding:3px 8px;border-radius:10px;background:${m.kyc_status==='verified'?'#e6f4ec':'#fffbeb'};color:${m.kyc_status==='verified'?'var(--g)':'var(--o)'}">
+            ${m.kyc_status==='verified'?'✓ KYC':'⏳ KYC'}</span>
+        </div>`;}).join('');
+  }catch(e){wrap.innerHTML='<p style="padding:16px;color:red">'+e.message+'</p>';}
+}
+async function adminLoans(){
+  const wrap=document.getElementById('admin-content');
+  if(!wrap)return;
+  wrap.innerHTML='<div class="sp"></div>';
+  try{
+    const d=await api('/api/admin/loans?status=pending');
+    const loans=d.loans||[];
+    wrap.innerHTML=`<div class="sh"><div class="sht">Pending Loan Requests (${loans.length})</div></div>`+
+      (!loans.length?'<div class="empty"><span class="ei">💳</span><p>No pending requests</p></div>':
+      loans.map(l=>`<div class="loan-req-card">
+        <div style="font-size:15px;font-weight:800">KSh ${(l.amount||0).toLocaleString('en-KE')}</div>
+        <div style="font-size:12px;color:var(--muted);margin:4px 0">${l.member_name||'—'} · ${l.member_no||'—'}</div>
+        <div class="ir"><span class="il">Purpose</span><span class="iv">${l.purpose||'—'}</span></div>
+        <div class="ir"><span class="il">Term</span><span class="iv">${l.term||'—'} months</span></div>
+        <div class="lrc-actions">
+          <button class="lrc-approve" onclick="adminLoanAction('${l.id}','approved',this)">✓ Approve</button>
+          <button class="lrc-reject" onclick="adminLoanAction('${l.id}','rejected',this)">✗ Reject</button>
+        </div>
+      </div>`).join(''));
+  }catch(e){wrap.innerHTML='<p style="padding:16px;color:red">'+e.message+'</p>';}
+}
+async function adminLoanAction(id,action,btn){
+  btn.disabled=true;btn.textContent=action==='approved'?'Approving...':'Rejecting...';
+  try{
+    await api('/api/admin/loans/'+id+'/'+action,{method:'POST'});
+    toast(action==='approved'?'Loan approved!':'Loan rejected','ok');
+    btn.closest('.loan-req-card').style.opacity='.4';
+  }catch(e){toast(e.message,'err');btn.disabled=false;btn.textContent=action==='approved'?'✓ Approve':'✗ Reject';}
+}
+function adminBroadcast(){
+  const wrap=document.getElementById('admin-content');
+  if(!wrap)return;
+  wrap.innerHTML=`<div class="card"><div class="ct">📢 Broadcast Message</div>
+    <div class="f"><label>Message to all members</label>
+      <textarea id="bc-msg" rows="4" style="border:1.5px solid #e0e0e0;border-radius:10px;padding:12px;font-size:13px;width:100%;resize:none" placeholder="Type your announcement..."></textarea></div>
+    <div style="font-size:12px;color:var(--muted);margin:8px 0">Will appear in notifications for all members</div>
+    <button class="btn btn-g" onclick="sendBroadcast()" style="border-radius:10px">📤 Send to All Members</button>
+  </div>`;
+}
+async function sendBroadcast(){
+  const msg=document.getElementById('bc-msg')?.value?.trim();
+  if(!msg)return toast('Enter a message first','err');
+  try{
+    await api('/api/admin/broadcast',{method:'POST',body:JSON.stringify({message:msg})});
+    toast('Broadcast sent to all members!','ok',4000);
+    document.getElementById('bc-msg').value='';
+  }catch(e){toast(e.message,'err');}
+}
+
+// ── AUDIT LOG ────────────────────────────────────────────────────────────────
+async function auditLog(){
+  const c=document.getElementById('pc');c.innerHTML='<div class="sp"></div>';
+  try{
+    const d=await api('/api/me/audit?limit=50');
+    const logs=d.logs||[];
+    c.innerHTML=`<div class="sh"><div class="sht">📋 Activity Log</div></div>
+      <div class="card">`+
+      (!logs.length?'<div class="empty" style="padding:20px"><span class="ei">📋</span><p>No activity recorded yet</p></div>':
+      logs.map(l=>`<div class="audit-row">
+        <div class="audit-dot ${l.level==='warn'?'warn':l.level==='err'?'err':''}"></div>
+        <div class="audit-text"><strong>${l.action||'Action'}</strong> — ${l.detail||''}</div>
+        <div class="audit-time">${(l.created_at||'').slice(0,16).replace('T',' ')}</div>
+      </div>`).join(''))+
+      '</div>';
+  }catch(e){errPage(e.message);}
+}
+
+// ── PDF STATEMENT ─────────────────────────────────────────────────────────────
+async function pdfStatement(){
+  const c=document.getElementById('pc');c.innerHTML='<div class="sp"></div>';
+  try{
+    const [me,st]=await Promise.all([loadMe().then(()=>ME),api('/api/me/statement?limit=100')]);
+    const txns=st.transactions||[];
+    c.innerHTML=`
+      <div class="sh"><div class="sht">📄 Account Statement</div></div>
+      <div class="card" style="text-align:center;padding:24px">
+        <div style="font-size:40px">📄</div>
+        <div style="font-size:16px;font-weight:800;margin:8px 0">Generate Statement</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px">${txns.length} transactions available</div>
+        <div class="f" style="text-align:left"><label>Date From</label>
+          <input type="date" id="stmt-from"></div>
+        <div class="f" style="text-align:left"><label>Date To</label>
+          <input type="date" id="stmt-to" value="${new Date().toISOString().slice(0,10)}"></div>
+        <button class="btn btn-g" onclick="generatePDFStatement()" style="border-radius:13px;margin-top:8px">
+          ⬇️ Download PDF Statement</button>
+        <button class="btn" onclick="downloadStatement()" style="border-radius:13px;background:#e8f5e9;color:var(--g);border:1.5px solid #c8e6c9;margin-top:8px">
+          📊 Download CSV Statement</button>
+      </div>
+      <div class="card">
+        <div class="ct">Recent Transactions Preview</div>
+        ${txns.slice(0,10).map(t=>`<div class="tr">
+          <div class="td">${(t.date||t.created_at||'').slice(0,10)}</div>
+          <div class="tb2">${t.description||t.type||'Transaction'}</div>
+          <div class="ta" style="color:${['deposit','credit'].includes((t.type||'').toLowerCase())?'var(--g)':'var(--r)'}">
+            ${['deposit','credit'].includes((t.type||'').toLowerCase())?'+':'-'}KSh ${(t.amount||0).toLocaleString('en-KE',{minimumFractionDigits:2})}
+          </div></div>`).join('')}
+      </div>`;
+  }catch(e){errPage(e.message);}
+}
+async function generatePDFStatement(){
+  toast('Preparing your statement...','ok',2000);
+  const m=ME||{};
+  const from=document.getElementById('stmt-from')?.value||'';
+  const to=document.getElementById('stmt-to')?.value||new Date().toISOString().slice(0,10);
+  const url='/api/me/statement?limit=500'+(from?'&from='+from:'')+(to?'&to='+to:'');
+  const d=await api(url).catch(()=>({transactions:[]}));
+  let txns=d.transactions||[];
+  if(from)txns=txns.filter(t=>(t.date||t.created_at||'')>=from);
+  if(to)txns=txns.filter(t=>(t.date||t.created_at||'')<=to+'T23:59:59');
+  // Build printable HTML
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>HELA Statement</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px;color:#111}
+  h1{color:#0d5c30;font-size:22px}.info{background:#f0f4f1;padding:12px;border-radius:8px;margin:12px 0;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#0d5c30;color:#fff;padding:8px;text-align:left}
+  td{padding:8px;border-bottom:1px solid #eee}tr:nth-child(even){background:#f9f9f9}
+  .dep{color:#0d5c30;font-weight:700}.wdr{color:#dc2626;font-weight:700}
+  .footer{text-align:center;font-size:11px;color:#999;margin-top:20px;padding-top:10px;border-top:1px solid #eee}
+  @media print{button{display:none}}</style></head><body>
+  <h1>HELA SMART SACCO</h1>
+  <div class="info"><strong>Member:</strong> ${m.name||'—'} &nbsp;|&nbsp; <strong>No:</strong> ${m.member_no||'—'} &nbsp;|&nbsp; <strong>Phone:</strong> ${m.phone||'—'}<br>
+  <strong>Account:</strong> ${m.account_no||'—'} &nbsp;|&nbsp; <strong>Balance:</strong> KSh ${(m.balance||0).toLocaleString('en-KE',{minimumFractionDigits:2})} &nbsp;|&nbsp; <strong>Period:</strong> ${from||'All time'} to ${to}</div>
+  <button onclick="window.print()" style="background:#0d5c30;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:12px">🖨️ Print / Save as PDF</button>
+  <table><thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Amount</th></tr></thead><tbody>
+  ${txns.map(t=>`<tr><td>${(t.date||t.created_at||'').slice(0,10)}</td><td>${t.description||'—'}</td><td>${t.type||'—'}</td>
+  <td class="${['deposit','credit'].includes((t.type||'').toLowerCase())?'dep':'wdr'}">
+  ${['deposit','credit'].includes((t.type||'').toLowerCase())?'+':'-'}KSh ${(t.amount||0).toLocaleString('en-KE',{minimumFractionDigits:2})}</td></tr>`).join('')}
+  </tbody></table>
+  <div class="footer">HELA SMART SACCO · helasacco@gmail.com · 0704363089 · Licensed by CBK<br>Generated: ${new Date().toLocaleString('en-KE')}</div>
+  </body></html>`);
+  win.document.close();
+}
+
 function doLogout(){
   T='';ME=null;
   localStorage.removeItem('ht');localStorage.removeItem('hm');
@@ -1133,7 +1831,7 @@ function doLogout(){
 function go(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
-  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support,helaAI})[page]?.();
+  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support,helaAI,analytics,memberCard,budgetPlanner,healthScore,kycUpload,adminDash,auditLog,pdfStatement})[page]?.();
 }
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
@@ -1187,6 +1885,12 @@ async function home(){
           <div class="qi" style="background:#e0f7fa">🔔</div><span class="ql">Alerts</span></button>
         <button class="qa" onclick="go('helaAI')">
           <div class="qi" style="background:linear-gradient(135deg,#e8f5e9,#e3f2fd)">🤖</div><span class="ql">AI Help</span></button>
+        <button class="qa" onclick="go('analytics')">
+          <div class="qi" style="background:#e8f5e9">📊</div><span class="ql">Analytics</span></button>
+        <button class="qa" onclick="go('memberCard')">
+          <div class="qi" style="background:linear-gradient(135deg,#e8f5e9,#e3f2fd)">💳</div><span class="ql">My Card</span></button>
+        <button class="qa" onclick="go('healthScore')">
+          <div class="qi" style="background:#fce4ec">💡</div><span class="ql">Health</span></button>
         <button class="qa" onclick="go('help')">
           <div class="qi" style="background:#fff8e1">❓</div><span class="ql">Help</span></button>
       </div>
