@@ -30,22 +30,40 @@ if DATABASE_URL.startswith("postgres"):
 
     def db1(sql, p=()):
         sql = sql.replace("?", "%s")
-        with _con().cursor() as c:
-            c.execute(sql, p)
-            r = c.fetchone()
-            return dict(r) if r else None
+        try:
+            with _con().cursor() as c:
+                c.execute(sql, p)
+                r = c.fetchone()
+                return dict(r) if r else None
+        except Exception as e:
+            log.error(f"db1: {e} | SQL: {sql[:80]}")
+            if "no such table" in str(e) or "does not exist" in str(e):
+                try: init_db()
+                except: pass
+            return None
 
     def dba(sql, p=()):
         sql = sql.replace("?", "%s")
-        with _con().cursor() as c:
-            c.execute(sql, p)
-            rows = c.fetchall()
-            return [dict(r) for r in rows] if rows else []
+        try:
+            with _con().cursor() as c:
+                c.execute(sql, p)
+                rows = c.fetchall()
+                return [dict(r) for r in rows] if rows else []
+        except Exception as e:
+            log.error(f"dba: {e} | SQL: {sql[:80]}")
+            if "no such table" in str(e) or "does not exist" in str(e):
+                try: init_db()
+                except: pass
+            return []
 
     def dbx(sql, p=()):
         sql = sql.replace("?", "%s")
-        with _con().cursor() as c:
-            c.execute(sql, p)
+        try:
+            with _con().cursor() as c:
+                c.execute(sql, p)
+        except Exception as e:
+            log.error(f"dbx: {e} | SQL: {sql[:80]}")
+            raise
 
     def init_db():
         log.warning("Creating PostgreSQL tables if not exist...")
