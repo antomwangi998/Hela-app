@@ -344,6 +344,35 @@ body.dark .tab.active{background:#fff;color:#1a3d28}
 
 /* ── Password change form ── */
 .pw-form{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+
+/* ── AI Assistant ── */
+.ai-wrap{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:400px}
+.ai-messages{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:10px}
+.ai-msg{display:flex;gap:10px;align-items:flex-start}
+.ai-msg.user{flex-direction:row-reverse}
+.ai-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:16px;flex-shrink:0}
+.ai-avatar.bot{background:linear-gradient(135deg,#0d5c30,#1565a0)}
+.ai-avatar.user{background:var(--g)}
+.ai-bubble{max-width:78%;padding:11px 14px;border-radius:16px;font-size:13px;line-height:1.6}
+.ai-bubble.bot{background:#f0f4f8;border-bottom-left-radius:4px}
+.ai-bubble.user{background:var(--g);color:#fff;border-bottom-right-radius:4px}
+body.dark .ai-bubble.bot{background:#2a2a2a}
+.ai-typing{display:flex;gap:4px;padding:12px 14px;align-items:center}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:#999;
+  animation:aiDot 1.2s infinite ease-in-out}
+.ai-dot:nth-child(2){animation-delay:.2s}
+.ai-dot:nth-child(3){animation-delay:.4s}
+@keyframes aiDot{0%,80%,100%{transform:scale(0.7);opacity:.5}40%{transform:scale(1);opacity:1}}
+.ai-input-row{display:flex;gap:8px;padding:10px 0 0;border-top:1px solid #eee;margin-top:8px}
+.ai-input-row input{flex:1;border:1.5px solid #e0e0e0;border-radius:22px;padding:11px 16px;font-size:13px}
+.ai-send{background:linear-gradient(135deg,#0d5c30,#1565a0);color:#fff;border:none;
+  border-radius:50%;width:42px;height:42px;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.ai-sug{background:#e8f5e9;border:1px solid #c8e6c9;border-radius:20px;
+  padding:6px 12px;font-size:11px;font-weight:600;color:var(--g);cursor:pointer;transition:all .2s}
+.ai-sug:active{background:var(--g);color:#fff}
 </style>
 </head>
 <body>
@@ -452,7 +481,7 @@ body.dark .tab.active{background:#fff;color:#1a3d28}
     <button class="ni active" id="nav-home"      onclick="go('home')"><span class="ic">🏠</span>Home</button>
     <button class="ni"        id="nav-statement" onclick="go('statement')"><span class="ic">📄</span>Statement</button>
     <button class="ni"        id="nav-loans"     onclick="go('loans')"><span class="ic">💳</span>Loans</button>
-    <button class="ni"        id="nav-payments"  onclick="go('payments')"><span class="ic">💸</span>Pay</button>
+    <button class="ni"        id="nav-ai"        onclick="go('helaAI')"><span class="ic">🤖</span>AI</button>
     <button class="ni"        id="nav-more"      onclick="go('more')" style="position:relative">
       <span class="notif-dot show" id="notif-bell-dot" style="top:4px;right:8px"></span>
       <span class="ic">☰</span>More</button>
@@ -815,33 +844,6 @@ async function doChangePassword(){
     document.getElementById('pw-change-section').innerHTML='';
   }catch(e){showE('cp-err',e.message);}
 }
-function _settings(){
-  const c=document.getElementById('pc');
-  c.innerHTML=`<div class="card"><div class="ct">⚙️ Account Settings</div>
-    <div class="settings-row" onclick="toast('Visit branch to change password','ok')">
-      <div class="settings-row-left"><div class="settings-icon" style="background:#e8f5e9">🔑</div>
-        <div><div class="settings-label">Change Password</div><div class="settings-sub">Update your login password</div></div></div>
-      <span style="color:#ccc">›</span></div>
-    <div class="settings-row" onclick="toast('Transaction PIN coming soon','ok')">
-      <div class="settings-row-left"><div class="settings-icon" style="background:#eff6ff">🔐</div>
-        <div><div class="settings-label">Transaction PIN</div><div class="settings-sub">Set a 4-digit PIN</div></div></div>
-      <span style="color:#ccc">›</span></div>
-  </div>
-  <div class="card"><div class="ct">🔔 Notifications</div>
-    <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#e8f5e9">💰</div>
-      <div><div class="settings-label">Transaction Alerts</div><div class="settings-sub">Deposits &amp; withdrawals</div></div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-    <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#fffbeb">📢</div>
-      <div><div class="settings-label">Announcements</div><div class="settings-sub">News &amp; offers</div></div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-    <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#eff6ff">💳</div>
-      <div><div class="settings-label">Loan Reminders</div><div class="settings-sub">Before due dates</div></div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-  </div>
-  <button class="btn" style="background:var(--r);color:#fff;border-radius:13px;margin-bottom:24px" onclick="if(confirm('Sign out?'))doLogout()">
-    🚪 Sign Out</button>`;
-}
-
 function support(){
   const c=document.getElementById('pc');
   c.innerHTML=`<div class="card">
@@ -950,6 +952,9 @@ function more(){
     <div class="settings-row" onclick="go('support')"><div class="settings-row-left">
       <div class="settings-icon" style="background:#e8f5e9">💬</div>
       <div><div class="settings-label">Live Support Chat</div><div class="settings-sub">Chat with our team</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('helaAI')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:linear-gradient(135deg,#e8f5e9,#e3f2fd)">🤖</div>
+      <div><div class="settings-label">HELA AI Assistant</div><div class="settings-sub">Ask anything about your account</div></div></div><span style="color:#ccc">›</span></div>
     <div class="settings-row" onclick="go('help')"><div class="settings-row-left">
       <div class="settings-icon" style="background:#fff8e1">❓</div>
       <div><div class="settings-label">Help &amp; Support</div><div class="settings-sub">FAQs, contact branch</div></div></div><span style="color:#ccc">›</span></div>
@@ -964,28 +969,161 @@ function more(){
   <button class="btn" style="background:var(--r);color:#fff;border-radius:13px;margin-bottom:24px" onclick="doLogout()">🚪 Log Out</button>`;
 }
 
+
+// ── HELA AI ASSISTANT ─────────────────────────────────────────────────────────
+let _aiHistory=[];
+const _aiSystemPrompt=()=>{
+  const m=ME||{};
+  return `You are HELA AI, a friendly and knowledgeable financial assistant for HELA SMART SACCO in Kenya.
+Member info: Name=${m.name||'Member'}, Balance=KSh ${(m.balance||0).toFixed(2)}, 
+Member No=${m.member_no||'N/A'}, KYC=${m.kyc_status||'pending'}, 
+Active loans=${(m.loans||[]).filter(l=>['active','disbursed'].includes(l.status)).length}.
+
+You help members with:
+- Savings advice and goal planning
+- Loan eligibility and application guidance  
+- Understanding their account and transactions
+- Financial literacy and budgeting tips
+- SACCO services, rates and policies
+- General personal finance advice
+
+HELA SACCO rates: Savings interest 8% p.a., Loans from 1.5%/month, Fixed deposits up to 14% p.a.
+Loan limit: Up to 3x savings balance. KYC required for full access.
+
+Keep responses concise, warm and practical. Use KSh for currency. 
+Occasionally use Swahili greetings. Format numbers with commas.`;
+};
+
+async function helaAI(){
+  const c=document.getElementById('pc');
+  c.innerHTML=`
+    <div class="card" style="background:linear-gradient(135deg,#0d5c30,#1565a0);color:#fff;padding:18px;margin-bottom:0;border-radius:18px 18px 0 0">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:50%;
+          display:flex;align-items:center;justify-content:center;font-size:22px">🤖</div>
+        <div>
+          <div style="font-size:16px;font-weight:800">HELA AI Assistant</div>
+          <div style="font-size:11px;opacity:.8">● Online — ask me anything</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border-radius:0 0 18px 18px;padding-top:12px">
+      <div class="ai-suggestions" id="ai-sugs">
+        <span class="ai-sug" onclick="askAI('What is my loan eligibility?')">💳 Loan eligibility</span>
+        <span class="ai-sug" onclick="askAI('How can I grow my savings?')">💰 Savings tips</span>
+        <span class="ai-sug" onclick="askAI('Explain fixed deposits')">📈 Fixed deposits</span>
+        <span class="ai-sug" onclick="askAI('Help me create a budget')">📊 Budget help</span>
+        <span class="ai-sug" onclick="askAI('What documents do I need for KYC?')">🪪 KYC docs</span>
+        <span class="ai-sug" onclick="askAI('How do I repay my loan faster?')">⚡ Repay faster</span>
+      </div>
+      <div class="ai-wrap">
+        <div class="ai-messages" id="ai-msgs">
+          <div class="ai-msg">
+            <div class="ai-avatar bot">🤖</div>
+            <div class="ai-bubble bot">Habari! 👋 I&#39;m <strong>HELA AI</strong>, your personal financial assistant.<br><br>
+            I can help you with savings advice, loan eligibility, budgeting, and anything about your HELA SACCO account.<br><br>
+            What would you like to know today?</div>
+          </div>
+        </div>
+        <div class="ai-input-row">
+          <input type="text" id="ai-in" placeholder="Ask HELA AI anything..." 
+            onkeydown="if(event.key==='Enter')sendAI()">
+          <button class="ai-send" onclick="sendAI()">➤</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function sendAI(){
+  const inp=document.getElementById('ai-in');
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';askAI(msg);
+}
+
+async function askAI(msg){
+  // Hide suggestions after first message
+  const sugs=document.getElementById('ai-sugs');
+  if(sugs)sugs.style.display='none';
+
+  const msgs=document.getElementById('ai-msgs');
+  if(!msgs)return;
+
+  // Add user bubble
+  msgs.innerHTML+=`<div class="ai-msg user">
+    <div class="ai-avatar user" style="font-size:13px;font-weight:800">${(ME?.name||'U').split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+    <div class="ai-bubble user">${msg}</div></div>`;
+
+  // Typing indicator
+  const typingId='ai-typing-'+Date.now();
+  msgs.innerHTML+=`<div class="ai-msg" id="${typingId}">
+    <div class="ai-avatar bot">🤖</div>
+    <div class="ai-bubble bot"><div class="ai-typing">
+      <div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div>
+    </div></div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+
+  // Add to history
+  _aiHistory.push({role:'user',content:msg});
+  if(_aiHistory.length>20)_aiHistory=_aiHistory.slice(-20);
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:_aiSystemPrompt(),
+        messages:_aiHistory
+      })
+    });
+    const data=await resp.json();
+    const reply=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    _aiHistory.push({role:'assistant',content:reply});
+
+    // Remove typing indicator and add reply
+    document.getElementById(typingId)?.remove();
+    const formatted=reply.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    msgs.innerHTML+=`<div class="ai-msg">
+      <div class="ai-avatar bot">🤖</div>
+      <div class="ai-bubble bot"><p>${formatted}</p></div></div>`;
+  }catch(e){
+    document.getElementById(typingId)?.remove();
+    msgs.innerHTML+=`<div class="ai-msg">
+      <div class="ai-avatar bot">🤖</div>
+      <div class="ai-bubble bot">Sorry, I&#39;m having trouble connecting right now. Please try again or call our branch on +254 700 000 000.</div></div>`;
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
 function downloadStatement(){
   toast('Preparing statement...','ok',2000);
-  api('/api/me/statement?limit=500').then(d=>{
-    const txns=d.transactions||[];
+  api('/api/me/statement?limit=500').then(function(d){
+    var txns=d.transactions||[];
     if(!txns.length)return toast('No transactions to download','err');
-    const m=ME||{};
-    const rows=[['HELA SMART SACCO - Account Statement'],
+    var m=ME||{};
+    var rows=[
+      ['HELA SMART SACCO - Account Statement'],
       ['Member','Phone','Account','Member No'],
       [m.name||'',m.phone||'',m.account_no||'',m.member_no||''],
-      [''],['Date','Type','Amount (KSh)','Description','Reference']];
-    txns.forEach(t=>rows.push([
+      [''],
+      ['Date','Type','Amount (KSh)','Description','Reference']
+    ];
+    txns.forEach(function(t){rows.push([
       (t.date||'').slice(0,10),t.type||'',
-      (t.amount||0).toFixed(2),t.description||'',t.reference||'']));
-    const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('
-');
-    const blob=new Blob([csv],{type:'text/csv'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;
+      (t.amount||0).toFixed(2),t.description||'',t.reference||''
+    ]);});
+    var lines=rows.map(function(r){
+      return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');
+    });
+    var csv=lines.join(String.fromCharCode(13,10));
+    var blob=new Blob([csv],{type:'text/csv'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;
     a.download='HELA_Statement_'+new Date().toISOString().slice(0,10)+'.csv';
     a.click();URL.revokeObjectURL(url);
-    toast('✅ Statement downloaded!','ok',3000);
-  }).catch(()=>toast('Failed to download statement','err'));
+    toast('Statement downloaded!','ok',3000);
+  }).catch(function(){toast('Failed to download statement','err');});
 }
 function doLogout(){
   T='';ME=null;
@@ -999,7 +1137,7 @@ function doLogout(){
 function go(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
-  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support})[page]?.();
+  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support,helaAI})[page]?.();
 }
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
@@ -1051,6 +1189,8 @@ async function home(){
           <div class="qi" style="background:#fce4ec">🤝</div><span class="ql">Refer</span></button>
         <button class="qa" onclick="go('notifications')">
           <div class="qi" style="background:#e0f7fa">🔔</div><span class="ql">Alerts</span></button>
+        <button class="qa" onclick="go('helaAI')">
+          <div class="qi" style="background:linear-gradient(135deg,#e8f5e9,#e3f2fd)">🤖</div><span class="ql">AI Help</span></button>
         <button class="qa" onclick="go('help')">
           <div class="qi" style="background:#fff8e1">❓</div><span class="ql">Help</span></button>
       </div>
@@ -1201,7 +1341,7 @@ function exportCSV(){
     t.date||'',t.type||'',t.amount||0,t.balance||0,
     (t.description||'').replace(/,/g,' '),t.channel||'',t.reference||''
   ]));
-  const csv=rows.map(r=>r.join(',')).join('\n');
+  const csv=rows.map(r=>r.join(',')).join(String.fromCharCode(10));
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=`hela-statement-${new Date().toISOString().slice(0,10)}.csv`;
