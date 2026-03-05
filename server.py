@@ -443,7 +443,7 @@ async def b2c_cb():
 
 
 @app.post("/api/ai/chat")
-async def ai_chat(request: Request, u: dict = Depends(_auth_auth)):
+async def ai_chat(request: Request, u: dict = Depends(_auth_user)):
     b = await request.json()
     messages  = b.get("messages", [])
     system_p  = b.get("system", "You are HELA AI, a helpful SACCO assistant.")
@@ -480,14 +480,6 @@ async def ai_chat(request: Request, u: dict = Depends(_auth_auth)):
     except Exception as e:
         log.error(f"AI chat error: {e}")
         raise HTTPException(502, "AI service temporarily unavailable")
-
-
-def _auth_auth(request: Request):
-    a = request.headers.get("Authorization", "")
-    u = verify_jwt(a[7:]) if a.startswith("Bearer ") else None
-    if not u:
-        raise HTTPException(401, "Not authenticated")
-    return u
 
 
 @app.post("/api/me/change_password")
