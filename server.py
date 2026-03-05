@@ -49,6 +49,15 @@ if DATABASE_URL.startswith("postgres"):
 
     def init_db():
         log.warning("Creating PostgreSQL tables if not exist...")
+        global _pg
+        # Force fresh connection for init
+        try:
+            _pg = psycopg2.connect(DATABASE_URL,
+                  cursor_factory=psycopg2.extras.RealDictCursor)
+            _pg.autocommit = True
+        except Exception as ce:
+            log.error(f"DB connect failed: {ce}")
+            raise
         dbx("""CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL, salt TEXT NOT NULL,
@@ -475,10 +484,14 @@ async def ai_chat(request: Request, u: dict = Depends(_auth_user)):
     try:
         with _ur.urlopen(req, timeout=30) as resp:
             result = _json.loads(resp.read())
-            text = " ".join(b["text"] for b in result.get("content", []) if b.get("type") == "text")
+            text = " ".join(blk["text"] for blk in result.get("content", []) if blk.get("type") == "text")
             return {"reply": text}
+    except _ur.HTTPError as e:
+        body = e.read().decode()
+        log.error(f"AI chat HTTP error: {e.code} {body}")
+        raise HTTPException(502, f"AI error: {e.code}")
     except Exception as e:
-        log.error(f"AI chat error: {e}")
+        log.error(f"AI chat error: {type(e).__name__}: {e}")
         raise HTTPException(502, "AI service temporarily unavailable")
 
 
