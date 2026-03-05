@@ -442,6 +442,54 @@ async def b2c_cb():
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 
+@app.post("/api/ai/chat")
+async def ai_chat(request: Request, u: dict = Depends(_auth_auth)):
+    b = await request.json()
+    messages  = b.get("messages", [])
+    system_p  = b.get("system", "You are HELA AI, a helpful SACCO assistant.")
+    if not messages:
+        raise HTTPException(400, "No messages provided")
+
+    import urllib.request as _ur, json as _json
+    payload = _json.dumps({
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 1000,
+        "system": system_p,
+        "messages": messages[-20:]
+    }).encode()
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(503, "AI service not configured")
+
+    req = _ur.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01"
+        },
+        method="POST"
+    )
+    try:
+        with _ur.urlopen(req, timeout=30) as resp:
+            result = _json.loads(resp.read())
+            text = " ".join(b["text"] for b in result.get("content", []) if b.get("type") == "text")
+            return {"reply": text}
+    except Exception as e:
+        log.error(f"AI chat error: {e}")
+        raise HTTPException(502, "AI service temporarily unavailable")
+
+
+def _auth_auth(request: Request):
+    a = request.headers.get("Authorization", "")
+    u = verify_jwt(a[7:]) if a.startswith("Bearer ") else None
+    if not u:
+        raise HTTPException(401, "Not authenticated")
+    return u
+
+
 @app.post("/api/me/change_password")
 async def change_password(request: Request, u: dict = Depends(_auth_user)):
     uid = u["sub"]
