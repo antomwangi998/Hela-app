@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<!-- pwa -->
 <meta name="theme-color" content="#0d5c30">
 <title>HELA SMART SACCO</title>
 <meta name="description" content="HELA SMART SACCO — Savings, Loans & Investments. Access your account online.">
@@ -280,6 +281,69 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .help-q{font-size:13px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
 .help-a{font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px;display:none}
 .help-a.open{display:block}
+
+/* ── Dark mode ── */
+body.dark{--bg:#121212;--card:#1e1e1e;--muted:#aaa;color:#f0f0f0}
+body.dark .card{background:#1e1e1e;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+body.dark .tb{background:#1a3d28}
+body.dark .bn{background:#1e1e1e;border-top:1px solid #333}
+body.dark input,body.dark select,body.dark textarea{background:#2a2a2a;color:#f0f0f0;border-color:#444}
+body.dark .f label{color:#ccc}
+body.dark .settings-row{border-bottom-color:#333}
+body.dark .help-cat{background:#1e1e1e}
+body.dark .pay-btn{background:#1e1e1e;border-color:#333;color:#f0f0f0}
+body.dark .notif-item{background:#1e1e1e}
+body.dark .auth-box{background:#1e1e1e}
+body.dark .tab{background:#2a2a2a;color:#aaa}
+body.dark .tab.active{background:#fff;color:#1a3d28}
+
+/* ── Loan tracker ── */
+.loan-track{display:flex;align-items:flex-start;gap:0;margin:16px 0;position:relative}
+.loan-track::before{content:'';position:absolute;top:18px;left:18px;right:18px;height:3px;background:#e0e0e0;z-index:0}
+.lt-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.lt-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:14px;background:#e0e0e0;color:#999;font-weight:700;transition:all .3s}
+.lt-dot.done{background:var(--g);color:#fff}
+.lt-dot.active{background:var(--o);color:#fff;box-shadow:0 0 0 4px rgba(234,160,0,.2)}
+.lt-label{font-size:10px;font-weight:600;color:var(--muted);text-align:center;line-height:1.3}
+
+/* ── Chat / ticket ── */
+.chat-bubble{max-width:80%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.5;margin-bottom:8px}
+.chat-bubble.agent{background:#f0f0f0;border-bottom-left-radius:4px;align-self:flex-start}
+.chat-bubble.member{background:var(--g);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.chat-wrap{display:flex;flex-direction:column;padding:12px 0;min-height:200px;max-height:340px;overflow-y:auto}
+.chat-time{font-size:10px;color:#bbb;text-align:center;margin:4px 0 10px}
+.chat-input-row{display:flex;gap:8px;padding-top:10px;border-top:1px solid #f0f0f0;margin-top:8px}
+.chat-input-row input{flex:1;border:1.5px solid #e0e0e0;border-radius:22px;padding:10px 16px;font-size:13px}
+.chat-send{background:var(--g);color:#fff;border:none;border-radius:50%;width:40px;height:40px;
+  font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* ── Branch card ── */
+.branch-card{background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;gap:14px;align-items:flex-start}
+.branch-icon{width:42px;height:42px;background:#e8f5e9;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.branch-name{font-size:14px;font-weight:700;margin-bottom:2px}
+.branch-addr{font-size:12px;color:var(--muted);margin-bottom:6px}
+.branch-actions{display:flex;gap:8px}
+.branch-act{background:#e8f5e9;color:var(--g);border:none;border-radius:8px;
+  padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer}
+
+/* ── PWA install banner ── */
+.pwa-banner{background:linear-gradient(135deg,#0d5c30,#1565a0);color:#fff;
+  border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.pwa-banner-text{flex:1;font-size:13px}
+.pwa-banner-text strong{display:block;font-size:14px;margin-bottom:2px}
+.pwa-install-btn{background:rgba(255,255,255,.25);border:none;border-radius:10px;
+  color:#fff;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* ── Lang toggle ── */
+.lang-btn{background:none;border:1.5px solid var(--g);color:var(--g);border-radius:8px;
+  padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px}
+.lang-btn.active{background:var(--g);color:#fff}
+
+/* ── Password change form ── */
+.pw-form{display:flex;flex-direction:column;gap:14px;margin-top:12px}
 </style>
 </head>
 <body>
@@ -486,6 +550,26 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 let T=localStorage.getItem('ht')||'';
 let ME=JSON.parse(localStorage.getItem('hm')||'null');
 let GOAL=JSON.parse(localStorage.getItem('hg')||'null');
+let LANG=localStorage.getItem('hela-lang')||'en';
+const TR={
+  en:{balance:'Total Savings Balance',deposit:'Deposit',apply_loan:'Apply Loan',
+      no_txn:'No transactions yet',logout:'Logout',home:'Home',
+      statement:'Statement',loans:'Loans',pay:'Pay',more:'More'},
+  sw:{balance:'Jumla ya Akiba',deposit:'Weka Pesa',apply_loan:'Omba Mkopo',
+      no_txn:'Hakuna miamala bado',logout:'Toka',home:'Nyumbani',
+      statement:'Taarifa',loans:'Mikopo',pay:'Lipa',more:'Zaidi'}
+};
+function t(k){return (TR[LANG]||TR.en)[k]||k;}
+function setLang(l){LANG=l;localStorage.setItem('hela-lang',l);
+  document.querySelectorAll('[data-t]').forEach(el=>el.textContent=t(el.dataset.t));}
+if(localStorage.getItem('hela-dark')==='1')document.body.classList.add('dark');
+function toggleDark(){document.body.classList.toggle('dark');
+  localStorage.setItem('hela-dark',document.body.classList.contains('dark')?'1':'0');}
+let _pwaPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_pwaPrompt=e;
+  const b=document.getElementById('pwa-banner');if(b)b.style.display='flex';});
+function installPWA(){if(_pwaPrompt){_pwaPrompt.prompt();_pwaPrompt=null;
+  document.getElementById('pwa-banner').style.display='none';}}
 let _repayLoan=null;
 
 async function api(path,opts={}){
@@ -659,6 +743,79 @@ async function referrals(){
 }
 
 function settings(){
+  const isDark=document.body.classList.contains('dark');
+  const isSwahili=LANG==='sw';
+  const c=document.getElementById('pc');
+  c.innerHTML=`
+    <div class="card"><div class="ct">⚙️ Account Settings</div>
+      <div class="settings-row" onclick="showChangePassword()">
+        <div class="settings-row-left"><div class="settings-icon" style="background:#e8f5e9">🔑</div>
+          <div><div class="settings-label">Change Password</div><div class="settings-sub">Update your login password</div></div></div>
+        <span style="color:#ccc">›</span></div>
+      <div class="settings-row" onclick="toast('Transaction PIN coming soon','ok')">
+        <div class="settings-row-left"><div class="settings-icon" style="background:#eff6ff">🔐</div>
+          <div><div class="settings-label">Transaction PIN</div><div class="settings-sub">Set a 4-digit PIN</div></div></div>
+        <span style="color:#ccc">›</span></div>
+    </div>
+    <div class="card"><div class="ct">🌍 Language / Lugha</div>
+      <div class="settings-row">
+        <div class="settings-row-left"><div class="settings-icon" style="background:#e8f5e9">🌍</div>
+          <div><div class="settings-label">Language</div><div class="settings-sub">English / Kiswahili</div></div></div>
+        <div style="display:flex;gap:6px">
+          <button class="lang-btn ${!isSwahili?'active':''}" onclick="setLang('en')">EN</button>
+          <button class="lang-btn ${isSwahili?'active':''}" onclick="setLang('sw')">SW</button>
+        </div></div>
+    </div>
+    <div class="card"><div class="ct">🎨 Appearance</div>
+      <div class="settings-row">
+        <div class="settings-row-left"><div class="settings-icon" style="background:#e8eaf6">🌙</div>
+          <div><div class="settings-label">Dark Mode</div><div class="settings-sub">Easy on the eyes at night</div></div></div>
+        <div class="toggle ${isDark?'on':''}" onclick="toggleDark();this.classList.toggle('on')"></div></div>
+    </div>
+    <div class="card"><div class="ct">🔔 Notifications</div>
+      <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#e8f5e9">💰</div>
+        <div><div class="settings-label">Transaction Alerts</div><div class="settings-sub">Deposits &amp; withdrawals</div></div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div class="settings-row-left"><div class="settings-icon" style="background:#fffbeb">📢</div>
+        <div><div class="settings-label">Announcements</div><div class="settings-sub">News &amp; offers</div></div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+    <div id="pw-change-section"></div>
+    <button class="btn" style="background:var(--r);color:#fff;border-radius:13px;margin-bottom:24px" onclick="if(confirm('Sign out?'))doLogout()">🚪 Sign Out</button>`;
+}
+function showChangePassword(){
+  document.getElementById('pw-change-section').innerHTML=`
+    <div class="card"><div class="ct">🔑 Change Password</div>
+      <div class="pw-form">
+        <div class="f"><label>Current Password</label>
+          <div class="pw"><input type="password" id="cp-old" placeholder="Enter current password">
+          <button class="pt" onclick="tpw('cp-old',this)" tabindex="-1">👁</button></div></div>
+        <div class="f"><label>New Password</label>
+          <div class="pw"><input type="password" id="cp-new" placeholder="Min 6 characters">
+          <button class="pt" onclick="tpw('cp-new',this)" tabindex="-1">👁</button></div></div>
+        <div class="f"><label>Confirm New Password</label>
+          <div class="pw"><input type="password" id="cp-confirm" placeholder="Repeat new password">
+          <button class="pt" onclick="tpw('cp-confirm',this)" tabindex="-1">👁</button></div></div>
+        <div id="cp-err" class="em"></div>
+        <button class="btn btn-g" onclick="doChangePassword()">Update Password</button>
+      </div></div>`;
+  document.getElementById('pw-change-section').scrollIntoView({behavior:'smooth'});
+}
+async function doChangePassword(){
+  const oldPw=document.getElementById('cp-old').value.trim();
+  const newPw=document.getElementById('cp-new').value.trim();
+  const conf=document.getElementById('cp-confirm').value.trim();
+  if(!oldPw||!newPw)return showE('cp-err','All fields required');
+  if(newPw.length<6)return showE('cp-err','New password must be at least 6 characters');
+  if(newPw!==conf)return showE('cp-err','Passwords do not match');
+  try{
+    await api('/api/me/change_password',{method:'POST',
+      body:JSON.stringify({old_password:oldPw,new_password:newPw})});
+    toast('✅ Password changed successfully!','ok',4000);
+    document.getElementById('pw-change-section').innerHTML='';
+  }catch(e){showE('cp-err',e.message);}
+}
+function _settings(){
   const c=document.getElementById('pc');
   c.innerHTML=`<div class="card"><div class="ct">⚙️ Account Settings</div>
     <div class="settings-row" onclick="toast('Visit branch to change password','ok')">
@@ -683,6 +840,59 @@ function settings(){
   </div>
   <button class="btn" style="background:var(--r);color:#fff;border-radius:13px;margin-bottom:24px" onclick="if(confirm('Sign out?'))doLogout()">
     🚪 Sign Out</button>`;
+}
+
+function support(){
+  const c=document.getElementById('pc');
+  c.innerHTML=`<div class="card">
+    <div class="ct">💬 Support Chat</div>
+    <div class="chat-wrap" id="chat-wrap">
+      <div class="chat-time">Today</div>
+      <div class="chat-bubble agent">👋 Habari! Welcome to HELA support. How can we help you?</div>
+      <div class="chat-bubble agent">Ask about your account, loans, deposits or anything else.</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-in" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" onclick="sendChat()">➤</button>
+    </div></div>
+  <div class="card"><div class="ct">📞 Direct Contact</div>
+    <div class="mini-stat" onclick="window.open('tel:+254700000000')" style="cursor:pointer">
+      <div class="ms-icon" style="background:#e8f5e9">📞</div>
+      <div><div class="ms-label">Call Branch</div><div class="ms-val" style="color:var(--g)">+254 700 000 000</div></div></div>
+    <div class="mini-stat" onclick="window.open('https://wa.me/254700000000')" style="cursor:pointer">
+      <div class="ms-icon" style="background:#e8f5e9">💬</div>
+      <div><div class="ms-label">WhatsApp</div><div class="ms-val" style="color:var(--g)">Chat directly</div></div></div>
+    <div class="mini-stat" onclick="window.open('mailto:support@helasacco.co.ke')" style="cursor:pointer">
+      <div class="ms-icon" style="background:#eff6ff">✉️</div>
+      <div><div class="ms-label">Email</div><div class="ms-val" style="color:#1565a0">support@helasacco.co.ke</div></div></div>
+  </div>`;
+}
+const _chatR={
+  loan:['Loan applications are reviewed within 24hrs. Track status in the Loans tab.','You need KYC verification to access higher loan limits. Visit any branch.'],
+  deposit:['To deposit, tap Deposit on the home screen. You will get an M-Pesa prompt.','Deposits reflect instantly after you confirm on your phone.'],
+  balance:['Your balance is on the Home screen.','For full history go to the Statement tab.'],
+  password:['To change password: More → Settings → Change Password.','Forgotten password? Visit any branch with your National ID.'],
+  kyc:['KYC needs your original National ID at any HELA branch.','Verified members unlock higher loan limits and full services.'],
+  default:['Thank you for reaching out. A support agent will follow up within 2 hours.','For urgent help call +254 700 000 000 or WhatsApp us.','Your query has been noted. We will respond shortly during business hours (8am–5pm Mon–Fri).']
+};
+function sendChat(){
+  const inp=document.getElementById('chat-in');
+  const msg=inp.value.trim();if(!msg)return;
+  const wrap=document.getElementById('chat-wrap');
+  const mb=document.createElement('div');mb.className='chat-bubble member';mb.textContent=msg;
+  wrap.appendChild(mb);inp.value='';wrap.scrollTop=wrap.scrollHeight;
+  setTimeout(()=>{
+    const low=msg.toLowerCase();
+    let r=_chatR.default;
+    if(/loan|mkopo|borrow/.test(low))r=_chatR.loan;
+    else if(/deposit|weka|mpesa/.test(low))r=_chatR.deposit;
+    else if(/balance|akiba|savings/.test(low))r=_chatR.balance;
+    else if(/password|nywila|login/.test(low))r=_chatR.password;
+    else if(/kyc|verif|id/.test(low))r=_chatR.kyc;
+    const ab=document.createElement('div');ab.className='chat-bubble agent';
+    ab.textContent=r[Math.floor(Math.random()*r.length)];
+    wrap.appendChild(ab);wrap.scrollTop=wrap.scrollHeight;
+  },900);
 }
 
 function help(){
@@ -737,6 +947,9 @@ function more(){
     <div class="settings-row" onclick="go('settings')"><div class="settings-row-left">
       <div class="settings-icon" style="background:#e8eaf6">⚙️</div>
       <div><div class="settings-label">Settings</div><div class="settings-sub">Password, PIN, notifications</div></div></div><span style="color:#ccc">›</span></div>
+    <div class="settings-row" onclick="go('support')"><div class="settings-row-left">
+      <div class="settings-icon" style="background:#e8f5e9">💬</div>
+      <div><div class="settings-label">Live Support Chat</div><div class="settings-sub">Chat with our team</div></div></div><span style="color:#ccc">›</span></div>
     <div class="settings-row" onclick="go('help')"><div class="settings-row-left">
       <div class="settings-icon" style="background:#fff8e1">❓</div>
       <div><div class="settings-label">Help &amp; Support</div><div class="settings-sub">FAQs, contact branch</div></div></div><span style="color:#ccc">›</span></div>
@@ -751,6 +964,29 @@ function more(){
   <button class="btn" style="background:var(--r);color:#fff;border-radius:13px;margin-bottom:24px" onclick="doLogout()">🚪 Log Out</button>`;
 }
 
+function downloadStatement(){
+  toast('Preparing statement...','ok',2000);
+  api('/api/me/statement?limit=500').then(d=>{
+    const txns=d.transactions||[];
+    if(!txns.length)return toast('No transactions to download','err');
+    const m=ME||{};
+    const rows=[['HELA SMART SACCO - Account Statement'],
+      ['Member','Phone','Account','Member No'],
+      [m.name||'',m.phone||'',m.account_no||'',m.member_no||''],
+      [''],['Date','Type','Amount (KSh)','Description','Reference']];
+    txns.forEach(t=>rows.push([
+      (t.date||'').slice(0,10),t.type||'',
+      (t.amount||0).toFixed(2),t.description||'',t.reference||'']));
+    const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('
+');
+    const blob=new Blob([csv],{type:'text/csv'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;
+    a.download='HELA_Statement_'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click();URL.revokeObjectURL(url);
+    toast('✅ Statement downloaded!','ok',3000);
+  }).catch(()=>toast('Failed to download statement','err'));
+}
 function doLogout(){
   T='';ME=null;
   localStorage.removeItem('ht');localStorage.removeItem('hm');
@@ -763,7 +999,7 @@ function doLogout(){
 function go(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
-  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more})[page]?.();
+  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support})[page]?.();
 }
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
@@ -780,7 +1016,13 @@ async function home(){
 
     c.innerHTML=`
       <div class="bh">
-        <div class="bhl">Total Savings Balance</div>
+        <div id="pwa-banner" style="display:none" class="pwa-banner" onclick="installPWA()">
+        <span style="font-size:28px">📲</span>
+        <div class="pwa-banner-text">
+          <strong>Add to Home Screen</strong>Install HELA SACCO as an app for quick access</div>
+        <button class="pwa-install-btn">Install</button>
+      </div>
+      <div class="bhl">Total Savings Balance</div>
         <div class="bha">KSh ${bal}</div>
         <div class="bhn">Acc: ${m.account_no||'—'}</div>
         <div class="bhr">
@@ -1000,6 +1242,15 @@ async function loans(){
   }catch(e){errPage(e.message);}
 }
 
+function loanTracker(status){
+  const steps=[['Applied','⏳'],['Review','🔍'],['Approved','✅'],['Active','💰'],['Cleared','🎉']];
+  const idx={'pending':0,'under_review':1,'approved':2,'active':3,'disbursed':3,'overdue':3,'repaying':3,'cleared':4}[status]??0;
+  return '<div class="loan-track">'+steps.map(([lbl,ico],i)=>`
+    <div class="lt-step">
+      <div class="lt-dot ${i<idx?'done':i===idx?'active':''}">${i<=idx?ico:i+1}</div>
+      <div class="lt-label">${lbl}</div>
+    </div>`).join('')+'</div>';
+}
 function lRow(l){
   const out=(l.outstanding||0).toLocaleString('en-KE',{minimumFractionDigits:2});
   const pri=(l.amount||0).toLocaleString('en-KE',{minimumFractionDigits:2});
@@ -1010,6 +1261,7 @@ function lRow(l){
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:17px;font-weight:800">KSh ${pri}</div>
       <span class="badge ${l.status}">${l.status.toUpperCase()}</span></div>
+    ${loanTracker(l.status)}
     <div class="pb"><div class="pf" style="width:${pct}%"></div></div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${pct}% repaid</div>
     <div class="lrow"><span class="ll">Outstanding</span><span class="lv" style="color:var(--r)">KSh ${out}</span></div>
