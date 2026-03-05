@@ -1067,18 +1067,14 @@ async function askAI(msg){
   if(_aiHistory.length>20)_aiHistory=_aiHistory.slice(-20);
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const resp=await api('/api/ai/chat',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
         system:_aiSystemPrompt(),
         messages:_aiHistory
       })
     });
-    const data=await resp.json();
-    const reply=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const reply=resp.reply||'';
     _aiHistory.push({role:'assistant',content:reply});
 
     // Remove typing indicator and add reply
