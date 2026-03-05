@@ -48,6 +48,7 @@ if DATABASE_URL.startswith("postgres"):
             c.execute(sql, p)
 
     def init_db():
+        log.warning("Creating PostgreSQL tables if not exist...")
         dbx("""CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL, salt TEXT NOT NULL,
@@ -173,13 +174,30 @@ def _get_html():
 
 
 app = FastAPI(title="HELA SMART SACCO", docs_url=None, redoc_url=None)
+
+# Create tables immediately at module load (before any request)
+try:
+    init_db()
+    log.warning("HELA: Tables ready at module load")
+except Exception as _e:
+    log.error(f"HELA: Module-level init_db failed: {_e}")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
 
 @app.on_event("startup")
 async def startup():
-    init_db()
+    import sys
+    try:
+        log.warning("=== HELA: Running init_db ===")
+        init_db()
+        log.warning("=== HELA: init_db complete ===")
+        # Verify tables exist
+        r = db1("SELECT COUNT(*) as c FROM users")
+        log.warning(f"=== HELA: users table OK, {(r or {}).get('c',0)} rows ===")
+    except Exception as e:
+        log.error(f"=== HELA: init_db FAILED: {e} ===")
+        import traceback; traceback.print_exc()
 
 
 @app.post("/api/auth/login")
