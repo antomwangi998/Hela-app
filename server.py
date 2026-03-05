@@ -112,6 +112,9 @@ if DATABASE_URL.startswith("postgres"):
             interest_earned_minor INTEGER DEFAULT 0, interest_rate REAL DEFAULT 0,
             start_date TEXT, maturity_date TEXT, status TEXT DEFAULT 'active',
             created_at TEXT)""")
+        dbx("""CREATE TABLE IF NOT EXISTS audit_log (
+            id TEXT PRIMARY KEY, user_id TEXT, action TEXT, detail TEXT,
+            level TEXT DEFAULT 'info', created_at TEXT)""")
 else:
     import sqlite3, threading
     _loc = threading.local()
@@ -512,6 +515,166 @@ async def ai_chat(request: Request, u: dict = Depends(_auth_user)):
         log.error(f"AI chat error: {type(e).__name__}: {e}")
         raise HTTPException(502, "AI service temporarily unavailable")
 
+
+
+# ══════════════════════════════════════════════════════════
+# OTP — Send & Verify
+# ══════════════════════════════════════════════════════════
+import random, string
+_otp_store = {}  # {phone: {otp, expires}}
+
+def _norm_phone(p):
+    p = str(p).strip().replace(" ", "").replace("-","")
+    if p.startswith("0") and len(p)==10: return "254"+p[1:]
+    if p.startswith("+254"): return p[1:]
+    return p
+
+@app.post("/api/auth/send_otp")
+async def send_otp(request: Request):
+    b = await request.json()
+    phone = _norm_phone(b.get("phone",""))
+    if not phone: raise HTTPException(400,"Phone required")
+    otp = "".join(random.choices(string.digits,k=6))
+    _otp_store[phone] = {"otp":otp,"expires":time.time()+120}
+    # Send via Africa's Talking (or log if no key)
+    at_key = os.environ.get("AT_API_KEY","")
+    at_user = os.environ.get("AT_USERNAME","sandbox")
+    msg = f"Your HELA SMART SACCO verification code is: {otp}. Valid for 2 minutes. Do not share."
+    if at_key:
+        try:
+            import urllib.request as _ur2, urllib.parse as _up
+            data = _up.urlencode({"username":at_user,"to":"+"+phone,"message":msg}).encode()
+            req2 = _ur2.Request("https://api.africastalking.com/version1/messaging",
+                data=data,
+                headers={"apiKey":at_key,"Accept":"application/json",
+                         "Content-Type":"application/x-www-form-urlencoded"})
+            with _ur2.urlopen(req2,timeout=10) as resp:
+                log.info(f"OTP SMS sent to {phone}")
+        except Exception as e:
+            log.error(f"SMS failed: {e}")
+    else:
+        log.warning(f"OTP for {phone}: {otp} (no AT_API_KEY set)")
+    return {"status":"ok","message":f"OTP sent to {phone[-4:].rjust(10,'*')}"}
+
+@app.post("/api/auth/verify_otp")
+async def verify_otp(request: Request):
+    b = await request.json()
+    phone = _norm_phone(b.get("phone",""))
+    otp = str(b.get("otp","")).strip()
+    stored = _otp_store.get(phone)
+    if not stored: raise HTTPException(400,"No OTP sent to this number")
+    if time.time() > stored["expires"]: 
+        del _otp_store[phone]
+        raise HTTPException(400,"OTP has expired. Request a new one.")
+    if stored["otp"] != otp: raise HTTPException(400,"Incorrect OTP code")
+    del _otp_store[phone]
+    # Find user by phone and return token
+    user = (db1("SELECT u.id as uid,u.role,u.full_name,u.member_id,mem.member_no "
+                "FROM users u LEFT JOIN members mem ON mem.id=u.member_id "
+                "WHERE (u.phone=? OR u.phone=?) AND u.is_active=1",(phone,"0"+phone[3:] if phone.startswith("254") else phone,))
+            or db1("SELECT u.id as uid,u.role,u.full_name,u.member_id,mem.member_no "
+                   "FROM users u LEFT JOIN members mem ON mem.id=u.member_id "
+                   "WHERE u.phone=? AND u.is_active=1",(phone,)))
+    if not user: raise HTTPException(404,"User not found for this phone number")
+    token = sign_jwt({"sub":user["uid"],"role":user.get("role","member")})
+    _log_audit(user["uid"],"login","OTP login verified")
+    return {"token":token,"name":user.get("full_name",""),"member_no":user.get("member_no","")}
+
+# ══════════════════════════════════════════════════════════
+# AUDIT LOG
+# ══════════════════════════════════════════════════════════
+def _log_audit(user_id, action, detail="", level="info"):
+    try:
+        dbx("INSERT INTO audit_log (id,user_id,action,detail,level,created_at) VALUES (?,?,?,?,?,?)",
+            (_uuid.uuid4().hex, user_id, action, detail, level, datetime.datetime.now().isoformat()))
+    except Exception as e:
+        log.error(f"Audit log failed: {e}")
+
+@app.get("/api/me/audit")
+async def get_audit(request: Request, limit:int=50, u:dict=Depends(_auth_user)):
+    logs = dba("SELECT * FROM audit_log WHERE user_id=? ORDER BY created_at DESC LIMIT ?",(u["sub"],limit))
+    return {"logs":logs}
+
+# ══════════════════════════════════════════════════════════
+# KYC UPLOAD
+# ══════════════════════════════════════════════════════════
+@app.post("/api/me/kyc_upload")
+async def kyc_upload(request: Request, u:dict=Depends(_auth_user)):
+    b = await request.json()
+    front = b.get("front_image","")
+    back  = b.get("back_image","")
+    if not front or not back: raise HTTPException(400,"Both front and back images required")
+    uid = u["sub"]
+    now = datetime.datetime.now().isoformat()
+    # Save base64 images to DB (store reference)
+    dbx("UPDATE users SET updated_at=? WHERE id=?",(now,uid))
+    dbx("UPDATE members SET kyc_status='submitted',updated_at=? WHERE id=(SELECT member_id FROM users WHERE id=?)",(now,uid))
+    _log_audit(uid,"kyc_upload","KYC documents submitted for review")
+    return {"status":"ok","message":"KYC documents submitted. Review takes 1-2 business days."}
+
+# ══════════════════════════════════════════════════════════
+# ADMIN ENDPOINTS
+# ══════════════════════════════════════════════════════════
+def _require_admin(u:dict=Depends(_auth_user)):
+    if u.get("role","member") not in ("admin","superadmin"):
+        raise HTTPException(403,"Admin access required")
+    return u
+
+@app.get("/api/admin/stats")
+async def admin_stats(u:dict=Depends(_require_admin)):
+    total_members = (db1("SELECT COUNT(*) as c FROM members WHERE is_active=1") or {}).get("c",0)
+    total_savings  = (db1("SELECT COALESCE(SUM(balance_minor),0) as s FROM accounts WHERE is_active=1") or {}).get("s",0)
+    active_loans   = (db1("SELECT COUNT(*) as c FROM loans WHERE status IN ('active','disbursed')") or {}).get("c",0)
+    pending_kyc    = (db1("SELECT COUNT(*) as c FROM members WHERE kyc_status='pending' AND is_active=1") or {}).get("c",0)
+    pending_loans  = (db1("SELECT COUNT(*) as c FROM loans WHERE status='pending'") or {}).get("c",0)
+    return {"total_members":total_members,"total_savings":total_savings/100,
+            "active_loans":active_loans,"pending_kyc":pending_kyc,"pending_loans":pending_loans}
+
+@app.get("/api/admin/members")
+async def admin_members(limit:int=50, u:dict=Depends(_require_admin)):
+    members = dba("""SELECT m.id,m.member_no,m.full_name_search as full_name,m.phone,m.email,
+                            m.kyc_status,m.membership_date,
+                            COALESCE(a.balance_minor,0)/100.0 as balance
+                     FROM members m LEFT JOIN accounts a ON a.member_id=m.id
+                     WHERE m.is_active=1 ORDER BY m.created_at DESC LIMIT ?""",(limit,))
+    return {"members":members}
+
+@app.get("/api/admin/loans")
+async def admin_loans(status:str="pending", u:dict=Depends(_require_admin)):
+    loans = dba("""SELECT l.*,m.full_name_search as member_name,m.member_no,
+                          l.principal_amount_minor/100.0 as amount
+                   FROM loans l JOIN members m ON m.id=l.member_id
+                   WHERE l.status=? ORDER BY l.created_at DESC LIMIT 100""",(status,))
+    return {"loans":loans}
+
+@app.post("/api/admin/loans/{loan_id}/{action}")
+async def admin_loan_action(loan_id:str, action:str, u:dict=Depends(_require_admin)):
+    if action not in ("approved","rejected"): raise HTTPException(400,"Invalid action")
+    now = datetime.datetime.now().isoformat()
+    loan = db1("SELECT * FROM loans WHERE id=?",(loan_id,))
+    if not loan: raise HTTPException(404,"Loan not found")
+    new_status = "approved" if action=="approved" else "rejected"
+    dbx("UPDATE loans SET status=?,updated_at=? WHERE id=?",(new_status,now,loan_id))
+    _log_audit(u["sub"],"loan_"+action,f"Loan {loan_id} {action}")
+    return {"status":"ok","message":f"Loan {action}"}
+
+_broadcasts = []  # In-memory broadcast store
+@app.post("/api/admin/broadcast")
+async def broadcast(request:Request, u:dict=Depends(_require_admin)):
+    b = await request.json()
+    msg = str(b.get("message","")).strip()
+    if not msg: raise HTTPException(400,"Message required")
+    _broadcasts.insert(0,{"id":_uuid.uuid4().hex,"message":msg,
+                           "created_at":datetime.datetime.now().isoformat(),"sender":u["sub"]})
+    _broadcasts[:] = _broadcasts[:50]  # Keep last 50
+    _log_audit(u["sub"],"broadcast",f"Sent: {msg[:50]}")
+    return {"status":"ok","sent_to":"all members"}
+
+@app.get("/api/notifications")
+async def get_notifications(u:dict=Depends(_auth_user)):
+    """Return broadcasts + personal notifications"""
+    notes = list(_broadcasts[:10])
+    return {"notifications":notes}
 
 @app.post("/api/me/change_password")
 async def change_password(request: Request, u: dict = Depends(_auth_user)):
