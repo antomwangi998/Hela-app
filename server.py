@@ -224,22 +224,50 @@ async def startup():
         cnt = (r or {}).get('c', 0)
         log.warning(f"=== HELA: init_db OK, {cnt} users ===")
 
-        # AUTO-PROMOTE ADMIN — reads ADMIN_PHONE env var (set on Render)
+        # ── AUTO-SEED ADMIN ACCOUNT ─────────────────────────────────────────
+        # Reads from Render env vars. Set these in Render > Environment:
+        #   ADMIN_PHONE    = 0704363089
+        #   ADMIN_PASSWORD = YourChosenPassword
+        #   ADMIN_NAME     = Antony Mwangi
         admin_phone = os.environ.get("ADMIN_PHONE", "0704363089")
-        norm = "254" + admin_phone.lstrip("0") if admin_phone.startswith("0") else admin_phone
-        local = "0" + norm[3:] if norm.startswith("254") else admin_phone
-        user = (
+        admin_pw    = os.environ.get("ADMIN_PASSWORD", "hela@admin2024")
+        admin_name  = os.environ.get("ADMIN_NAME", "Antony Mwangi")
+        admin_email = os.environ.get("ADMIN_EMAIL", "mwangiantony557@gmail.com")
+
+        norm_phone = "254" + admin_phone.lstrip("0") if admin_phone.startswith("0") else admin_phone
+        local_phone = "0" + norm_phone[3:] if norm_phone.startswith("254") else admin_phone
+
+        # Check if admin already exists (any phone format)
+        existing = (
             db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (admin_phone, admin_phone)) or
-            db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (norm, norm)) or
-            db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (local, local))
+            db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (norm_phone, norm_phone)) or
+            db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (local_phone, local_phone))
         )
-        if user and user.get("role") != "admin":
-            dbx("UPDATE users SET role='admin' WHERE id=?", (user["id"],))
-            log.warning("=== HELA: Auto-promoted " + str(user.get("username")) + " to admin ===")
-        elif user:
-            log.warning("=== HELA: " + str(user.get("username")) + " is already admin ===")
+
+        if existing:
+            if existing.get("role") != "admin":
+                dbx("UPDATE users SET role=\'admin\' WHERE id=?", (existing["id"],))
+                log.warning("=== HELA: Promoted existing user to admin ===")
+            else:
+                log.warning("=== HELA: Admin already exists ===")
         else:
-            log.warning(f"=== HELA: Admin phone {admin_phone} not yet registered ===")
+            # CREATE admin user from scratch
+            import uuid as _u2
+            uid  = str(_u2.uuid4())
+            mid  = str(_u2.uuid4())
+            mno  = "HLS00001"
+            pw_hash, salt = _hash(admin_pw)
+            now  = datetime.datetime.utcnow().isoformat()
+            # Insert member
+            try:
+                dbx("INSERT OR IGNORE INTO members (id,member_no,full_name,phone,email,kyc_status,balance,created_at,updated_at) VALUES (?,?,?,?,?,\'verified\',0,?,?)",
+                    (mid, mno, admin_name, admin_phone, admin_email, now, now))
+                # Insert user
+                dbx("INSERT OR IGNORE INTO users (id,username,password_hash,salt,iterations,role,full_name,phone,email,member_id,is_active,created_at,updated_at) VALUES (?,?,?,?,?,\'admin\',?,?,?,?,1,?,?)",
+                    (uid, admin_phone, pw_hash, salt, 10000, admin_name, admin_phone, admin_email, mid, now, now))
+                log.warning(f"=== HELA: Admin account CREATED: {admin_phone} / {admin_pw} ===")
+            except Exception as seed_err:
+                log.error(f"=== HELA: Admin seed error: {seed_err} ===")
     except Exception as e:
         log.error(f"=== HELA: startup FAILED: {e} ===")
         import traceback; traceback.print_exc()
