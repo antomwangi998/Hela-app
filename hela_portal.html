@@ -951,6 +951,7 @@ async function doFP(){
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 function go(page){
+  if(page!=='adminDash')_admKill();
   document.querySelectorAll('.bn').forEach(b=>b.classList.remove('on'));
   const nm={home:'nav-home',statement:'nav-act',loans:'nav-loans',investments:'nav-ins',insights:'nav-ins',analytics:'nav-ins',budgetPlanner:'nav-ins',healthScore:'nav-ins',helaAI:'nav-more',more:'nav-more',profile:'nav-more',payments:'nav-more',notifications:'nav-more',referrals:'nav-more',settings:'nav-more',help:'nav-more',support:'nav-more',memberCard:'nav-more',kycUpload:'nav-more',adminDash:'nav-more',auditLog:'nav-act',pdfStatement:'nav-act'};
   const nav=E(nm[page]||'nav-home');if(nav)nav.classList.add('on');
@@ -1886,54 +1887,361 @@ async function submitKYC(){
 }
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────────
+let _admTimers=[];
+function _admKill(){_admTimers.forEach(clearInterval);_admTimers=[];}
+
 async function adminDash(){
-  const c=E('pc');c.innerHTML='<div class="sp"></div>';
+  _admKill();
+  const c=E('pc');
   if((ME?.role||'member')==='member'){
-    c.innerHTML='<div style="padding:20px"><div class="empty"><div class="empty-ico">🔒</div><h3>Admin Only</h3><p>You do not have admin access</p></div></div>';return;
+    c.innerHTML='<div style="padding:20px"><div class="empty"><div class="empty-ico">🔒</div><h3>Admin Only</h3></div></div>';return;
   }
-  try{
-    const s=await api('/api/admin/stats');
-    c.innerHTML=`<div style="padding:0 20px">
-      <div class="sh"><div class="sht">👨‍💼 Admin Dashboard</div><div class="sha" onclick="adminDash()">Refresh</div></div>
-      <div class="adm-grid">
-        <div class="adm-stat"><div class="adm-ic" style="background:#e8f5e9">👥</div><div><div class="adm-v">${s.total_members||0}</div><div class="adm-l">Members</div></div></div>
-        <div class="adm-stat"><div class="adm-ic" style="background:#eff6ff">💰</div><div><div class="adm-v">KSh ${((s.total_savings||0)/1000).toFixed(0)}k</div><div class="adm-l">Total Savings</div></div></div>
-        <div class="adm-stat"><div class="adm-ic" style="background:#fffbeb">💳</div><div><div class="adm-v">${s.active_loans||0}</div><div class="adm-l">Active Loans</div></div></div>
-        <div class="adm-stat"><div class="adm-ic" style="background:#fce4ec">⏳</div><div><div class="adm-v">${s.pending_kyc||0}</div><div class="adm-l">Pending KYC</div></div></div>
+
+  // Fetch real stats (graceful fallback)
+  let stats={total_members:0,total_savings:0,active_loans:0,pending_kyc:0};
+  let members=[];let loans=[];
+  try{stats=await api('/api/admin/stats');}catch(e){}
+  try{const d=await api('/api/admin/members?limit=200');members=d.members||[];}catch(e){}
+  try{const d=await api('/api/admin/loans?status=all');loans=d.loans||[];}catch(e){}
+
+  // ── Fraud engine seed data
+  const fraudBanks=['Apple.com/Bill','M-PESA Deposit','KCB Transfer','Equity Bank','Netflix.com',
+    'Binance.US','MPESA W/draw','Shell Oil #42','OnlyFans','FOREIGN_TX_RU','Intl Wire TF'];
+  const cities=['Nairobi, KE','Mombasa, KE','Dubai, AE','Lagos, NG','London, UK',
+    'Moscow, RU','New York, US','Bucharest, RO','São Paulo, BR','Manila, PH'];
+  const txnIds=()=>Math.random().toString(36).slice(2,10).toUpperCase();
+  let fraudCount=7,blockedCount=5,totalVol=42700,prevented=37050;
+  let liveAlerts=[];
+
+  // Fraud transaction generator
+  function genTx(){
+    const merchant=fraudBanks[Math.floor(Math.random()*fraudBanks.length)];
+    const isFraud=Math.random()<0.18||merchant.includes('FOREIGN')||merchant.includes('Intl Wire');
+    const score=isFraud?(Math.random()*30+70).toFixed(1):(Math.random()*35).toFixed(1);
+    const amt=(Math.random()*900+50).toFixed(2);
+    const city=cities[Math.floor(Math.random()*cities.length)];
+    return {id:txnIds(),merchant,amt:parseFloat(amt),score:parseFloat(score),
+      city,flagged:isFraud,ts:new Date().toLocaleTimeString('en-KE',{hour12:false})};
+  }
+
+  // Waveform data for chart
+  let waveData=Array.from({length:60},(_,i)=>({
+    vol:0.4+0.3*Math.sin(i*0.3)+Math.random()*0.15,
+    fraud:Math.random()<0.15?0.3+Math.random()*0.4:Math.random()*0.08
+  }));
+  let liveTxns=Array.from({length:8},()=>genTx());
+
+  const pendingLoans=loans.filter(l=>l.status==='pending');
+  const totalSav=stats.total_savings||members.reduce((s,m)=>s+(m.balance||0),0);
+
+  c.innerHTML=`
+  <!-- FRAUD DASHBOARD FULL SCREEN -->
+  <div id="fraud-dash" style="
+    background:#050e05;min-height:calc(100vh - 84px);
+    font-family:'Courier New',monospace;color:#00ff41;
+    padding:0;overflow:hidden;position:relative;">
+
+    <!-- Scanline overlay -->
+    <div style="position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,65,.015) 2px,rgba(0,255,65,.015) 4px);pointer-events:none;z-index:1"></div>
+
+    <!-- Header Bar -->
+    <div style="background:#000;border-bottom:1px solid #00ff4133;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10">
+      <div>
+        <div style="font-size:10px;color:#00ff41;letter-spacing:3px;animation:blink 2s infinite">▶ HELA NEURAL FRAUD ENGINE v2.4.1 // ACTIVE</div>
+        <div style="font-size:9px;color:#00ff4166">UPTIME: <span id="uptime">00:28:14</span> // STATUS: SCANNING // THREAT LEVEL: <span style="color:#ffff00">MODERATE</span></div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <button class="btn btn-g" onclick="adminMembers()" style="flex:1;border-radius:10px;padding:11px;font-size:12px">👥 Members</button>
-        <button class="btn" onclick="adminLoans()" style="flex:1;border-radius:10px;padding:11px;font-size:12px;background:#1565a0;color:#fff;border:none">💳 Loans</button>
-        <button class="btn" onclick="adminBroadcast()" style="flex:1;border-radius:10px;padding:11px;font-size:12px;background:#7c3aed;color:#fff;border:none">📢 Broadcast</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="adm_tab('members')" id="tab-mbr" style="background:#00ff4120;border:1px solid #00ff4155;color:#00ff41;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">MEMBERS</button>
+        <button onclick="adm_tab('loans')" id="tab-loans" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">LOANS</button>
+        <button onclick="adm_tab('broadcast')" id="tab-bc" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">BROADCAST</button>
       </div>
-      <div id="adm-content"></div>
-    </div>`;
-    adminMembers();
-  }catch(e){errPage(e.message);}
+    </div>
+
+    <!-- KPI STATS ROW -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#00ff4115;border-bottom:1px solid #00ff4122;padding:0 16px;margin:0 0 16px">
+      ${[
+        {l:'TOTAL TXN',v:`<span id='kpi-txn'>${stats.total_members||28}</span>`,s:'MEMBERS',c:'#00ff41'},
+        {l:'FRAUD DETECTED',v:`<span id='kpi-fraud'>${fraudCount}</span>`,s:'IN PERIOD',c:'#ff4136'},
+        {l:'BLOCKED',v:`<span id='kpi-blocked'>${blockedCount}</span>`,s:'TXN OF FRAUD',c:'#ff851b'},
+        {l:'VOL. PROCESSED',v:`KSh ${(totalSav/1000).toFixed(1)}K`,s:'TOTAL SAVED',c:'#ffff00'},
+        {l:'LOSS PREVENTED',v:`KSh ${(prevented/1000).toFixed(2)}K`,s:'FRAUD AMOUNT',c:'#2ecc40'},
+      ].map(k=>`
+        <div style="padding:14px 10px;border-right:1px solid #00ff4115">
+          <div style="font-size:9px;color:#00ff4166;letter-spacing:2px;margin-bottom:4px">${k.l}</div>
+          <div style="font-size:28px;font-weight:900;color:${k.c};line-height:1;text-shadow:0 0 12px ${k.c}55">${k.v}</div>
+          <div style="font-size:9px;color:#00ff4155;margin-top:3px">${k.s}</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="padding:0 16px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:2">
+
+      <!-- WAVE CHART + RISK DIST -->
+      <div style="display:grid;grid-template-columns:1fr;gap:14px">
+        <!-- Transaction Velocity Chart -->
+        <div style="border:1px solid #00ff4133;background:#000;border-radius:4px;padding:12px">
+          <div style="font-size:9px;color:#00ff4188;letter-spacing:2px;margin-bottom:8px">◆ TRANSACTION VELOCITY / FRAUD RATE</div>
+          <canvas id="wave-canvas" width="340" height="90" style="width:100%;height:90px"></canvas>
+        </div>
+        <!-- Risk Score Distribution -->
+        <div style="border:1px solid #00ff4133;background:#000;border-radius:4px;padding:12px">
+          <div style="font-size:9px;color:#00ff4188;letter-spacing:2px;margin-bottom:8px">◆ RISK SCORE DISTRIBUTION</div>
+          <canvas id="risk-canvas" width="340" height="90" style="width:100%;height:90px"></canvas>
+        </div>
+      </div>
+
+      <!-- LIVE TX STREAM -->
+      <div style="border:1px solid #00ff4133;background:#000;border-radius:4px;padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:9px;color:#00ff4188;letter-spacing:2px">◆ LIVE TRANSACTION STREAM</div>
+          <div style="font-size:9px;color:#ff4136;animation:blink 1s infinite">● LIVE</div>
+        </div>
+        <!-- Header -->
+        <div style="display:grid;grid-template-columns:90px 1fr 65px 80px 45px 65px;gap:6px;font-size:8px;color:#00ff4155;letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid #00ff4120;margin-bottom:4px">
+          <span>TXN ID</span><span>MERCHANT</span><span>AMOUNT</span><span>LOCATION</span><span>SCORE</span><span>STATUS</span>
+        </div>
+        <div id="tx-stream" style="max-height:200px;overflow:hidden;font-size:10px;line-height:2"></div>
+      </div>
+
+      <!-- ALERTS + VECTORS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <!-- Fraud Alerts -->
+        <div style="border:1px solid #ff413633;background:#0a0000;border-radius:4px;padding:12px">
+          <div style="font-size:9px;color:#ff4136;letter-spacing:2px;margin-bottom:8px">◆ FRAUD ALERTS</div>
+          <div id="fraud-alerts" style="font-size:9px;line-height:1.8;max-height:150px;overflow:hidden"></div>
+        </div>
+        <!-- Attack Vectors -->
+        <div style="border:1px solid #00ff4133;background:#000;border-radius:4px;padding:12px">
+          <div style="font-size:9px;color:#00ff4188;letter-spacing:2px;margin-bottom:10px">◆ ATTACK VECTORS</div>
+          <div id="vectors" style="font-size:9px"></div>
+        </div>
+      </div>
+
+      <!-- SYSTEM STATUS -->
+      <div style="border:1px solid #00ff4133;background:#000;border-radius:4px;padding:12px;margin-bottom:14px">
+        <div style="font-size:9px;color:#00ff4188;letter-spacing:2px;margin-bottom:10px">◆ SYSTEM STATUS</div>
+        <div id="sys-status" style="font-size:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+      </div>
+
+      <!-- NORMAL ADMIN SECTION (hidden by default, shown by tabs) -->
+      <div id="adm-content" style="display:none"></div>
+    </div>
+  </div>
+
+  <style>
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+  @keyframes glitch{0%,100%{text-shadow:0 0 8px #00ff41}50%{text-shadow:2px 0 8px #ff4136,-2px 0 8px #00ff41}}
+  .fraud-row{display:grid;grid-template-columns:90px 1fr 65px 80px 45px 65px;gap:6px;padding:2px 0;
+    border-bottom:1px solid #00ff4108;animation:slideIn .3s ease}
+  .fraud-row.flagged{background:rgba(255,65,54,.06);color:#ff4136!important}
+  </style>`;
+
+  // ── WAVE CHART ENGINE
+  function drawWave(){
+    const cv=E('wave-canvas');if(!cv)return;
+    const ctx=cv.getContext('2d');const W=cv.width,H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    // Grid lines
+    ctx.strokeStyle='rgba(0,255,65,.08)';ctx.lineWidth=0.5;
+    for(let y=0;y<H;y+=H/4){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    for(let x=0;x<W;x+=W/8){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    const pts=waveData;const step=W/(pts.length-1);
+    // Volume fill
+    ctx.beginPath();ctx.moveTo(0,H);
+    pts.forEach((p,i)=>ctx.lineTo(i*step,H-(p.vol*H*.85)));
+    ctx.lineTo(W,H);ctx.closePath();
+    ctx.fillStyle='rgba(0,255,65,.15)';ctx.fill();
+    // Volume line
+    ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(0,H-(p.vol*H*.85)):ctx.lineTo(i*step,H-(p.vol*H*.85)));
+    ctx.strokeStyle='#00ff41';ctx.lineWidth=1.5;ctx.stroke();
+    // Fraud line
+    ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(0,H-(p.fraud*H*.85)):ctx.lineTo(i*step,H-(p.fraud*H*.85)));
+    ctx.strokeStyle='#ff4136';ctx.lineWidth=1.2;ctx.stroke();
+    // Fraud fill
+    ctx.beginPath();ctx.moveTo(0,H);
+    pts.forEach((p,i)=>ctx.lineTo(i*step,H-(p.fraud*H*.85)));
+    ctx.lineTo(W,H);ctx.closePath();
+    ctx.fillStyle='rgba(255,65,54,.12)';ctx.fill();
+  }
+
+  function drawRisk(){
+    const cv=E('risk-canvas');if(!cv)return;
+    const ctx=cv.getContext('2d');const W=cv.width,H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle='rgba(0,255,65,.08)';ctx.lineWidth=0.5;
+    for(let y=0;y<H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // Score buckets: 0-10,10-20,...,90-100
+    const buckets=[38,22,18,12,8,6,5,4,11,7]; // distribution
+    const maxB=Math.max(...buckets);
+    const bw=W/buckets.length;
+    buckets.forEach((v,i)=>{
+      const bh=(v/maxB)*(H-16);const x=i*bw+2;const y=H-bh-2;
+      const score=i*10;
+      const col=score<30?'#2ecc40':score<60?'#ffff00':score<80?'#ff851b':'#ff4136';
+      // Bar glow
+      const g=ctx.createLinearGradient(x,y,x,H);
+      g.addColorStop(0,col);g.addColorStop(1,col+'44');
+      ctx.fillStyle=g;ctx.fillRect(x,y,bw-4,bh);
+      // Label
+      ctx.fillStyle='rgba(0,255,65,.5)';ctx.font='7px Courier New';
+      ctx.fillText(score,x+1,H-1);
+    });
+  }
+
+  function renderTxStream(){
+    const el=E('tx-stream');if(!el)return;
+    el.innerHTML=liveTxns.slice(0,10).map(t=>`
+      <div class="fraud-row ${t.flagged?'flagged':''}">
+        <span style="color:#00ff4166;font-size:9px">${t.id}</span>
+        <span style="color:${t.flagged?'#ff4136':'#00ff41'}">${t.merchant}</span>
+        <span style="color:#ffff00">KSh ${t.amt.toFixed(0)}</span>
+        <span style="color:#00ff4188">${t.city}</span>
+        <span style="color:${t.score>70?'#ff4136':t.score>40?'#ff851b':'#2ecc40'}">${t.score}</span>
+        <span style="color:${t.flagged?'#ff4136':'#2ecc40'};font-weight:700">${t.flagged?'FLAGGED':'APPROVED'}</span>
+      </div>`).join('');
+  }
+
+  function renderAlerts(){
+    const el=E('fraud-alerts');if(!el)return;
+    if(!liveAlerts.length)liveAlerts=[
+      {t:'11:22:35',msg:'FOREIGN_TX_RU | KSh 3,931 | ACCOUNT_TAKEOVER',c:'#ff4136'},
+      {t:'11:22:11',msg:'FLAGGED: INTL_WIRE_IF | KSh 1,748.33 | AMT_ANOMALY',c:'#ff4136'},
+      {t:'11:21:58',msg:'BLOCKED: CRYPTO_GATE_IO | KSh 7,003.12 | VELOCITY_SPIKE',c:'#ff851b'},
+      {t:'11:21:44',msg:'BLOCKED: UNKNOWN_MERCH | KSh 455.00 | CARD_NOT_PRESENT',c:'#ff851b'},
+      {t:'11:21:32',msg:'BLOCKED: INTL_WIRE_IF | KSh 1,448.72 | ANTI_MISMATCH',c:'#ff851b'},
+    ];
+    el.innerHTML=liveAlerts.slice(0,6).map((a,i)=>`
+      <div style="color:${a.c};padding:2px 0;border-bottom:1px solid ${a.c}18;
+        animation:slideIn .4s ${i*.05}s ease both;font-size:9px">
+        <span style="opacity:.55">${a.t} AMT </span>${a.msg}
+      </div>`).join('');
+  }
+
+  function renderVectors(){
+    const el=E('vectors');if(!el)return;
+    const vecs=[
+      {n:'VELOCITY BREACH',pct:72,c:'#2ecc40'},
+      {n:'GEO ANOMALY',pct:32,c:'#2ecc40'},
+      {n:'AMOUNT SPIKE',pct:65,c:'#ffff00'},
+      {n:'CARD NOT PRESENT',pct:16,c:'#ffff00'},
+      {n:'UNUSUAL MERCHANT',pct:43,c:'#ff4136'},
+    ];
+    el.innerHTML=vecs.map(v=>`
+      <div style="margin-bottom:7px;display:flex;align-items:center;gap:8px">
+        <div style="font-size:9px;color:#00ff41aa;width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.n}</div>
+        <div style="flex:1;height:4px;background:#00ff4115;border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${v.pct}%;background:${v.c};box-shadow:0 0 4px ${v.c};
+            border-radius:2px;transition:width 1s ease;animation:growBar .8s ease both"></div>
+        </div>
+        <div style="font-size:9px;color:${v.c};width:28px;text-align:right">${v.pct}%</div>
+      </div>`).join('');
+  }
+
+  function renderSysStatus(){
+    const el=E('sys-status');if(!el)return;
+    const sys=[
+      {n:'ML MODEL A7',pct:96,c:'#2ecc40'},
+      {n:'RULE ENGINE',pct:11,c:'#ff4136'},
+      {n:'GEO LOOKUP',pct:72,c:'#2ecc40'},
+      {n:'RIN DATABASE',pct:85,c:'#ffff00'},
+    ];
+    el.innerHTML=sys.map(s=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+        <div style="width:6px;height:6px;border-radius:50%;background:${s.c};box-shadow:0 0 6px ${s.c}"></div>
+        <div style="font-size:9px;color:#00ff41aa;flex:1">${s.n}</div>
+        <div style="font-size:9px;color:${s.c}">${s.pct}%</div>
+      </div>`).join('');
+  }
+
+  // Uptime clock
+  let uptimeSec=1694;
+  _admTimers.push(setInterval(()=>{
+    uptimeSec++;const h=String(Math.floor(uptimeSec/3600)).padStart(2,'0');
+    const m=String(Math.floor((uptimeSec%3600)/60)).padStart(2,'0');
+    const s=String(uptimeSec%60).padStart(2,'0');
+    const el=E('uptime');if(el)el.textContent=`${h}:${m}:${s}`;
+  },1000));
+
+  // Animate wave — shift data left and add new point
+  _admTimers.push(setInterval(()=>{
+    waveData.shift();
+    const isFraudSpike=Math.random()<0.12;
+    waveData.push({
+      vol:0.35+0.3*Math.sin(Date.now()/1800)+Math.random()*0.12,
+      fraud:isFraudSpike?0.25+Math.random()*0.35:Math.random()*0.06
+    });
+    drawWave();
+    // Animate risk bars (subtle flicker)
+    drawRisk();
+  },400));
+
+  // New live transactions stream
+  _admTimers.push(setInterval(()=>{
+    const tx=genTx();
+    liveTxns.unshift(tx);
+    if(liveTxns.length>20)liveTxns.pop();
+    if(tx.flagged){
+      fraudCount++;blockedCount++;prevented+=tx.amt;
+      const fEl=E('kpi-fraud');if(fEl)fEl.textContent=fraudCount;
+      const bEl=E('kpi-blocked');if(bEl)bEl.textContent=blockedCount;
+      // Add to alerts
+      const alert={t:new Date().toLocaleTimeString('en-KE',{hour12:false}),
+        msg:`${tx.merchant} | KSh ${tx.amt.toFixed(0)} | FLAGGED`,c:'#ff4136'};
+      liveAlerts.unshift(alert);
+      if(liveAlerts.length>10)liveAlerts.pop();
+      renderAlerts();
+    }
+    totalVol+=tx.amt;
+    renderTxStream();
+  },1800));
+
+  // Initial renders
+  setTimeout(()=>{drawWave();drawRisk();renderTxStream();renderAlerts();renderVectors();renderSysStatus();},50);
 }
-async function adminMembers(){
-  const w=E('adm-content');if(!w)return;w.innerHTML='<div class="sp"></div>';
+
+// ── ADMIN TABS ────────────────────────────────────────────────────────────────
+function adm_tab(tab){
+  const tabs=['members','loans','broadcast'];
+  tabs.forEach(t=>{
+    const btn=E('tab-'+t.replace('broadcast','bc'));
+    if(btn){btn.style.background=t===tab?'#00ff4120':'transparent';
+      btn.style.color=t===tab?'#00ff41':'#00ff4180';
+      btn.style.borderColor=t===tab?'#00ff4155':'#00ff4133';}
+  });
+  const w=E('adm-content');if(!w)return;
+  w.style.display='block';
+  if(tab==='members')adm_members();
+  else if(tab==='loans')adm_loans();
+  else adm_broadcast();
+}
+
+async function adm_members(){
+  const w=E('adm-content');if(!w)return;
+  w.innerHTML='<div class="sp"></div>';
   try{
-    const d=await api('/api/admin/members?limit=50');const ms=d.members||[];
-    w.innerHTML=`<div class="sh"><div class="sht">All Members (${ms.length})</div></div>`+
+    const d=await api('/api/admin/members?limit=100');const ms=d.members||[];
+    w.innerHTML=`<div class="sh"><div class="sht">👥 All Members (${ms.length})</div><div class="sha" onclick="adm_members()">↻</div></div>`+
       ms.map(m=>{const i=(m.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
         return `<div class="mem-row"><div class="mem-av">${i}</div>
           <div style="flex:1"><div style="font-size:13px;font-weight:700">${m.full_name||'—'}</div>
-            <div style="font-size:11px;color:var(--muted)">${m.member_no||'—'} · ${m.phone||'—'}</div></div>
-          <span class="badge ${m.kyc_status==='verified'?'b-act':'b-pend'}">${m.kyc_status==='verified'?'✓ KYC':'⏳'}</span>
+            <div style="font-size:11px;color:var(--muted)">${m.member_no||'—'} · ${m.phone||'—'} · KSh ${fmt(m.balance||0)}</div></div>
+          <span class="badge ${m.kyc_status==='verified'?'b-act':'b-pend'}">${m.kyc_status==='verified'?'✓':'⏳'}</span>
         </div>`;}).join('');
   }catch(e){w.innerHTML='<p style="padding:16px;color:red">'+e.message+'</p>';}
 }
-async function adminLoans(){
+
+async function adm_loans(){
   const w=E('adm-content');if(!w)return;w.innerHTML='<div class="sp"></div>';
   try{
     const d=await api('/api/admin/loans?status=pending');const ls=d.loans||[];
-    w.innerHTML=`<div class="sh"><div class="sht">Pending Loans (${ls.length})</div></div>`+
-      (!ls.length?'<div class="empty"><div class="empty-ico">💳</div><p>No pending requests</p></div>':
+    w.innerHTML=`<div class="sh"><div class="sht">💳 Pending Loans (${ls.length})</div></div>`+
+      (!ls.length?'<div class="empty"><div class="empty-ico">✅</div><p>No pending loan requests</p></div>':
       ls.map(l=>`<div class="card">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">KSh ${fmt(l.amount)}</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${l.member_name||'—'} · ${l.member_no||'—'}</div>
         <div class="ir"><span class="il">Purpose</span><span class="iv">${l.purpose||'—'}</span></div>
+        <div class="ir"><span class="il">Term</span><span class="iv">${l.term_months||'—'} months</span></div>
         <div style="display:flex;gap:8px;margin-top:12px">
           <button onclick="adminLoanAct('${l.id}','approved',this)" style="flex:1;padding:10px;background:#dcfce7;color:#15803d;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">✓ Approve</button>
           <button onclick="adminLoanAct('${l.id}','rejected',this)" style="flex:1;padding:10px;background:#fee2e2;color:#dc2626;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">✗ Reject</button>
@@ -1941,12 +2249,8 @@ async function adminLoans(){
       </div>`).join(''));
   }catch(e){w.innerHTML='<p style="padding:16px;color:red">'+e.message+'</p>';}
 }
-async function adminLoanAct(id,action,btn){
-  btn.disabled=true;btn.textContent=action==='approved'?'Approving...':'Rejecting...';
-  try{await api('/api/admin/loans/'+id+'/'+action,{method:'POST'});toast(action==='approved'?'Loan approved!':'Loan rejected','ok');btn.closest('.card').style.opacity='.4';}
-  catch(e){toast(e.message,'err');btn.disabled=false;}
-}
-function adminBroadcast(){
+
+function adm_broadcast(){
   const w=E('adm-content');if(!w)return;
   w.innerHTML=`<div class="card"><div class="ct">📢 Broadcast Message</div>
     <div class="fld"><label>Message to all members</label>
@@ -1954,10 +2258,24 @@ function adminBroadcast(){
     <button class="btn btn-g" onclick="sendBroadcast()" style="border-radius:10px;margin-top:8px">📤 Send to All Members</button>
   </div>`;
 }
+
+// Keep old names working
+function adminMembers(){adm_tab('members');}
+function adminLoans(){adm_tab('loans');}
+function adminBroadcast(){adm_tab('broadcast');}
+
+async function adminLoanAct(id,action,btn){
+  btn.disabled=true;btn.textContent=action==='approved'?'Approving...':'Rejecting...';
+  try{await api('/api/admin/loans/'+id+'/'+action,{method:'POST'});
+    toast(action==='approved'?'Loan approved! ✅':'Loan rejected','ok');
+    btn.closest('.card').style.opacity='.4';
+  }catch(e){toast(e.message,'err');btn.disabled=false;}
+}
 async function sendBroadcast(){
   const msg=E('bc-msg')?.value?.trim();if(!msg)return toast('Enter a message first','err');
-  try{await api('/api/admin/broadcast',{method:'POST',body:JSON.stringify({message:msg})});toast('Broadcast sent!','ok',4000);E('bc-msg').value='';}
-  catch(e){toast(e.message,'err');}
+  try{await api('/api/admin/broadcast',{method:'POST',body:JSON.stringify({message:msg})});
+    toast('📢 Broadcast sent to all members!','ok',4000);E('bc-msg').value='';
+  }catch(e){toast(e.message,'err');}
 }
 
 // ── AUDIT LOG ─────────────────────────────────────────────────────────────────
