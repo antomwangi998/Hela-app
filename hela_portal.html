@@ -831,9 +831,10 @@ async function doLogin(){
   try{
     const r=await api('/api/auth/login',{method:'POST',body:JSON.stringify({phone,password:pass})});
     T=r.token;localStorage.setItem('ht',T);localStorage.setItem('hela-phone',phone);
-    // Update bio token if registered
+    if(r.role)localStorage.setItem('hela-role',r.role);
     if(localStorage.getItem('hela-bio-cred'))localStorage.setItem('hela-bio-token',T);
     try{await loadMe();}catch(e){const c=localStorage.getItem('hm');if(c)ME=JSON.parse(c);}
+    if(r.role&&ME)ME.role=r.role;
     showApp();
   }catch(e){showE('le',e.message);}
   finally{btn.disabled=false;btn.textContent='🔒 Sign In';}
@@ -864,7 +865,15 @@ async function doReg(){
 }
 
 async function loadMe(){
-  try{ME=await api('/api/me');localStorage.setItem('hm',JSON.stringify(ME));}
+  try{
+    ME=await api('/api/me');
+    // Make sure role is set — fall back to stored role from login JWT
+    if(!ME.role||ME.role==='member'){
+      const storedRole=localStorage.getItem('hela-role');
+      if(storedRole&&storedRole!=='member')ME.role=storedRole;
+    }
+    localStorage.setItem('hm',JSON.stringify(ME));
+  }
   catch(e){const c=localStorage.getItem('hm');if(c)ME=JSON.parse(c);else throw e;}
 }
 
@@ -1893,8 +1902,9 @@ function _admKill(){_admTimers.forEach(clearInterval);_admTimers=[];}
 async function adminDash(){
   _admKill();
   const c=E('pc');
-  if((ME?.role||'member')==='member'){
-    c.innerHTML='<div style="padding:20px"><div class="empty"><div class="empty-ico">🔒</div><h3>Admin Only</h3></div></div>';return;
+  const myRole=ME?.role||localStorage.getItem('hela-role')||'member';
+  if(myRole==='member'){
+    c.innerHTML='<div style="padding:20px"><div class="empty"><div class="empty-ico">🔒</div><h3>Admin Only</h3><p>Your role: '+myRole+'</p></div></div>';return;
   }
 
   // Fetch real stats (graceful fallback)
