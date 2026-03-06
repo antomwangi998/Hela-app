@@ -346,6 +346,86 @@ body.dark .kyc-area{background:#1a2a1a;border-color:#2a5a2a}
 body.dark .ns-unread{background:#1e1e1e}
 .ns-read{background:#f8fafc}
 body.dark .ns-read{background:#1a1a1a}
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;margin-bottom:6px}
+.qa-item{display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;transition:transform .15s;background:none;border:none;padding:0}
+.qa-item:active{transform:scale(.85)}
+.qa-ico{width:58px;height:58px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:0 6px 20px rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.07),
+    inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.03);
+  transition:all .15s}
+.qa-ico::before{content:"";position:absolute;top:0;left:0;right:0;height:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0));
+  pointer-events:none}
+body.dark .qa-ico{background:rgba(28,45,28,.85);border-color:rgba(255,255,255,.12);
+  box-shadow:0 6px 20px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.12)}
+.qa-item:active .qa-ico{transform:scale(.88)}
+.qa-lbl{font-size:10px;font-weight:700;color:var(--text);text-align:center;line-height:1.3}
+
+/* ── LIQUID GLASS card-liquid ── */
+.card-liquid{
+  background:rgba(255,255,255,.72);
+  backdrop-filter:blur(20px) saturate(170%);
+  -webkit-backdrop-filter:blur(20px) saturate(170%);
+  border:1px solid rgba(255,255,255,.6);
+  border-radius:22px;padding:18px;margin-bottom:14px;
+  box-shadow:0 4px 24px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.8);
+}
+body.dark .card-liquid{
+  background:rgba(20,32,20,.75);
+  border-color:rgba(255,255,255,.1);
+}
+/* Insight cards — glass */
+.ins-card{
+  background:rgba(255,255,255,.75);
+  backdrop-filter:blur(18px) saturate(160%);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);
+  border:1px solid rgba(255,255,255,.65);
+  border-radius:20px;padding:16px;
+  box-shadow:0 4px 20px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.75);
+  cursor:pointer;transition:transform .15s;
+}
+body.dark .ins-card{background:rgba(22,36,22,.78);border-color:rgba(255,255,255,.1)}
+.ins-card:active{transform:scale(.94)}
+/* Auto savings banner — glass */
+.asb{
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:0 4px 20px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.75);
+}
+body.dark .asb{background:rgba(22,36,22,.75);border-color:rgba(255,255,255,.1)}
+/* Bottom nav glass */
+.bnav{
+  background:rgba(255,255,255,.84)!important;
+  backdrop-filter:blur(28px) saturate(200%)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(200%)!important;
+  border-top:1px solid rgba(255,255,255,.6)!important;
+}
+body.dark .bnav{background:rgba(10,18,10,.9)!important;border-top-color:rgba(255,255,255,.08)!important}
+/* Modal glass */
+.mo-box{
+  background:rgba(255,255,255,.97)!important;
+  backdrop-filter:blur(32px) saturate(200%)!important;
+  -webkit-backdrop-filter:blur(32px) saturate(200%)!important;
+}
+body.dark .mo-box{background:rgba(14,22,14,.97)!important}
+/* Toast glass */
+.toast.ok{background:rgba(13,92,48,.92)!important;backdrop-filter:blur(12px)}
+.toast.err{background:rgba(239,68,68,.92)!important;backdrop-filter:blur(12px)}
+.toast.info{background:rgba(21,101,160,.92)!important;backdrop-filter:blur(12px)}
+/* Shimmer on balance card */
+.bal-shine{position:absolute;top:0;left:-100%;width:55%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  animation:balShine 4s ease-in-out infinite;pointer-events:none;z-index:0}
+@keyframes balShine{0%,100%{left:-100%}50%{left:120%}}
+
 </style>
 </head>
 <body>
@@ -358,25 +438,56 @@ body.dark .ns-read{background:#1a1a1a}
     <img class="auth-logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZDVjMzA7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzBhM2Q2MjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJvZHlHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzFhOGE0NztzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWU2ZmE4O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY29pbkdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjljYTI0O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmMDkzMmI7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGZpbHRlciBpZD0ic2hhZG93IiB4PSItMjAlIiB5PSItMjAlIiB3aWR0aD0iMTQwJSIgaGVpZ2h0PSIxNDAlIj4KICAgICAgPGZlRHJvcFNoYWRvdyBkeD0iMCIgZHk9IjYiIHN0ZERldmlhdGlvbj0iOCIgZmxvb2QtY29sb3I9IiMwMDAwMDA0NCIvPgogICAgPC9maWx0ZXI+CiAgPC9kZWZzPgoKICA8IS0tIEJhY2tncm91bmQgY2lyY2xlIC0tPgogIDxjaXJjbGUgY3g9IjIwMCIgY3k9IjIwMCIgcj0iMTk1IiBmaWxsPSJ1cmwoI2JnR3JhZCkiLz4KICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyMDAiIHI9IjE4NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMTUpIiBzdHJva2Utd2lkdGg9IjIiLz4KCiAgPCEtLSBQaWdneSBiYW5rIGJvZHkgLS0+CiAgPGVsbGlwc2UgY3g9IjIwMCIgY3k9IjIxNSIgcng9IjkwIiByeT0iNzUiIGZpbGw9InVybCgjYm9keUdyYWQpIiBmaWx0ZXI9InVybCgjc2hhZG93KSIvPgoKICA8IS0tIFBpZ2d5IGhlYWQgLS0+CiAgPGNpcmNsZSBjeD0iMjcyIiBjeT0iMTc1IiByPSI0MiIgZmlsbD0idXJsKCNib2R5R3JhZCkiIGZpbHRlcj0idXJsKCNzaGFkb3cpIi8+CgogIDwhLS0gRWFyIC0tPgogIDxlbGxpcHNlIGN4PSIyNjgiIGN5PSIxMzgiIHJ4PSIxMiIgcnk9IjE2IiBmaWxsPSIjMWE4YTQ3Ii8+CiAgPGVsbGlwc2UgY3g9IjI2OCIgY3k9IjEzOCIgcng9IjciIHJ5PSIxMCIgZmlsbD0iI2ZmOWFhMiIvPgoKICA8IS0tIFNub3V0IC0tPgogIDxlbGxpcHNlIGN4PSIzMDYiIGN5PSIxODUiIHJ4PSIxOCIgcnk9IjE0IiBmaWxsPSIjMWU2ZmE4Ii8+CiAgPGNpcmNsZSBjeD0iMzAwIiBjeT0iMTgzIiByPSI0IiBmaWxsPSIjMGEzZDYyIi8+CiAgPGNpcmNsZSBjeD0iMzEyIiBjeT0iMTgzIiByPSI0IiBmaWxsPSIjMGEzZDYyIi8+CgogIDwhLS0gRXllIC0tPgogIDxjaXJjbGUgY3g9IjI4MiIgY3k9IjE2OCIgcj0iNiIgZmlsbD0id2hpdGUiLz4KICA8Y2lyY2xlIGN4PSIyODMiIGN5PSIxNjkiIHI9IjMiIGZpbGw9IiMwYTNkNjIiLz4KICA8Y2lyY2xlIGN4PSIyODQiIGN5PSIxNjciIHI9IjEiIGZpbGw9IndoaXRlIi8+CgogIDwhLS0gQ29pbiBzbG90IG9uIHRvcCAtLT4KICA8cmVjdCB4PSIxNzgiIHk9IjE0MiIgd2lkdGg9IjM2IiBoZWlnaHQ9IjgiIHJ4PSI0IiBmaWxsPSIjMGEzZDYyIi8+CgogIDwhLS0gTGVncyAtLT4KICA8cmVjdCB4PSIxNDgiIHk9IjI3OCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjI4IiByeD0iMTEiIGZpbGw9IiMxNTY1YTAiLz4KICA8cmVjdCB4PSIxNzgiIHk9IjI4MiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjI0IiByeD0iMTEiIGZpbGw9IiMxNTY1YTAiLz4KICA8cmVjdCB4PSIyMDgiIHk9IjI4MiIgd2lkdGg9IjIyIiBoZWlnaHQ9IjI0IiByeD0iMTEiIGZpbGw9IiMxNTY1YTAiLz4KICA8cmVjdCB4PSIyMzgiIHk9IjI3OCIgd2lkdGg9IjIyIiBoZWlnaHQ9IjI4IiByeD0iMTEiIGZpbGw9IiMxNTY1YTAiLz4KCiAgPCEtLSBUYWlsIC0tPgogIDxwYXRoIGQ9Ik0xMTIgMjEwIFE5NSAxOTUgMTAwIDE3OCBRMTA1IDE2MSAxMTggMTY4IiBmaWxsPSJub25lIiBzdHJva2U9IiMxZTZmYTgiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CgogIDwhLS0gR29sZCBjb2luIGZseWluZyBpbiAtLT4KICA8Y2lyY2xlIGN4PSIxNTUiIGN5PSIxNDgiIHI9IjIyIiBmaWxsPSJ1cmwoI2NvaW5HcmFkKSIgZmlsdGVyPSJ1cmwoI3NoYWRvdykiLz4KICA8Y2lyY2xlIGN4PSIxNTUiIGN5PSIxNDgiIHI9IjE3IiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC40KSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iMTU1IiB5PSIxNTQiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPktTaDwvdGV4dD4KCiAgPCEtLSBNb3Rpb24gbGluZXMgZm9yIGNvaW4gLS0+CiAgPGxpbmUgeDE9IjE2OCIgeTE9IjE0MyIgeDI9IjE4MCIgeTI9IjE0MSIgc3Ryb2tlPSJyZ2JhKDI0OSwyMDIsMzYsMC42KSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8bGluZSB4MT0iMTY3IiB5MT0iMTUwIiB4Mj0iMTc5IiB5Mj0iMTUwIiBzdHJva2U9InJnYmEoMjQ5LDIwMiwzNiwwLjQpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxsaW5lIHgxPSIxNjgiIHkxPSIxNTciIHgyPSIxNzkiIHkyPSIxNTkiIHN0cm9rZT0icmdiYSgyNDksMjAyLDM2LDAuMykiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CgogIDwhLS0gVGV4dDogSEVMQSAtLT4KICA8dGV4dCB4PSIyMDAiIHk9IjM0NiIgZm9udC1mYW1pbHk9IkFyaWFsIEJsYWNrLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjYiPkhFTEE8L3RleHQ+CgogIDwhLS0gVGV4dDogU01BUlQgU0FDQ08gLS0+CiAgPHRleHQgeD0iMjAwIiB5PSIzNzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjc1KSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjQiPlNNQVJUIFNBQ0NPPC90ZXh0PgoKICA8IS0tIERlY29yYXRpdmUgYm90dG9tIGFyYyAtLT4KICA8cGF0aCBkPSJNODAgMzg1IFEyMDAgNDAwIDMyMCAzODUiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cg==" alt="HELA">
     <div class="auth-title">HELA SMART SACCO</div>
     <div class="auth-sub">SAVINGS · LOANS · INVESTMENTS</div>
-    <div class="auth-illus">
-      <svg width="220" height="160" viewBox="0 0 220 160">
-        <ellipse cx="110" cy="140" rx="95" ry="18" fill="rgba(255,255,255,.08)"/>
-        <ellipse cx="110" cy="108" rx="60" ry="48" fill="#1a8a47"/>
-        <circle cx="155" cy="80" r="32" fill="#1a8a47"/>
-        <circle cx="155" cy="80" r="24" fill="#52c27a"/>
-        <rect x="100" y="68" width="20" height="5" rx="2.5" fill="#071f10"/>
-        <rect x="60" y="114" width="16" height="22" rx="8" fill="#1565a0"/>
-        <rect x="80" y="118" width="16" height="18" rx="8" fill="#1565a0"/>
-        <circle cx="72" cy="100" r="16" fill="#f5c518"/>
-        <circle cx="72" cy="100" r="12" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
-        <text x="72" y="104" font-family="Arial Black" font-size="8" font-weight="900" fill="white" text-anchor="middle">KSh</text>
-        <line x1="170" y1="45" x2="195" y2="15" stroke="#52c27a" stroke-width="2.5" stroke-linecap="round"/>
-        <polygon points="195,8 202,20 186,16" fill="#52c27a"/>
-        <rect x="152" y="118" width="14" height="32" rx="2" fill="#0d5c30"/>
-        <rect x="170" y="102" width="14" height="48" rx="2" fill="#1a8a47"/>
-        <rect x="188" y="86" width="14" height="64" rx="2" fill="#52c27a"/>
-        <line x1="40" y1="112" x2="55" y2="96" stroke="rgba(245,197,24,.6)" stroke-width="1.5"/>
-        <circle cx="38" cy="114" r="4" fill="rgba(245,197,24,.8)"/>
+    <div class="auth-illus" style="width:100%;max-width:320px;height:190px;margin:14px auto 0;display:flex;align-items:flex-end;justify-content:center">
+      <svg width="310" height="182" viewBox="0 0 310 182" style="filter:drop-shadow(0 16px 34px rgba(0,0,0,.45))">
+        <ellipse cx="155" cy="168" rx="116" ry="13" fill="rgba(255,255,255,.08)"/>
+        <rect x="216" y="114" width="18" height="48" rx="4" fill="rgba(13,92,48,.95)"/>
+        <rect x="239" y="90"  width="18" height="72" rx="4" fill="rgba(26,138,71,.95)"/>
+        <rect x="262" y="64"  width="18" height="98" rx="4" fill="rgba(82,194,122,.95)"/>
+        <line x1="214" y1="108" x2="248" y2="50" stroke="#52c27a" stroke-width="3" stroke-linecap="round"/>
+        <polygon points="250,42 260,57 242,55" fill="#52c27a"/>
+        <rect x="20" y="106" width="44" height="34" rx="10" fill="#1a8a47"/>
+        <rect x="28" y="98"  width="28" height="14" rx="7"  fill="#0d5c30"/>
+        <line x1="30" y1="116" x2="58" y2="116" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
+        <line x1="30" y1="123" x2="54" y2="123" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+        <ellipse cx="88" cy="154" rx="14" ry="5" fill="#b45309"/>
+        <ellipse cx="88" cy="149" rx="14" ry="5" fill="#d97706"/>
+        <ellipse cx="88" cy="144" rx="14" ry="5" fill="#f59e0b"/>
+        <ellipse cx="88" cy="139" rx="14" ry="5" fill="#fbbf24"/>
+        <ellipse cx="88" cy="134" rx="14" ry="5" fill="#fcd34d"/>
+        <circle cx="116" cy="52" r="21" fill="#f59e0b"/>
+        <circle cx="116" cy="52" r="14" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+        <text x="116" y="58" font-family="Arial Black,sans-serif" font-size="9" font-weight="900" fill="white" text-anchor="middle">KSh</text>
+        <line x1="134" y1="46" x2="148" y2="43" stroke="rgba(245,197,24,.55)" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="134" y1="52" x2="150" y2="52" stroke="rgba(245,197,24,.4)"  stroke-width="1.5" stroke-linecap="round"/>
+        <text x="163" y="30" font-size="15" fill="rgba(255,255,255,.85)">✦</text>
+        <text x="93"  y="34" font-size="11" fill="rgba(245,197,24,.85)">✦</text>
+        <text x="65"  y="88" font-size="9"  fill="rgba(255,255,255,.55)">✦</text>
+        <ellipse cx="153" cy="126" rx="57" ry="45" fill="#f9a8d4"/>
+        <ellipse cx="153" cy="126" rx="57" ry="45" fill="url(#bsh)"/>
+        <circle cx="192" cy="102" r="31" fill="#f9a8d4"/>
+        <circle cx="192" cy="102" r="31" fill="url(#hsh)"/>
+        <ellipse cx="185" cy="74" rx="10" ry="13" fill="#f472b6"/>
+        <ellipse cx="185" cy="74" rx="6"  ry="8"  fill="#fda4af"/>
+        <ellipse cx="210" cy="112" rx="14" ry="11" fill="#f472b6"/>
+        <circle cx="204" cy="110" r="3.5" fill="#be185d"/>
+        <circle cx="216" cy="110" r="3.5" fill="#be185d"/>
+        <circle cx="200" cy="96" r="5.5" fill="white"/>
+        <circle cx="201" cy="97" r="2.8" fill="#1e293b"/>
+        <circle cx="202" cy="96" r="1.1" fill="white"/>
+        <line x1="197" y1="91" x2="196" y2="88" stroke="#be185d" stroke-width="1"   stroke-linecap="round"/>
+        <line x1="200" y1="90" x2="200" y2="87" stroke="#be185d" stroke-width="1"   stroke-linecap="round"/>
+        <line x1="203" y1="91" x2="204" y2="88" stroke="#be185d" stroke-width="1"   stroke-linecap="round"/>
+        <rect x="138" y="83" width="30" height="7" rx="3.5" fill="#be185d"/>
+        <rect x="114" y="162" width="18" height="20" rx="9" fill="#f472b6"/>
+        <rect x="136" y="166" width="18" height="16" rx="9" fill="#f472b6"/>
+        <rect x="158" y="166" width="18" height="16" rx="9" fill="#f472b6"/>
+        <rect x="180" y="162" width="18" height="20" rx="9" fill="#f472b6"/>
+        <path d="M100 122 Q86 108 93 92 Q100 78 112 86" fill="none" stroke="#f472b6" stroke-width="5.5" stroke-linecap="round"/>
+        <defs>
+          <radialGradient id="bsh" cx="38%" cy="30%"><stop offset="0%" stop-color="rgba(255,255,255,.3)"/><stop offset="100%" stop-color="rgba(0,0,0,.05)"/></radialGradient>
+          <radialGradient id="hsh" cx="35%" cy="28%"><stop offset="0%" stop-color="rgba(255,255,255,.35)"/><stop offset="100%" stop-color="rgba(0,0,0,.05)"/></radialGradient>
+        </defs>
       </svg>
     </div>
   </div>
@@ -891,14 +1002,14 @@ async function home(){
       <div style="padding:0 20px">
         <div class="sh"><div class="sht">Recent Activity</div><div class="sha" onclick="go('statement')">See All ›</div></div>
         <div class="qa-grid">
-          <div class="qa-item" onclick="oMo('dep-mo')"><div class="qa-ico" style="background:#e8f5e9">💳</div><div class="qa-lbl">Deposit</div></div>
-          <div class="qa-item" onclick="oMo('loan-mo')"><div class="qa-ico" style="background:#fffbeb">💵</div><div class="qa-lbl">Loan</div></div>
-          <div class="qa-item" onclick="go('statement')"><div class="qa-ico" style="background:#eff6ff">📄</div><div class="qa-lbl">Statements</div></div>
-          <div class="qa-item" onclick="go('payments')"><div class="qa-ico" style="background:#fce4ec">💸</div><div class="qa-lbl">Pay Bills</div></div>
-          <div class="qa-item" onclick="toast('Transfer — coming soon','info')"><div class="qa-ico" style="background:#e0f7fa">🔄</div><div class="qa-lbl">Transfer</div></div>
-          <div class="qa-item" onclick="go('referrals')"><div class="qa-ico" style="background:#f3e5f5">🤝</div><div class="qa-lbl">Refer</div></div>
-          <div class="qa-item" onclick="go('helaAI')"><div class="qa-ico" style="background:linear-gradient(135deg,#e8f5e9,#e3f2fd)">🤖</div><div class="qa-lbl">AI Chatbot</div></div>
-          <div class="qa-item" onclick="go('analytics')"><div class="qa-ico" style="background:#e8f5e9">📊</div><div class="qa-lbl">Analytics</div></div>
+          <div class="qa-item" onclick="oMo('dep-mo')"><div class="qa-ico" style="background:linear-gradient(145deg,#dcfce7,#bbf7d0)">💳</div><div class="qa-lbl">Deposit</div></div>
+          <div class="qa-item" onclick="oMo('loan-mo')"><div class="qa-ico" style="background:linear-gradient(145deg,#fef9c3,#fef08a)">💵</div><div class="qa-lbl">Loan</div></div>
+          <div class="qa-item" onclick="go('statement')"><div class="qa-ico" style="background:linear-gradient(145deg,#dbeafe,#bfdbfe)">📄</div><div class="qa-lbl">Statements</div></div>
+          <div class="qa-item" onclick="go('payments')"><div class="qa-ico" style="background:linear-gradient(145deg,#fce7f3,#fbcfe8)">💸</div><div class="qa-lbl">Pay Bills</div></div>
+          <div class="qa-item" onclick="toast('Transfer — coming soon','info')"><div class="qa-ico" style="background:linear-gradient(145deg,#cffafe,#a5f3fc)">🔄</div><div class="qa-lbl">Transfer</div></div>
+          <div class="qa-item" onclick="go('referrals')"><div class="qa-ico" style="background:linear-gradient(145deg,#ede9fe,#ddd6fe)">🤝</div><div class="qa-lbl">Refer</div></div>
+          <div class="qa-item" onclick="go('helaAI')"><div class="qa-ico" style="background:linear-gradient(145deg,#d1fae5,#bfdbfe)">🤖</div><div class="qa-lbl">AI Chatbot</div></div>
+          <div class="qa-item" onclick="go('analytics')"><div class="qa-ico" style="background:linear-gradient(145deg,#dcfce7,#d1fae5)">📊</div><div class="qa-lbl">Analytics</div></div>
         </div>
 
         <!-- RECENT TXNS -->
@@ -1407,55 +1518,136 @@ function askAI(msg){
   },900+Math.random()*600);
 }
 
-function getAIReply(q,m){
-  const bal=m.balance||0;const name=(m.name||'').split(' ')[0]||'there';
-  const loans=m.loans||[];const hasLoan=loans.some(l=>['active','disbursed'].includes(l.status));
+function getAIReply(raw,m){
+  const q=raw.toLowerCase();
+  const bal=m.balance||0;
+  const name=(m.name||'friend').split(' ')[0];
   const kyc=m.kyc_status==='verified';
+  const loans=m.loans||[];
+  const hasOv=loans.some(l=>l.status==='overdue');
+  const hasLoan=loans.some(l=>['active','disbursed'].includes(l.status));
   const maxLoan=Math.round(bal*3);
 
-  if(/balance|savings|account|how much/.test(q))
-    return `Your current savings balance is <strong>KSh ${fmt(bal)}</strong> ${name}. ${bal<1000?'Start depositing regularly to grow your savings!':bal<10000?'You are building well! Keep saving consistently.':'Great savings! You qualify for our premium loan rates.'}`;
+  // ── GREETINGS
+  if(/^(hi|hello|hey|habari|hujambo|sasa|mambo|niaje|jambo|good\s*(morning|afternoon|evening|day))/.test(q))
+    return `Habari ${name}! 👋 Karibu sana.<br><br>I\'m HELA AI — your personal SACCO assistant. I can help with:<br>• Loan applications & eligibility<br>• Savings tips & strategies<br>• Fixed deposits & investments<br>• M-Pesa deposits & withdrawals<br>• Budget planning & health score<br>• KYC verification<br><br>What would you like to know?`;
 
-  if(/loan.*(eligible|qualify|how much|get)|borrow|how much.*(borrow|loan)/.test(q))
-    return kyc?`Based on your savings of KSh ${fmt(bal)}, you qualify for a loan of up to <strong>KSh ${maxLoan.toLocaleString('en-KE')}</strong> (3x your savings).<br><br>Interest starts from <strong>1.5% per month</strong>. Tap the Loans tab to apply!`:'You need to complete KYC verification first before applying for loans. Go to <strong>More → KYC Upload</strong> to submit your National ID.';
+  if(/thank|asante|sawa|good.*help|appreciate/.test(q))
+    return `Karibu sana ${name}! 😊 Always happy to help. Feel free to ask about your account, loans, or savings anytime!`;
 
-  if(/fixed deposit|fd|invest|14%/.test(q))
-    return 'Fixed Deposits at HELA SACCO earn up to <strong>14% per annum</strong>!<br><br>Minimum deposit: <strong>KSh 10,000</strong><br>Term: 6 to 24 months<br>Interest paid at maturity<br><br>To open a Fixed Deposit, call <strong>0704363089</strong> or email helasacco@gmail.com';
+  // ── ABOUT HELA
+  if(/about hela|what is hela|hela sacco|who is hela|tell me about/.test(q))
+    return `<strong>🏦 About HELA SMART SACCO</strong><br><br>HELA SMART SACCO is a licensed, CBK-regulated Savings & Credit Cooperative in Kenya — empowering members to save, borrow, and invest smartly.<br><br><strong>Products:</strong><br>💰 Savings account — <strong>8% p.a.</strong><br>💳 Loans — from <strong>1.5%/month</strong><br>📈 Fixed deposits — up to <strong>14% p.a.</strong><br>📱 M-Pesa deposits & payments<br>🤖 AI-powered financial tools<br><br><strong>Contact:</strong><br>📞 0704363089<br>📧 helasacco@gmail.com<br>📸 @mr.mwangi (Instagram/TikTok)`;
 
-  if(/budget|spend|expense|plan/.test(q))
-    return `Here is a simple budget plan for you ${name}:<br><br>💡 <strong>50/30/20 Rule:</strong><br>• <strong>50%</strong> → Needs (rent, food, transport)<br>• <strong>30%</strong> → Wants (entertainment, shopping)<br>• <strong>20%</strong> → Savings &amp; debt repayment<br><br>Use our <strong>Budget Planner</strong> in the Insights tab to track yours!`;
+  // ── BALANCE
+  if(/balance|how much.*have|my account|account balance|savings balance/.test(q))
+    return `Your current savings balance is <strong>KSh ${bal.toLocaleString('en-KE',{minimumFractionDigits:2})}</strong>, ${name}.<br><br>${bal<1000?'💡 Start saving — even KSh 100/day = <strong>KSh 36,500/year</strong>!':bal<10000?'📈 Building well! Reach KSh 10,000 to unlock better loan rates.':bal<50000?'💪 Great! You qualify for loans up to <strong>KSh '+maxLoan.toLocaleString('en-KE')+'</strong>.':'🌟 Excellent! You\'re eligible for premium rates and investment products.'}`;
 
-  if(/kyc|national id|verify|document/.test(q))
-    return `To complete KYC you need:<br><br>📋 <strong>Documents:</strong><br>• National ID (front and back)<br>• A clear photo (not blurry)<br><br>Go to <strong>More → KYC Upload</strong> to submit. Verification takes 1-2 business days. KYC unlocks higher loan limits!`;
+  // ── LOANS
+  if(/loan.*limit|borrow.*how much|qualify.*loan|eligible.*loan|how much.*loan/.test(q))
+    return kyc?`Based on your savings of <strong>KSh ${bal.toLocaleString('en-KE')}</strong>:<br><br>💳 Loan limit: <strong>KSh ${maxLoan.toLocaleString('en-KE')}</strong> (3× savings)<br>📅 Terms: 3–36 months<br>💹 Rate: from <strong>1.5%/month</strong><br><br>${hasOv?'⚠️ You have an overdue loan — please repay it first.':'✅ You can apply now in the Loans tab!'}`:
+    '🪪 Complete <strong>KYC verification</strong> first (More → KYC Upload). Takes 1–2 business days.';
 
-  if(/repay|pay.*(loan|faster)|reduce.*loan/.test(q))
-    return `Tips to repay your loan faster:<br><br>⚡ <strong>1.</strong> Pay more than the minimum monthly<br>⚡ <strong>2.</strong> Make extra payments when you have surplus<br>⚡ <strong>3.</strong> Set a savings goal to clear the loan<br>⚡ <strong>4.</strong> Avoid new loans until this one is cleared<br><br>${hasLoan?'Go to the <strong>Loans tab</strong> to make a repayment.':'You have no active loans currently.'}`;
+  if(/apply.*loan|how.*get.*loan|loan.*apply/.test(q))
+    return `<strong>How to apply for a loan:</strong><br><br>1️⃣ Tap <strong>Loans</strong> at the bottom nav<br>2️⃣ Tap <strong>+ Apply</strong><br>3️⃣ Enter amount, purpose & term<br>4️⃣ Submit — reviewed within <strong>24 hours</strong><br><br>📋 Requirements:<br>• KYC verified (National ID)<br>• Active savings account<br>• No overdue loans<br>• Limit: <strong>3× your savings</strong>`;
 
-  if(/interest|rate/.test(q))
-    return '<strong>HELA SACCO rates:</strong><br><br>💰 Savings: <strong>8% p.a.</strong><br>💳 Loans: from <strong>1.5%/month</strong><br>📈 Fixed Deposits: up to <strong>14% p.a.</strong><br><br>These rates are highly competitive compared to banks!';
+  if(/loan.*interest|interest.*loan|rate.*loan/.test(q))
+    return `<strong>Loan Interest Rates:</strong><br><br>Standard: <strong>1.5%/month</strong><br>Premium: <strong>2.0%/month</strong><br><br><strong>Example — KSh 10,000 for 12 months at 1.5%:</strong><br>Monthly: <strong>KSh 916</strong><br>Total repaid: <strong>KSh 10,992</strong><br>Interest: KSh 992<br><br>Use the <strong>Loan Calculator</strong> in the Loans tab for any scenario!`;
 
-  if(/mpesa|deposit|pay|send money/.test(q))
-    return 'To deposit via M-Pesa:<br><br>1. Tap <strong>Deposit</strong> on the Home screen<br>2. Enter your M-Pesa phone number<br>3. Enter amount<br>4. Confirm the STK push on your phone<br><br>Your savings balance updates instantly!';
+  if(/repay|pay.*loan|loan.*pay/.test(q))
+    return `<strong>How to repay your loan:</strong><br><br>1️⃣ Go to <strong>Loans tab</strong><br>2️⃣ Find your active loan<br>3️⃣ Tap <strong>"Repay via M-Pesa"</strong><br>4️⃣ Enter M-Pesa number & amount<br>5️⃣ Confirm the STK push<br><br>${hasLoan?'💡 Pay extra to clear your loan faster & save on interest!':'You have no active loans. Apply in the Loans tab.'}`;
 
-  if(/password|forgot|reset|login/.test(q))
-    return 'To reset your password:<br><br>1. Go to the login screen<br>2. Tap <strong>Forgot password?</strong><br>3. Enter your email address<br>4. Check your email for a reset link<br><br>Or call <strong>0704363089</strong> for help.';
+  if(/repay.*faster|clear.*loan.*fast|pay.*off/.test(q))
+    return `<strong>⚡ Repay faster tips:</strong><br><br>1. Pay <strong>double installments</strong> when possible<br>2. Use bonuses & windfalls for lump payments<br>3. Set up <strong>Auto Savings</strong> linked to repayment<br>4. Avoid new loans until current is cleared<br><br>Every extra payment goes directly to reducing your outstanding balance!`;
 
-  if(/hello|hi|habari|hujambo|hey/.test(q))
-    return `Habari ${name}! 👋 How can I help you today? I can assist with:<br>• Loan eligibility &amp; applications<br>• Savings advice &amp; tips<br>• Budget planning<br>• Understanding your account`;
+  // ── SAVINGS
+  if(/save|saving tips|grow.*money|how to save/.test(q))
+    return `<strong>💰 Savings Tips for ${name}:</strong><br><br>🎯 <strong>Set a goal</strong> — use the Savings Goal feature (Home → Auto Savings)<br>📅 <strong>Save regularly</strong> — KSh 500/week = <strong>KSh 26,000/year</strong><br><br>💡 <strong>50/30/20 Rule:</strong><br>• 50% → Needs (rent, food, transport)<br>• 30% → Wants<br>• <strong>20% → Savings & debt</strong><br><br>At <strong>8% p.a.</strong>, your KSh ${bal.toLocaleString('en-KE')} earns <strong>KSh ${Math.round(bal*0.08).toLocaleString('en-KE')}/year</strong>!`;
 
-  if(/thank|asante|sawa/.test(q))
-    return `Karibu ${name}! 😊 Feel free to ask anything else about your HELA SACCO account.`;
+  if(/interest.*saving|saving.*rate|earn.*saving/.test(q))
+    return `<strong>HELA Savings Rates:</strong><br><br>💰 Regular savings: <strong>8% p.a.</strong><br>📈 Fixed Deposit 6mo: <strong>10% p.a.</strong><br>📈 Fixed Deposit 12mo: <strong>12% p.a.</strong><br>📈 Fixed Deposit 24mo: <strong>14% p.a.</strong><br><br>Your KSh ${bal.toLocaleString('en-KE')} earns ~<strong>KSh ${Math.round(bal*0.08/12).toLocaleString('en-KE')}/month</strong> in interest.`;
 
-  if(/contact|phone|email|call|support/.test(q))
-    return '📞 <strong>Contact HELA SACCO:</strong><br><br>📱 Call/WhatsApp: <strong>0704363089</strong><br>📧 Email: <strong>helasacco@gmail.com</strong><br>📸 Instagram/TikTok: <strong>@mr.mwangi</strong><br>📘 Facebook: <strong>Mwangi Antony</strong>';
+  // ── FIXED DEPOSITS
+  if(/fixed deposit|fd|fixed.*saving|14%/.test(q))
+    return `<strong>📈 HELA Fixed Deposits:</strong><br><br>Minimum: <strong>KSh 10,000</strong><br><br>Terms & rates:<br>• 6 months → <strong>10% p.a.</strong><br>• 12 months → <strong>12% p.a.</strong><br>• 24 months → <strong>14% p.a.</strong><br><br>Example: KSh 50,000 at 14% for 24 months = <strong>KSh 14,000 interest!</strong><br><br>To open one:<br>📞 0704363089 &nbsp;|&nbsp; 📧 helasacco@gmail.com`;
 
-  // Default smart response
-  const tips=['Start by saving at least 10% of your income every month to build your financial foundation.',
-    'Members who save consistently for 6+ months get priority loan processing at HELA SACCO.',
-    'Did you know? A fixed deposit of KSh 50,000 at 14% p.a. earns KSh 7,000 in interest per year!',
-    'Set a savings goal in the Insights tab to stay motivated and track your progress.'];
-  return `Good question! Here is a tip: ${tips[Math.floor(Math.random()*tips.length)]}<br><br>Feel free to ask me about loans, savings, investments, or your account! 😊`;
+  // ── M-PESA
+  if(/mpesa|deposit|how.*deposit|add.*money/.test(q))
+    return `<strong>📱 Deposit via M-Pesa:</strong><br><br>1️⃣ Home → tap <strong>Deposit</strong><br>2️⃣ Enter your M-Pesa number<br>3️⃣ Enter amount (min <strong>KSh 100</strong>)<br>4️⃣ Tap <strong>Send M-Pesa Request</strong><br>5️⃣ Confirm the STK push on your phone<br><br>✅ Balance updates <strong>instantly</strong>, 24/7!`;
+
+  if(/withdraw|get.*money|take.*out/.test(q))
+    return `<strong>💸 Withdrawal Process:</strong><br><br>1️⃣ Contact us: 📞 0704363089 (WhatsApp/call)<br>2️⃣ Provide member number & ID<br>3️⃣ Same-day for amounts under KSh 50,000<br>4️⃣ Larger amounts: 1–2 business days<br><br>Minimum withdrawal: <strong>KSh 1,000</strong>`;
+
+  // ── KYC
+  if(/kyc|national id|verify|id.*upload|document/.test(q))
+    return `<strong>🪪 KYC Verification:</strong><br><br>Documents needed:<br>✅ National ID — front<br>✅ National ID — back<br><br>How to submit:<br>1️⃣ More → <strong>KYC Upload</strong><br>2️⃣ Tap each area to take/upload photo<br>3️⃣ Submit — reviewed in <strong>1–2 days</strong><br><br>Benefits of KYC:<br>• Unlocks loan applications<br>• Higher withdrawal limits<br>• Full account features`;
+
+  // ── BUDGET
+  if(/budget|plan.*spend|expense|manage.*money/.test(q))
+    return `<strong>📋 Budget Planning:</strong><br><br>Use our <strong>Budget Planner</strong> in Insights tab!<br><br>Recommended 50/30/20:<br>🏠 Rent: 25–30%<br>🍽️ Food: 15–20%<br>🚌 Transport: 5–10%<br>💡 Utilities: 5%<br>📱 Airtime: 3%<br>🎯 <strong>Savings: 20%+</strong><br>🎉 Fun: max 10%<br><br>On KSh 30,000: save <strong>KSh 6,000/month</strong> = <strong>KSh 72,000/year</strong>!`;
+
+  // ── FEES
+  if(/fee|charge|cost|monthly.*fee|account.*fee/.test(q))
+    return `<strong>💰 HELA Fees — Transparent & Fair:</strong><br><br>✅ Account opening: <strong>FREE</strong><br>✅ Monthly maintenance: <strong>FREE</strong><br>✅ Deposits: <strong>FREE</strong><br>💳 Loans: <strong>1.5%/month</strong> (no hidden fees)<br>📱 M-Pesa: standard Safaricom charges<br><br>We believe in total transparency — no surprises!`;
+
+  // ── PASSWORD / BIOMETRIC
+  if(/password|forgot.*pass|reset.*pass|cant.*login/.test(q))
+    return `<strong>🔑 Password Reset:</strong><br><br>1️⃣ Login screen → tap <strong>"Forgot password?"</strong><br>2️⃣ Enter your registered email<br>3️⃣ Click the reset link in your inbox<br><br>Also try:<br>📱 <strong>Login with OTP</strong> — get an SMS code<br>🫆 <strong>Biometric login</strong> — if you set it up<br><br>Still stuck? Call <strong>0704363089</strong>`;
+
+  if(/biometric|fingerprint|face id|touch id/.test(q))
+    return `<strong>🫆 Biometric Login:</strong><br><br>1️⃣ Sign in with password first<br>2️⃣ Profile → <strong>Biometric Login</strong> (or Settings)<br>3️⃣ Tap to enable — use fingerprint or Face ID<br>4️⃣ Next time: tap <strong>"Login with fingerprint"</strong><br><br>✅ Works on Android & iPhone<br>🔒 Biometric data stays on your device — we never see it!`;
+
+  // ── REFERRALS
+  if(/refer|referral|friend.*join|earn.*refer/.test(q))
+    return `<strong>🤝 Referral Program:</strong><br><br>Earn <strong>KSh 200</strong> per friend who:<br>✅ Joins using your referral code<br>✅ Makes their first deposit<br><br>Go to <strong>More → Referrals</strong> to get your code!<br><br>💡 Refer 10 friends = <strong>KSh 2,000 bonus!</strong>`;
+
+  // ── CONTACT
+  if(/contact|call|phone|email|support|help.*num/.test(q))
+    return `<strong>📞 Contact HELA SACCO:</strong><br><br>📱 WhatsApp/Call: <strong>0704363089</strong><br>📧 Email: <strong>helasacco@gmail.com</strong><br>📸 Instagram/TikTok: <strong>@mr.mwangi</strong><br>📘 Facebook: <strong>Mwangi Antony</strong><br><br>⏰ Mon–Sat, 8AM–6PM<br>💬 WhatsApp available 24/7`;
+
+  // ── HEALTH SCORE
+  if(/health.*score|financial.*score|my score/.test(q)){
+    const sc=Math.min(100,(bal>=50000?25:bal>=10000?20:bal>=1000?12:0)+(hasOv?0:15)+(kyc?20:5)+(loans.length?15:0));
+    return `<strong>💡 Your Financial Health Score: ${sc}/100</strong><br><br>${sc>=80?'🌟 Excellent!':sc>=60?'👍 Good':sc>=40?'📊 Fair':'📉 Needs Work'}<br><br>Improve it by:<br>${!kyc?'✅ Complete KYC → +15 pts<br>':''}${bal<10000?'✅ Save KSh '+(10000-bal).toLocaleString('en-KE')+' more → +8 pts<br>':''}${hasOv?'✅ Repay overdue loan → +15 pts<br>':''}View full details in <strong>Insights → Health Score</strong>`;
+  }
+
+  // ── SWAHILI
+  if(/niambie|nisaidie|naweza|nataka|pesa|mkopo|akiba|riba/.test(q))
+    return `Habari ${name}! Niko hapa kukusaidia kwa Kiswahili! 🇰🇪<br><br><strong>Huduma za HELA SACCO:</strong><br>💰 Akiba: faida ya <strong>8% kwa mwaka</strong><br>💳 Mkopo: kuanzia <strong>1.5% kwa mwezi</strong><br>📈 Amana: hadi <strong>14% kwa mwaka</strong><br>📱 Amana kupitia M-Pesa<br><br>Una swali gani?`;
+
+  // ── OFF-TOPIC — friendly redirect
+  if(/weather|news|sports|football|politics|president|election/.test(q))
+    return `I\'m HELA AI, a <strong>financial assistant</strong> — not a news or weather service! 😊<br><br>For that, try Google or a news app.<br><br>But I\'m great at helping with:<br>💳 Loans | 💰 Savings | 📈 Investments | 📋 Budgets<br><br>Any financial question I can help with?`;
+
+  if(/recipe|food|cook|restaurant/.test(q))
+    return `Ha! I\'m a finance expert, not a chef 😄<br><br>For food, try Uber Eats or Google Maps. But for <strong>saving money for better meals</strong> — that\'s my specialty! Want a savings tip?`;
+
+  if(/doctor|hospital|sick|medicine|medical/.test(q))
+    return `Hope you\'re well! I focus on <strong>financial health</strong>, not physical health. For medical concerns, visit a doctor or call Kenya health helpline: <strong>0800 720 021</strong>.<br><br>On the finance side — did you know HELA offers emergency loans? They can help with unexpected costs!`;
+
+  if(/love|relationship|marriage|girlfriend|boyfriend/.test(q))
+    return `😄 I\'m HELA AI — a financial assistant, not a relationship counsellor! But financial stability does strengthen relationships. Want to set a <strong>savings goal</strong> for something special?`;
+
+  if(/joke|funny|laugh/.test(q))
+    return `😄 Finance joke:<br><br><em>"Why did the man put his money in the freezer? He wanted <strong>cold hard cash!</strong>"</em> 🥶💰<br><br>On a serious note: at <strong>8% interest</strong>, your savings at HELA grow while you sleep. Want to know how much?`;
+
+  if(/crypto|bitcoin|forex|stock|shares/.test(q))
+    return `<strong>HELA vs Crypto:</strong><br><br>Crypto is high-risk and volatile. HELA offers <strong>guaranteed, risk-free returns:</strong><br>• Savings: <strong>8% p.a.</strong><br>• Fixed deposits: up to <strong>14% p.a.</strong><br><br>For general investment advice, consult a CMA Kenya licensed advisor: 0800 724 222.`;
+
+  if(/how.*use.*app|guide|tutorial|navigate/.test(q))
+    return `<strong>📱 HELA App Guide:</strong><br><br>🏠 <strong>Home</strong> — Balance, quick actions, transactions<br>🕐 <strong>Activity</strong> — Statement history<br>💳 <strong>Loans</strong> — Apply, track & repay<br>📊 <strong>Insights</strong> — Analytics, budget, health score<br>☰ <strong>More</strong> — Profile, KYC, member card, settings<br>🤖 <strong>AI button</strong> (bottom right) — brings you here!`;
+
+  // ── DEFAULT
+  const tips=[
+    'Saving KSh 500/week gives you KSh 26,000/year — plus 8% interest at HELA!',
+    'Members who maintain consistent savings for 6+ months get priority loan processing.',
+    'A fixed deposit of KSh 50,000 at 14% p.a. earns KSh 14,000 in 2 years!',
+    'Set a savings goal in Insights → it keeps you motivated and on track.',
+    'HELA loans start from just 1.5%/month — one of Kenya\'s most affordable rates.'
+  ];
+  return `Interesting! I\'m HELA AI — specialized in <strong>HELA SACCO financial services</strong>. I might not have the best answer for that specific question, but here\'s a financial tip:<br><br>💡 <em>${tips[Math.floor(Math.random()*tips.length)]}</em><br><br>Feel free to ask about loans, savings, investments, or your account! 😊`;
 }
+
 
 // ── ANALYTICS ─────────────────────────────────────────────────────────────────
 async function analytics(){
