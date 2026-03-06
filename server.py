@@ -246,7 +246,7 @@ async def startup():
 
         if existing:
             if existing.get("role") != "admin":
-                dbx("UPDATE users SET role=\'admin\' WHERE id=?", (existing["id"],))
+                dbx("UPDATE users SET role=? WHERE id=?", ("admin", existing["id"],))
                 log.warning("=== HELA: Promoted existing user to admin ===")
             else:
                 log.warning("=== HELA: Admin already exists ===")
@@ -260,11 +260,18 @@ async def startup():
             now  = datetime.datetime.utcnow().isoformat()
             # Insert member
             try:
-                dbx("INSERT OR IGNORE INTO members (id,member_no,full_name,phone,email,kyc_status,balance,created_at,updated_at) VALUES (?,?,?,?,?,\'verified\',0,?,?)",
-                    (mid, mno, admin_name, admin_phone, admin_email, now, now))
-                # Insert user
-                dbx("INSERT OR IGNORE INTO users (id,username,password_hash,salt,iterations,role,full_name,phone,email,member_id,is_active,created_at,updated_at) VALUES (?,?,?,?,?,\'admin\',?,?,?,?,1,?,?)",
-                    (uid, admin_phone, pw_hash, salt, 10000, admin_name, admin_phone, admin_email, mid, now, now))
+                dbx(
+                    "INSERT OR IGNORE INTO members "
+                    "(id,member_no,full_name,phone,email,kyc_status,balance,created_at,updated_at) "
+                    "VALUES (?,?,?,?,?,?,0,?,?)",
+                    (mid, mno, admin_name, admin_phone, admin_email, "verified", now, now)
+                )
+                dbx(
+                    "INSERT OR IGNORE INTO users "
+                    "(id,username,password_hash,salt,iterations,role,full_name,phone,email,member_id,is_active,created_at,updated_at) "
+                    "VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?)",
+                    (uid, admin_phone, pw_hash, salt, 10000, "admin", admin_name, admin_phone, admin_email, mid, now, now)
+                )
                 log.warning(f"=== HELA: Admin account CREATED: {admin_phone} / {admin_pw} ===")
             except Exception as seed_err:
                 log.error(f"=== HELA: Admin seed error: {seed_err} ===")
@@ -745,6 +752,33 @@ async def list_users(secret: str):
         raise HTTPException(403, "Invalid secret key")
     users = dba("SELECT id, username, phone, role, created_at FROM users ORDER BY created_at DESC LIMIT 30")
     return {"users": [dict(u) for u in users]}
+
+
+@app.get("/api/debug")
+async def debug_status(secret: str = ""):
+    """Check server status, DB, and admin account."""
+    if secret != os.environ.get("ADMIN_SETUP_SECRET", "hela_master_2024"):
+        return {"status": "ok", "server": "HELA running"}
+    import sqlite3 as _sl
+    db_path = os.environ.get("SQLITE_PATH", "kivy_app.db")
+    admin_phone = os.environ.get("ADMIN_PHONE", "0704363089")
+    admin_pw    = os.environ.get("ADMIN_PASSWORD", "hela@admin2024")
+    try:
+        users = dba("SELECT id, username, phone, role, is_active FROM users LIMIT 20")
+        members = dba("SELECT id, member_no, full_name, phone FROM members LIMIT 20")
+        return {
+            "status": "ok",
+            "db_path": db_path,
+            "db_exists": os.path.exists(db_path),
+            "admin_phone_env": admin_phone,
+            "admin_pw_env": admin_pw,
+            "user_count": len(users),
+            "users": [dict(u) for u in users],
+            "member_count": len(members),
+            "members": [dict(m) for m in members],
+        }
+    except Exception as e:
+        return {"status": "error", "detail": str(e), "db_path": db_path}
 
 @app.get("/api/notifications")
 async def get_notifications(u:dict=Depends(_auth_user)):
