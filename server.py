@@ -217,16 +217,31 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
 
 @app.on_event("startup")
 async def startup():
-    import sys
     try:
         log.warning("=== HELA: Running init_db ===")
         init_db()
-        log.warning("=== HELA: init_db complete ===")
-        # Verify tables exist
         r = db1("SELECT COUNT(*) as c FROM users")
-        log.warning(f"=== HELA: users table OK, {(r or {}).get('c',0)} rows ===")
+        cnt = (r or {}).get('c', 0)
+        log.warning(f"=== HELA: init_db OK, {cnt} users ===")
+
+        # AUTO-PROMOTE ADMIN — reads ADMIN_PHONE env var (set on Render)
+        admin_phone = os.environ.get("ADMIN_PHONE", "0704363089")
+        norm = "254" + admin_phone.lstrip("0") if admin_phone.startswith("0") else admin_phone
+        local = "0" + norm[3:] if norm.startswith("254") else admin_phone
+        user = (
+            db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (admin_phone, admin_phone)) or
+            db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (norm, norm)) or
+            db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (local, local))
+        )
+        if user and user.get("role") != "admin":
+            dbx("UPDATE users SET role='admin' WHERE id=?", (user["id"],))
+            log.warning("=== HELA: Auto-promoted " + str(user.get("username")) + " to admin ===")
+        elif user:
+            log.warning("=== HELA: " + str(user.get("username")) + " is already admin ===")
+        else:
+            log.warning(f"=== HELA: Admin phone {admin_phone} not yet registered ===")
     except Exception as e:
-        log.error(f"=== HELA: init_db FAILED: {e} ===")
+        log.error(f"=== HELA: startup FAILED: {e} ===")
         import traceback; traceback.print_exc()
 
 
@@ -676,12 +691,24 @@ async def setup_admin(phone: str, secret: str):
     expected = os.environ.get("ADMIN_SETUP_SECRET", "hela_master_2024")
     if secret != expected:
         raise HTTPException(403, "Invalid secret key")
-    user = db1("SELECT id, username, role FROM users WHERE username=? OR phone=?", (phone, phone))
+    # Try all phone formats
+    norm = "254" + phone.lstrip("0") if phone.startswith("0") else phone
+    local = "0" + norm[3:] if norm.startswith("254") else phone
+    user = (
+        db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (phone, phone)) or
+        db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (norm, norm)) or
+        db1("SELECT id,username,role FROM users WHERE username=? OR phone=?", (local, local))
+    )
     if not user:
-        all_u = dba("SELECT username, phone, role FROM users LIMIT 20")
-        return {"error": f"User not found: {phone}", "registered_users": [dict(u) for u in all_u]}
-    dbx("UPDATE users SET role=\'admin\' WHERE id=?", (user["id"],))
-    return {"success": True, "message": f"User promoted to admin!", "username": user["username"]}
+        all_u = dba("SELECT id, username, phone, role FROM users LIMIT 30")
+        db_path = os.environ.get("SQLITE_PATH", "kivy_app.db")
+        return {
+            "error": f"User not found for: {phone} / {norm} / {local}",
+            "db_path": db_path,
+            "registered_users": [dict(u) for u in all_u]
+        }
+    dbx("UPDATE users SET role='admin' WHERE id=?", (user["id"],))
+    return {"success": True, "message": "✅ Promoted to admin!", "username": user["username"], "role": "admin"}
 
 @app.get("/api/list-users")
 async def list_users(secret: str):
