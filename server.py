@@ -670,6 +670,27 @@ async def broadcast(request:Request, u:dict=Depends(_require_admin)):
     _log_audit(u["sub"],"broadcast",f"Sent: {msg[:50]}")
     return {"status":"ok","sent_to":"all members"}
 
+# ── ONE-TIME ADMIN SETUP (no auth, protected by secret key) ──────────────────
+@app.get("/api/setup-admin")
+async def setup_admin(phone: str, secret: str):
+    expected = os.environ.get("ADMIN_SETUP_SECRET", "hela_master_2024")
+    if secret != expected:
+        raise HTTPException(403, "Invalid secret key")
+    user = db1("SELECT id, username, role FROM users WHERE username=? OR phone=?", (phone, phone))
+    if not user:
+        all_u = dba("SELECT username, phone, role FROM users LIMIT 20")
+        return {"error": f"User not found: {phone}", "registered_users": [dict(u) for u in all_u]}
+    dbx("UPDATE users SET role=\'admin\' WHERE id=?", (user["id"],))
+    return {"success": True, "message": f"User promoted to admin!", "username": user["username"]}
+
+@app.get("/api/list-users")
+async def list_users(secret: str):
+    expected = os.environ.get("ADMIN_SETUP_SECRET", "hela_master_2024")
+    if secret != expected:
+        raise HTTPException(403, "Invalid secret key")
+    users = dba("SELECT id, username, phone, role, created_at FROM users ORDER BY created_at DESC LIMIT 30")
+    return {"users": [dict(u) for u in users]}
+
 @app.get("/api/notifications")
 async def get_notifications(u:dict=Depends(_auth_user)):
     """Return broadcasts + personal notifications"""
