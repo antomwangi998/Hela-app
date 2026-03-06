@@ -147,9 +147,50 @@ else:
             _con().commit()
         except Exception as e:
             log.error(f"dbx: {e}")
+            raise
 
     def init_db():
-        pass
+        c = _con()
+        c.execute("""CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL, salt TEXT NOT NULL,
+            iterations INTEGER DEFAULT 10000, role TEXT DEFAULT 'member',
+            full_name TEXT, email TEXT, phone TEXT, member_id TEXT,
+            is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS members (
+            id TEXT PRIMARY KEY, member_no TEXT UNIQUE NOT NULL,
+            full_name TEXT, phone TEXT, email TEXT, id_number TEXT,
+            kyc_status TEXT DEFAULT 'pending', balance REAL DEFAULT 0,
+            is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS accounts (
+            id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
+            account_no TEXT UNIQUE NOT NULL, account_type TEXT DEFAULT 'savings',
+            balance_minor INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1,
+            opening_date TEXT, created_at TEXT, updated_at TEXT)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY, account_id TEXT, member_id TEXT,
+            transaction_type TEXT NOT NULL, amount_minor INTEGER NOT NULL,
+            description TEXT, channel TEXT DEFAULT 'web',
+            reference_number TEXT, created_at TEXT)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS loans (
+            id TEXT PRIMARY KEY, loan_no TEXT, member_id TEXT NOT NULL,
+            amount REAL DEFAULT 0, principal_amount_minor INTEGER DEFAULT 0,
+            outstanding_principal_minor INTEGER DEFAULT 0,
+            term_months INTEGER NOT NULL, interest_rate REAL DEFAULT 1.5,
+            purpose TEXT, loan_purpose TEXT, status TEXT DEFAULT 'pending',
+            next_payment_date TEXT, next_payment_amount_minor INTEGER DEFAULT 0,
+            created_at TEXT, updated_at TEXT)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS investments (
+            id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
+            name TEXT, investment_type TEXT, principal_minor INTEGER DEFAULT 0,
+            interest_earned_minor INTEGER DEFAULT 0, interest_rate REAL DEFAULT 0,
+            start_date TEXT, maturity_date TEXT, status TEXT DEFAULT 'active',
+            created_at TEXT)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS audit_log (
+            id TEXT PRIMARY KEY, user_id TEXT, action TEXT, detail TEXT,
+            level TEXT DEFAULT 'info', created_at TEXT)""")
+        c.commit()
+        log.warning("SQLite tables created/verified")
 
 
 def _b64u(b):
