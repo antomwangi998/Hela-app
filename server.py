@@ -11,6 +11,227 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 SYNC_SECRET  = os.environ.get("HELA_SYNC_SECRET", "hela_sync_secret")
 _SECRET      = os.environ.get("HELA_JWT_SECRET", "hela_sacco_jwt_v3")
 
+# ── Email (Gmail App Password or SendGrid SMTP) ───────────────────────────────
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+EMAIL_HOST  = os.environ.get("EMAIL_HOST",  "smtp.gmail.com")
+EMAIL_PORT  = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USER  = os.environ.get("EMAIL_USER",  "")          # mwangiantony557@gmail.com
+EMAIL_PASS  = os.environ.get("EMAIL_PASS",  "")          # Gmail App Password (16 chars)
+EMAIL_FROM  = os.environ.get("EMAIL_FROM",  "HELA SMART SACCO <helasacco@gmail.com>")
+
+def send_email(to: str, subject: str, html_body: str, text_body: str = ""):
+    """Send email via Gmail SMTP. Silently logs on failure."""
+    if not EMAIL_USER or not EMAIL_PASS:
+        log.warning(f"Email not configured — would send '{subject}' to {to}")
+        return False
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = EMAIL_FROM
+        msg["To"]      = to
+        if text_body:
+            msg.attach(MIMEText(text_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=15) as srv:
+            srv.ehlo()
+            srv.starttls()
+            srv.login(EMAIL_USER, EMAIL_PASS)
+            srv.sendmail(EMAIL_USER, to, msg.as_string())
+        log.info(f"Email sent: {subject} → {to}")
+        return True
+    except Exception as e:
+        log.error(f"Email failed: {e}")
+        return False
+
+def _email_welcome(name: str, email: str, member_no: str, phone: str):
+    if not email: return
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9">
+      <div style="background:linear-gradient(135deg,#0d5c30,#1565a0);padding:32px;text-align:center">
+        <h1 style="color:#fff;margin:0;font-size:28px">🐷 HELA SMART SACCO</h1>
+        <p style="color:rgba(255,255,255,.85);margin:8px 0 0">Savings · Loans · Investments</p>
+      </div>
+      <div style="padding:32px;background:#fff">
+        <h2 style="color:#0d5c30">Welcome, {name}! 🎉</h2>
+        <p style="color:#444;line-height:1.6">Your HELA SMART SACCO account is ready. Here are your details:</p>
+        <div style="background:#f0fdf4;border-left:4px solid #0d5c30;padding:16px;border-radius:8px;margin:20px 0">
+          <p style="margin:4px 0"><strong>Member No:</strong> {member_no}</p>
+          <p style="margin:4px 0"><strong>Phone:</strong> {phone}</p>
+          <p style="margin:4px 0"><strong>Status:</strong> ✅ Active</p>
+        </div>
+        <h3 style="color:#0d5c30">What you can do:</h3>
+        <ul style="color:#444;line-height:2">
+          <li>💰 Deposit via <strong>M-Pesa</strong> instantly</li>
+          <li>💳 Apply for loans up to <strong>3× your savings</strong></li>
+          <li>📈 Open a Fixed Deposit at <strong>up to 14% p.a.</strong></li>
+          <li>🤖 Chat with <strong>HELA AI</strong> for financial advice</li>
+        </ul>
+        <a href="https://hela-app-2.onrender.com" style="display:inline-block;background:#0d5c30;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px">Open HELA App →</a>
+      </div>
+      <div style="padding:20px;text-align:center;color:#999;font-size:12px">
+        📞 0704363089 &nbsp;|&nbsp; 📧 helasacco@gmail.com<br>
+        HELA SMART SACCO · Licensed &amp; Regulated
+      </div>
+    </div>"""
+    send_email(email, f"Welcome to HELA SMART SACCO — {member_no}", html)
+
+def _email_loan_approved(name: str, email: str, amount: float, term: int):
+    if not email: return
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:linear-gradient(135deg,#0d5c30,#1565a0);padding:28px;text-align:center">
+        <h1 style="color:#fff;margin:0">✅ Loan Approved!</h1>
+      </div>
+      <div style="padding:28px;background:#fff">
+        <p>Dear <strong>{name}</strong>,</p>
+        <p>Great news! Your loan application has been <strong style="color:#0d5c30">approved</strong>.</p>
+        <div style="background:#f0fdf4;border-left:4px solid #0d5c30;padding:16px;border-radius:8px;margin:20px 0">
+          <p style="margin:4px 0"><strong>Amount:</strong> KSh {amount:,.2f}</p>
+          <p style="margin:4px 0"><strong>Term:</strong> {term} months</p>
+          <p style="margin:4px 0"><strong>Rate:</strong> 1.5% per month</p>
+          <p style="margin:4px 0"><strong>Monthly Payment:</strong> KSh {(amount * (0.015 * (1.015**term)) / ((1.015**term)-1)):,.2f}</p>
+        </div>
+        <p>Funds will be disbursed to your M-Pesa within <strong>24 hours</strong>.</p>
+        <a href="https://hela-app-2.onrender.com" style="display:inline-block;background:#0d5c30;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold">View Loan Details →</a>
+      </div>
+      <div style="padding:16px;text-align:center;color:#999;font-size:12px">HELA SMART SACCO · 0704363089</div>
+    </div>"""
+    send_email(email, "✅ Your HELA Loan Has Been Approved!", html)
+
+def _email_loan_rejected(name: str, email: str, reason: str = ""):
+    if not email: return
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:#dc2626;padding:28px;text-align:center">
+        <h1 style="color:#fff;margin:0">Loan Application Update</h1>
+      </div>
+      <div style="padding:28px;background:#fff">
+        <p>Dear <strong>{name}</strong>,</p>
+        <p>We regret to inform you that your loan application could not be approved at this time.</p>
+        {f'<p><strong>Reason:</strong> {reason}</p>' if reason else ''}
+        <p>You can improve your eligibility by:</p>
+        <ul style="line-height:2;color:#444">
+          <li>Increasing your savings balance</li>
+          <li>Completing KYC verification</li>
+          <li>Clearing any outstanding loans</li>
+        </ul>
+        <a href="https://hela-app-2.onrender.com" style="display:inline-block;background:#0d5c30;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold">Contact Support →</a>
+      </div>
+      <div style="padding:16px;text-align:center;color:#999;font-size:12px">HELA SMART SACCO · 0704363089</div>
+    </div>"""
+    send_email(email, "Your HELA Loan Application Status", html)
+
+def _email_deposit(name: str, email: str, amount: float, balance: float, ref: str):
+    if not email: return
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:linear-gradient(135deg,#0d5c30,#1565a0);padding:28px;text-align:center">
+        <h1 style="color:#fff;margin:0">💰 Deposit Confirmed</h1>
+      </div>
+      <div style="padding:28px;background:#fff">
+        <p>Dear <strong>{name}</strong>,</p>
+        <p>Your M-Pesa deposit has been received and credited to your account.</p>
+        <div style="background:#f0fdf4;border-left:4px solid #0d5c30;padding:16px;border-radius:8px;margin:20px 0">
+          <p style="margin:4px 0"><strong>Amount Deposited:</strong> KSh {amount:,.2f}</p>
+          <p style="margin:4px 0"><strong>New Balance:</strong> KSh {balance:,.2f}</p>
+          <p style="margin:4px 0"><strong>Reference:</strong> {ref}</p>
+          <p style="margin:4px 0"><strong>Time:</strong> {datetime.datetime.now().strftime('%d %b %Y %H:%M')}</p>
+        </div>
+      </div>
+      <div style="padding:16px;text-align:center;color:#999;font-size:12px">HELA SMART SACCO · 0704363089</div>
+    </div>"""
+    send_email(email, f"✅ Deposit of KSh {amount:,.0f} Received", html)
+
+def _email_password_reset(email: str, name: str, reset_token: str):
+    if not email: return
+    reset_url = f"https://hela-app-2.onrender.com/?reset={reset_token}"
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:linear-gradient(135deg,#0d5c30,#1565a0);padding:28px;text-align:center">
+        <h1 style="color:#fff;margin:0">🔑 Password Reset</h1>
+      </div>
+      <div style="padding:28px;background:#fff">
+        <p>Dear <strong>{name}</strong>,</p>
+        <p>You requested a password reset. Click the button below — valid for <strong>30 minutes</strong>.</p>
+        <div style="text-align:center;margin:28px 0">
+          <a href="{reset_url}" style="display:inline-block;background:#0d5c30;color:#fff;padding:16px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px">Reset My Password →</a>
+        </div>
+        <p style="color:#999;font-size:13px">If you didn't request this, ignore this email. Your password is unchanged.</p>
+      </div>
+      <div style="padding:16px;text-align:center;color:#999;font-size:12px">HELA SMART SACCO · 0704363089</div>
+    </div>"""
+    send_email(email, "HELA SACCO — Password Reset Request", html)
+
+# ── M-Pesa Daraja ─────────────────────────────────────────────────────────────
+MPESA_ENV             = os.environ.get("MPESA_ENV",             "sandbox")
+MPESA_CONSUMER_KEY    = os.environ.get("MPESA_CONSUMER_KEY",    "")
+MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "")
+MPESA_SHORTCODE       = os.environ.get("MPESA_SHORTCODE",       "174379")
+MPESA_PASSKEY         = os.environ.get("MPESA_PASSKEY",         "")
+MPESA_CALLBACK_URL    = os.environ.get("MPESA_CALLBACK_URL",    "https://hela-app-2.onrender.com/mpesa/stk_callback")
+
+_mpesa_token_cache = {"token": None, "expires": 0}
+
+def _mpesa_base_url():
+    return "https://api.safaricom.co.ke" if MPESA_ENV == "production" else "https://sandbox.safaricom.co.ke"
+
+def _mpesa_token():
+    """Get cached OAuth token from Daraja."""
+    import urllib.request as _ur
+    now = time.time()
+    if _mpesa_token_cache["token"] and now < _mpesa_token_cache["expires"]:
+        return _mpesa_token_cache["token"]
+    if not MPESA_CONSUMER_KEY or not MPESA_CONSUMER_SECRET:
+        raise Exception("M-Pesa credentials not configured")
+    creds = base64.b64encode(f"{MPESA_CONSUMER_KEY}:{MPESA_CONSUMER_SECRET}".encode()).decode()
+    req = _ur.Request(
+        f"{_mpesa_base_url()}/oauth/v1/generate?grant_type=client_credentials",
+        headers={"Authorization": f"Basic {creds}"}
+    )
+    with _ur.urlopen(req, timeout=10) as r:
+        data = json.loads(r.read())
+    token = data["access_token"]
+    _mpesa_token_cache["token"] = token
+    _mpesa_token_cache["expires"] = now + int(data.get("expires_in", 3599)) - 60
+    return token
+
+def _mpesa_stk_push(phone: str, amount: int, account_ref: str, description: str) -> dict:
+    """Initiate Lipa Na M-Pesa STK push. Returns Daraja response."""
+    import urllib.request as _ur
+    token = _mpesa_token()
+    ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    password = base64.b64encode(f"{MPESA_SHORTCODE}{MPESA_PASSKEY}{ts}".encode()).decode()
+    # Normalize phone to 254XXXXXXXXX
+    p = phone.strip().replace("+","").replace(" ","").replace("-","")
+    if p.startswith("0"): p = "254" + p[1:]
+    payload = json.dumps({
+        "BusinessShortCode": MPESA_SHORTCODE,
+        "Password": password,
+        "Timestamp": ts,
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": int(amount),
+        "PartyA": p,
+        "PartyB": MPESA_SHORTCODE,
+        "PhoneNumber": p,
+        "CallBackURL": MPESA_CALLBACK_URL,
+        "AccountReference": account_ref,
+        "TransactionDesc": description
+    }).encode()
+    req = _ur.Request(
+        f"{_mpesa_base_url()}/mpesa/stkpush/v1/processrequest",
+        data=payload,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        method="POST"
+    )
+    with _ur.urlopen(req, timeout=15) as r:
+        return json.loads(r.read())
+
+# In-flight STK push tracker {checkout_request_id: {uid, amount, phone}}
+_stk_pending = {}
+
 if DATABASE_URL.startswith("postgres"):
     import psycopg2, psycopg2.extras
     _pg = None
@@ -417,6 +638,11 @@ async def register(request: Request):
         "balance_minor,is_active,opening_date,created_at,updated_at) "
         "VALUES (?,?,?,'savings',0,1,?,?,?)",
         (str(_uuid.uuid4()), mid, f"SAV{mno[3:]}", now[:10], now, now))
+    # Send welcome email in background
+    try:
+        import threading
+        threading.Thread(target=_email_welcome, args=(full, email, mno, p), daemon=True).start()
+    except Exception: pass
     return {"token": sign_jwt({"sub": uid, "role": "member"}),
             "role": "member", "name": full, "member_no": mno,
             "message": "Account created! Visit a branch to complete KYC."}
@@ -549,12 +775,97 @@ async def loan_apply(request: Request, u: dict = Depends(_auth_user)):
 
 
 @app.post("/api/me/stk_deposit")
-async def stk_deposit(u: dict = Depends(_auth_user)):
-    raise HTTPException(503, "STK Push not available on web. Use the mobile app.")
+async def stk_deposit(request: Request, u: dict = Depends(_auth_user)):
+    b = await request.json()
+    phone  = str(b.get("phone", "")).strip()
+    amount = int(b.get("amount", 0))
+    if not phone:
+        raise HTTPException(400, "Phone number required")
+    if amount < 10:
+        raise HTTPException(400, "Minimum deposit is KSh 10")
+    if amount > 150000:
+        raise HTTPException(400, "Maximum single deposit is KSh 150,000")
+
+    uid = u["sub"]
+    me = db1("SELECT u.full_name, u.email, mem.member_no FROM users u LEFT JOIN members mem ON mem.id=u.member_id WHERE u.id=?", (uid,))
+    mno = (me or {}).get("member_no", "HELA")
+
+    # If M-Pesa not configured — simulate for testing
+    if not MPESA_CONSUMER_KEY or not MPESA_PASSKEY:
+        # Simulate: credit account directly (sandbox/demo mode)
+        now = datetime.datetime.now().isoformat()
+        ref = "SIM" + str(int(time.time()))[-6:]
+        # Credit balance
+        acc = db1("SELECT id, balance_minor FROM accounts WHERE member_id=(SELECT member_id FROM users WHERE id=?)", (uid,))
+        if acc:
+            new_bal = (acc["balance_minor"] or 0) + amount * 100
+            dbx("UPDATE accounts SET balance_minor=?,updated_at=? WHERE id=?", (new_bal, now, acc["id"]))
+            dbx("INSERT INTO transactions (id,account_id,member_id,transaction_type,amount_minor,description,channel,reference_number,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                (_uuid.uuid4().hex, acc["id"], uid, "deposit", amount*100, f"M-Pesa Deposit (DEMO)", "mpesa", ref, now))
+        else:
+            # Create account if missing
+            aid = str(_uuid.uuid4())
+            mid = db1("SELECT member_id FROM users WHERE id=?", (uid,))
+            if mid:
+                dbx("INSERT INTO accounts (id,member_id,account_no,account_type,balance_minor,is_active,opening_date,created_at,updated_at) VALUES (?,?,?,?,?,1,?,?,?)",
+                    (aid, mid["member_id"], mno+"-SAV", "savings", amount*100, now[:10], now, now))
+        _log_audit(uid, "deposit", f"Demo deposit KSh {amount} ref {ref}")
+        return {"status": "demo", "message": f"✅ KSh {amount:,} credited (demo mode — add M-Pesa credentials for live)", "reference": ref}
+
+    try:
+        resp = _mpesa_stk_push(phone, amount, mno, f"HELA Deposit {mno}")
+        checkout_id = resp.get("CheckoutRequestID", "")
+        _stk_pending[checkout_id] = {"uid": uid, "amount": amount, "phone": phone, "member_no": mno}
+        _log_audit(uid, "stk_push", f"STK push KSh {amount} to {phone} checkout={checkout_id}")
+        return {
+            "status": "pending",
+            "message": "✅ M-Pesa prompt sent! Enter your PIN to complete.",
+            "checkout_id": checkout_id
+        }
+    except Exception as e:
+        log.error(f"STK push failed: {e}")
+        raise HTTPException(502, f"M-Pesa error: {str(e)[:100]}")
 
 
 @app.post("/mpesa/stk_callback")
-async def stk_cb():
+async def stk_cb(request: Request):
+    """Real M-Pesa STK callback from Safaricom."""
+    try:
+        body = await request.json()
+        cb = body.get("Body", {}).get("stkCallback", {})
+        result_code = cb.get("ResultCode", 1)
+        checkout_id = cb.get("CheckoutRequestID", "")
+        pending = _stk_pending.pop(checkout_id, None)
+
+        if result_code == 0 and pending:
+            uid    = pending["uid"]
+            amount = pending["amount"]
+            mno    = pending["member_no"]
+            # Extract M-Pesa receipt
+            items  = {i["Name"]: i.get("Value") for i in cb.get("CallbackMetadata", {}).get("Item", [])}
+            ref    = str(items.get("MpesaReceiptNumber", "MP"+str(int(time.time()))[-6:]))
+            now    = datetime.datetime.now().isoformat()
+            # Credit account
+            acc = db1("SELECT id, balance_minor FROM accounts WHERE member_id=(SELECT member_id FROM users WHERE id=?)", (uid,))
+            if acc:
+                new_bal = (acc["balance_minor"] or 0) + amount * 100
+                dbx("UPDATE accounts SET balance_minor=?,updated_at=? WHERE id=?", (new_bal, now, acc["id"]))
+                dbx("INSERT INTO transactions (id,account_id,member_id,transaction_type,amount_minor,description,channel,reference_number,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (_uuid.uuid4().hex, acc["id"], uid, "deposit", amount*100, "M-Pesa Deposit", "mpesa", ref, now))
+                _log_audit(uid, "deposit", f"M-Pesa KSh {amount} ref {ref}")
+                # Send email receipt
+                me = db1("SELECT full_name, email FROM users WHERE id=?", (uid,))
+                if me:
+                    import threading
+                    new_balance = new_bal / 100
+                    threading.Thread(target=_email_deposit,
+                        args=(me["full_name"], me.get("email",""), float(amount), new_balance, ref),
+                        daemon=True).start()
+            log.info(f"STK success: KSh {amount} for {uid} ref {ref}")
+        else:
+            log.warning(f"STK failed/cancelled: code={result_code} checkout={checkout_id}")
+    except Exception as e:
+        log.error(f"STK callback error: {e}")
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 
@@ -740,13 +1051,27 @@ async def admin_loans(status:str="pending", u:dict=Depends(_require_admin)):
 
 @app.post("/api/admin/loans/{loan_id}/{action}")
 async def admin_loan_action(loan_id:str, action:str, u:dict=Depends(_require_admin)):
-    if action not in ("approved","rejected"): raise HTTPException(400,"Invalid action")
+    if action not in ("approved","rejected","disbursed"): raise HTTPException(400,"Invalid action")
     now = datetime.datetime.now().isoformat()
     loan = db1("SELECT * FROM loans WHERE id=?",(loan_id,))
     if not loan: raise HTTPException(404,"Loan not found")
-    new_status = "approved" if action=="approved" else "rejected"
-    dbx("UPDATE loans SET status=?,updated_at=? WHERE id=?",(new_status,now,loan_id))
+    dbx("UPDATE loans SET status=?,updated_at=? WHERE id=?",(action,now,loan_id))
     _log_audit(u["sub"],"loan_"+action,f"Loan {loan_id} {action}")
+    # ── Email member about loan decision
+    try:
+        mid = loan.get("member_id","")
+        me = db1("SELECT u.full_name, u.email FROM users u JOIN members m ON m.id=u.member_id WHERE m.id=?",(mid,))
+        if me and me.get("email"):
+            amt  = float(loan.get("amount") or loan.get("principal_amount_minor",0)/100)
+            term = int(loan.get("term_months",12))
+            import threading
+            if action == "approved":
+                threading.Thread(target=_email_loan_approved,
+                    args=(me["full_name"],me["email"],amt,term),daemon=True).start()
+            elif action == "rejected":
+                threading.Thread(target=_email_loan_rejected,
+                    args=(me["full_name"],me["email"],""),daemon=True).start()
+    except Exception as _em: log.error(f"Loan email: {_em}")
     return {"status":"ok","message":f"Loan {action}"}
 
 _broadcasts = []  # In-memory broadcast store
@@ -826,6 +1151,55 @@ async def get_notifications(u:dict=Depends(_auth_user)):
     """Return broadcasts + personal notifications"""
     notes = list(_broadcasts[:10])
     return {"notifications":notes}
+
+# ── FORGOT PASSWORD ──────────────────────────────────────────────────────────
+_reset_tokens = {}  # {token: {uid, email, expires}}
+
+@app.post("/api/auth/forgot_password")
+async def forgot_password(request: Request):
+    b = await request.json()
+    identifier = str(b.get("email", b.get("phone", ""))).strip()
+    if not identifier:
+        raise HTTPException(400, "Email or phone required")
+    # Find user
+    user = (db1("SELECT u.id, u.full_name, u.email, u.phone FROM users u WHERE u.email=? OR u.phone=? OR u.username=?",
+               (identifier, identifier, identifier)) or
+            db1("SELECT u.id, u.full_name, u.email, u.phone FROM users u WHERE u.phone=?",
+               (_norm_phone(identifier),)))
+    # Always return 200 to prevent user enumeration
+    if not user:
+        return {"status": "ok", "message": "If that account exists, a reset link has been sent."}
+    token = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip("=")
+    _reset_tokens[token] = {"uid": user["id"], "email": user.get("email",""), "expires": time.time() + 1800}
+    import threading
+    threading.Thread(target=_email_password_reset,
+        args=(user.get("email",""), user.get("full_name","Member"), token),
+        daemon=True).start()
+    _log_audit(user["id"], "forgot_password", f"Reset requested for {identifier}")
+    return {"status": "ok", "message": "If that account exists, a reset link has been sent."}
+
+@app.post("/api/auth/reset_password")
+async def reset_password(request: Request):
+    b = await request.json()
+    token  = str(b.get("token", "")).strip()
+    new_pw = str(b.get("password", "")).strip()
+    if not token or not new_pw:
+        raise HTTPException(400, "Token and new password required")
+    if len(new_pw) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+    stored = _reset_tokens.get(token)
+    if not stored:
+        raise HTTPException(400, "Invalid or expired reset link")
+    if time.time() > stored["expires"]:
+        del _reset_tokens[token]
+        raise HTTPException(400, "Reset link has expired. Please request a new one.")
+    uid = stored["uid"]
+    pw_hash, salt = _hash(new_pw)
+    now = datetime.datetime.now().isoformat()
+    dbx("UPDATE users SET password_hash=?,salt=?,iterations=10000,updated_at=? WHERE id=?", (pw_hash, salt, now, uid))
+    del _reset_tokens[token]
+    _log_audit(uid, "password_reset", "Password reset via email link")
+    return {"status": "ok", "message": "Password updated! You can now log in."}
 
 @app.post("/api/me/change_password")
 async def change_password(request: Request, u: dict = Depends(_auth_user)):
