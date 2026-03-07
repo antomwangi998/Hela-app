@@ -855,10 +855,9 @@ async function doLogin(){
   try{
     const r=await api('/api/auth/login',{method:'POST',body:JSON.stringify({phone,password:pass})});
     T=r.token;localStorage.setItem('ht',T);localStorage.setItem('hela-phone',phone);
-    if(r.role)localStorage.setItem('hela-role',r.role);
     if(localStorage.getItem('hela-bio-cred'))localStorage.setItem('hela-bio-token',T);
     try{await loadMe();}catch(e){const c=localStorage.getItem('hm');if(c)ME=JSON.parse(c);}
-    if(r.role&&ME)ME.role=r.role;
+    if(ME?.id)localStorage.setItem('hela-uid',ME.id);
     showApp();
   }catch(e){
     const msg=e.message||'Login failed. Try again.';
@@ -891,8 +890,10 @@ async function doReg(){
     T=r.token;localStorage.setItem('ht',T);
     try{await loadMe();}catch(e){
       ME={id:r.member_id||'',name:r.name||first+' '+last,member_no:r.member_no||'',phone,email,kyc_status:'pending',balance:0,account_no:'',loans:[]};
-      localStorage.setItem('hm',JSON.stringify(ME));
+      if(ME?.id)localStorage.setItem('hela-uid',ME.id);
+    localStorage.setItem('hm',JSON.stringify(ME));
     }
+    if(ME?.id)localStorage.setItem('hela-uid',ME.id);
     setTimeout(()=>showApp(),1200);
   }catch(e){showE('re',e.message);}
   finally{btn.disabled=false;btn.textContent='Create My Account →';}
@@ -901,10 +902,7 @@ async function doReg(){
 async function loadMe(){
   try{
     ME=await api('/api/me');
-    if(!ME.role||ME.role==='member'){
-      const storedRole=localStorage.getItem('hela-role');
-      if(storedRole&&storedRole!=='member')ME.role=storedRole;
-    }
+    // Role comes from server ONLY — never trust localStorage for role
     localStorage.setItem('hm',JSON.stringify(ME));
     // Check for unread notifications
     api('/api/notifications?limit=1').then(d=>{
@@ -938,6 +936,7 @@ function doLogout(){
   if(!confirm('Sign out of HELA?'))return;
   T='';ME=null;
   localStorage.removeItem('ht');localStorage.removeItem('hm');
+  localStorage.removeItem('hela-uid');localStorage.removeItem('hela-role');
   E('app-screen').style.display='none';E('auth-screen').style.display='flex';
   E('lw').value='';clrErr();stab(1);
 }
@@ -1298,7 +1297,11 @@ async function profile(){
   }catch(e){errPage(e.message);}
 }
 
-function _avKey(){return 'hela-avatar-'+(ME?.id||ME?.member_no||'shared');}
+function _avKey(){
+  // Use stable user-specific key — ME.id is member_id from server
+  const uid=ME?.id||ME?.member_no||localStorage.getItem('hela-uid')||'shared';
+  return 'hela-avatar-'+uid;
+}
 function uploadAv(inp){
   const f=inp.files?.[0];if(!f)return;
   if(f.size>2*1024*1024)return toast('Photo too large — max 2MB','err');
