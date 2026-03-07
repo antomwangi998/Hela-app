@@ -639,10 +639,17 @@ body.dark .mo-box{background:rgba(14,22,14,.97)!important}
 <!-- MODALS -->
 <div class="mo" id="dep-mo"><div class="mo-box">
   <div class="mo-hd"><div class="mo-title">💳 Deposit via M-Pesa</div><button class="mo-x" onclick="cMo()">✕</button></div>
+  <div style="display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap" id="dep-quick">
+    <button onclick="E('da').value=500" style="flex:1;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#166534">500</button>
+    <button onclick="E('da').value=1000" style="flex:1;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#166534">1,000</button>
+    <button onclick="E('da').value=2000" style="flex:1;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#166534">2,000</button>
+    <button onclick="E('da').value=5000" style="flex:1;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#166534">5,000</button>
+  </div>
+  <div class="fld"><label>Amount (KSh)</label><div class="fi"><span class="fi-ic">💰</span><input type="number" id="da" placeholder="Enter amount" inputmode="numeric" min="10" max="150000"></div></div>
   <div class="fld"><label>M-Pesa Phone</label><div class="fi"><span class="fi-ic">📱</span><input type="tel" id="dp" placeholder="07XX XXX XXX" inputmode="tel"></div></div>
-  <div class="fld"><label>Amount (KSh)</label><div class="fi"><span class="fi-ic">💰</span><input type="number" id="da" placeholder="e.g. 1000" inputmode="numeric"></div></div>
+  <div style="font-size:11px;color:#64748b;margin-bottom:12px;text-align:center">You will receive a PIN prompt on your M-Pesa phone</div>
   <div id="dep-err" class="em"></div><div id="dep-ok" class="sm"></div>
-  <button class="btn btn-g" id="dep-btn" onclick="doDeposit()">Send M-Pesa Request</button>
+  <button class="btn btn-g" id="dep-btn" onclick="doDeposit()">📱 Send M-Pesa Request</button>
 </div></div>
 
 <div class="mo" id="loan-mo"><div class="mo-box">
@@ -676,6 +683,12 @@ body.dark .mo-box{background:rgba(14,22,14,.97)!important}
 // ── STATE ────────────────────────────────────────────────────────────────────
 let T=localStorage.getItem('ht')||'';
 let ME=JSON.parse(localStorage.getItem('hm')||'null');
+// Handle password reset link: ?reset=TOKEN
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const rt=params.get('reset');
+  if(rt){window._resetToken=rt;window.history.replaceState({},'',window.location.pathname);}
+})();
 let GOAL=JSON.parse(localStorage.getItem('hg')||'null');
 let _otpPhone='',_otpTimer=null,_curLoan=null;
 let _aiHistory=[];
@@ -710,14 +723,25 @@ function tpw(id,btn){const i=E(id);if(!i)return;
 function fmt(n){return (n||0).toLocaleString('en-KE',{minimumFractionDigits:2})}
 
 async function api(path,opts={}){
-  const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json','Authorization':'Bearer '+T,...(opts.headers||{})}});
-  const d=await r.json();
-  if(!r.ok)throw new Error(d.detail||d.error||'Request failed');
+  let r;
+  try{ r=await fetch(path,{...opts,headers:{'Content-Type':'application/json','Authorization':'Bearer '+T,...(opts.headers||{})}}); }
+  catch(e){ throw new Error('Network error — check your connection'); }
+  let d={};
+  try{ d=await r.json(); }catch(_){}
+  if(r.status===429){
+    const msg=d.detail||'Too many requests. Please wait a moment.';
+    throw new Error('⏳ '+msg);
+  }
+  if(r.status===401){ localStorage.removeItem('ht');localStorage.removeItem('hm');location.reload();return; }
+  if(!r.ok) throw new Error(d.detail||d.error||'Request failed');
   return d;
 }
 
 // ── APP INIT ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',()=>{
+  // Handle ?reset=TOKEN password reset links
+  const _rp=new URLSearchParams(window.location.search).get('reset');
+  if(_rp){window._resetToken=_rp;window.history.replaceState({},'',window.location.pathname);showResetPwScreen(_rp);return;}
   if(T&&ME){showApp();}
   const sp=localStorage.getItem('hela-phone');
   if(sp&&E('lp'))E('lp').value=sp;
@@ -836,8 +860,18 @@ async function doLogin(){
     try{await loadMe();}catch(e){const c=localStorage.getItem('hm');if(c)ME=JSON.parse(c);}
     if(r.role&&ME)ME.role=r.role;
     showApp();
-  }catch(e){showE('le',e.message);}
-  finally{btn.disabled=false;btn.textContent='🔒 Sign In';}
+  }catch(e){
+    const msg=e.message||'Login failed. Try again.';
+    showE('le',msg);
+    if(msg.includes('Too many')||msg.includes('Locked')||msg.includes('attempts')){
+      btn.textContent='🔒 Locked';
+      const sec=parseInt(msg.match(/\d+/)?.[0]||'30');
+      let t=sec;
+      const ti=setInterval(()=>{btn.textContent=`🔒 Wait ${--t}s`;if(t<=0){clearInterval(ti);btn.disabled=false;btn.textContent='🔒 Sign In';showE('le','');}},1000);
+      return; // Don't re-enable in finally
+    }
+  }
+  finally{if(!btn.textContent.includes('Locked')){btn.disabled=false;btn.textContent='🔒 Sign In';}}
 }
 
 async function doReg(){
@@ -853,7 +887,7 @@ async function doReg(){
   const btn=E('rbtn');btn.disabled=true;btn.textContent='Creating account…';
   try{
     const r=await api('/api/auth/register',{method:'POST',body:JSON.stringify({first_name:first,last_name:last,phone,id_number:id_no,email,password:pw})});
-    showE('rs','✅ Account created! Member No: '+r.member_no);
+    showE('rs','✅ Account created! Member No: '+r.member_no+'. Welcome SMS sent to your phone.');
     T=r.token;localStorage.setItem('ht',T);
     try{await loadMe();}catch(e){
       ME={id:r.member_id||'',name:r.name||first+' '+last,member_no:r.member_no||'',phone,email,kyc_status:'pending',balance:0,account_no:'',loans:[]};
@@ -867,12 +901,16 @@ async function doReg(){
 async function loadMe(){
   try{
     ME=await api('/api/me');
-    // Make sure role is set — fall back to stored role from login JWT
     if(!ME.role||ME.role==='member'){
       const storedRole=localStorage.getItem('hela-role');
       if(storedRole&&storedRole!=='member')ME.role=storedRole;
     }
     localStorage.setItem('hm',JSON.stringify(ME));
+    // Check for unread notifications
+    api('/api/notifications?limit=1').then(d=>{
+      const unread=(d.notifications||[]).some(n=>!n.is_read);
+      if(E('n-dot'))E('n-dot').style.display=unread?'block':'none';
+    }).catch(()=>{});
   }
   catch(e){const c=localStorage.getItem('hm');if(c)ME=JSON.parse(c);else throw e;}
 }
@@ -968,7 +1006,24 @@ function go(page){
   window.scrollTo(0,0);
   ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support,helaAI,analytics,memberCard,budgetPlanner,healthScore,kycUpload,adminDash,auditLog,pdfStatement,insights})[page]?.();
 }
-function oMo(id){E(id)?.classList.add('open');}
+function oMo(id){
+  E(id)?.classList.add('open');
+  if(id==='dep-mo'){
+    // Pre-fill phone from profile
+    const ph=ME?.phone||localStorage.getItem('hela-phone')||'';
+    const fmt=ph.startsWith('254')?'0'+ph.slice(3):ph;
+    if(E('dp')&&!E('dp').value)E('dp').value=fmt;
+    showE('dep-err','');showE('dep-ok','');
+    const depBtn=E('dep-btn');if(depBtn){depBtn.disabled=false;depBtn.textContent='📱 Send M-Pesa Request';}
+  }
+  if(id==='loan-mo'){showE('loan-err','');showE('loan-ok','');}
+  if(id==='rep-mo'){
+    const ph=ME?.phone||localStorage.getItem('hela-phone')||'';
+    const fmt=ph.startsWith('254')?'0'+ph.slice(3):ph;
+    if(E('reph')&&!E('reph').value)E('reph').value=fmt;
+    showE('rep-err','');showE('rep-ok','');
+  }
+}
 function cMo(){document.querySelectorAll('.mo').forEach(m=>m.classList.remove('open'));}
 function errPage(msg){E('pc').innerHTML=`<div style="padding:40px 20px"><div class="empty"><div class="empty-ico">⚠️</div><h3>Something went wrong</h3><p>${msg}</p><button class="btn btn-g" onclick="go('home')" style="margin-top:16px;border-radius:14px">← Back Home</button></div></div>`;}
 
@@ -1283,23 +1338,31 @@ function payments(){
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
 function notifications(){
-  E('n-dot').style.display='none';
-  const ns=[
-    {ico:'🏦',title:'Welcome to HELA SMART SACCO',msg:'Your account is ready. Visit a branch to complete KYC.',unread:true,time:'Just now'},
-    {ico:'💰',title:'Savings Tip',msg:'Members who save KSh 500/week earn up to 8% interest p.a.',unread:true,time:'Today'},
-    {ico:'💳',title:'Loan Offer',msg:'You may qualify for a loan of up to 3x your savings. Apply today!',unread:false,time:'This week'},
-    {ico:'📈',title:'Fixed Deposit Rates',msg:'Our FD rates are now up to 14% p.a. for 12-month deposits.',unread:false,time:'This week'},
-  ];
-  E('pc').innerHTML=`<div style="padding:0 20px">
-    <div class="sh"><div class="sht">🔔 Notifications</div><div class="sha">Mark all read</div></div>
-    ${ns.map(n=>`<div class="notif-strip ${n.unread?'ns-unread':'ns-read'}" style="margin-bottom:10px;border-radius:14px">
-      <div style="font-size:24px">${n.ico}</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:700;margin-bottom:3px">${n.title}</div>
-        <div style="font-size:12px;color:var(--muted)">${n.msg}</div>
-        <div style="font-size:11px;color:#bbb;margin-top:4px">${n.time}</div></div>
-      ${n.unread?'<div style="width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:4px"></div>':''}
-    </div>`).join('')}
-  </div>`;
+  const c=E('pc');c.innerHTML='<div class="sp"></div>';
+  api('/api/notifications').then(d=>{
+    const notes=d.notifications||[];
+    c.innerHTML=`<div style="padding:0 20px">
+      <div class="sh"><div class="sht">🔔 Notifications</div></div>
+      ${!notes.length?
+        '<div class="card"><div class="empty"><div class="empty-ico">🔔</div><p>No notifications yet</p><p style="font-size:12px;color:#94a3b8">You'll receive updates on deposits, loans and more here</p></div></div>':
+        '<div class="card">'+notes.map(n=>`
+          <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9;${!n.is_read?'background:#f0fdf4;margin:0 -12px;padding:12px':''}">
+            <div style="font-size:22px;flex-shrink:0">${n.type==='success'?'✅':n.type==='warning'?'⚠️':n.type==='loan'?'💵':n.type==='deposit'?'💳':'🔔'}</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700">${n.title||'Notification'}</div>
+              <div style="font-size:12px;color:#475569;margin-top:2px">${n.body||''}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:4px">${(n.created_at||'').slice(0,16).replace('T',' ')}</div>
+            </div>
+            ${!n.is_read?'<div style="width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:4px"></div>':''}
+          </div>`).join('')+'</div>'
+      }
+    </div>`;
+    // Mark all as read
+    api('/api/notifications/read',{method:'POST'}).catch(()=>{});
+    E('n-dot').style.display='none';
+  }).catch(()=>{
+    c.innerHTML='<div class="card"><div class="empty"><p>Could not load notifications</p></div></div>';
+  });
 }
 
 // ── REFERRALS ─────────────────────────────────────────────────────────────────
@@ -2262,11 +2325,25 @@ async function adm_loans(){
 
 function adm_broadcast(){
   const w=E('adm-content');if(!w)return;
-  w.innerHTML=`<div class="card"><div class="ct">📢 Broadcast Message</div>
+  w.innerHTML=`<div class="card">
+    <div class="ct">📢 Broadcast Message</div>
     <div class="fld"><label>Message to all members</label>
-      <textarea class="plain-in" id="bc-msg" rows="4" style="height:auto;resize:none" placeholder="Type your announcement..."></textarea></div>
-    <button class="btn btn-g" onclick="sendBroadcast()" style="border-radius:10px;margin-top:8px">📤 Send to All Members</button>
-  </div>`;
+      <textarea class="plain-in" id="bc-msg" rows="4" style="height:auto;resize:none;font-size:14px" placeholder="Type your announcement...&#10;e.g. Dear members, HELA SACCO offices will be closed on..."></textarea>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f1f5f9;margin-top:4px">
+      <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="bc-sms" style="width:18px;height:18px;accent-color:#0d5c30;cursor:pointer">
+        <div>
+          <div style="font-size:13px;font-weight:700">📱 Also send as SMS</div>
+          <div style="font-size:11px;color:#64748b">Sends to all member phones via Africa's Talking</div>
+        </div>
+      </label>
+    </div>
+    <div id="bc-char" style="font-size:11px;color:#94a3b8;text-align:right;margin-bottom:8px">0 / 160 chars</div>
+    <button class="btn btn-g" onclick="sendBroadcast()" style="border-radius:10px">📤 Send to All Members</button>
+    <div id="bc-status" style="margin-top:10px;font-size:13px;text-align:center;color:#0d5c30"></div>
+  </div>
+  <script>E('bc-msg')?.addEventListener('input',()=>{const l=E('bc-msg').value.length;E('bc-char').textContent=l+' / 160 chars';E('bc-char').style.color=l>160?'#ef4444':'#94a3b8';});<\/script>`;
 }
 
 // Keep old names working
@@ -2283,9 +2360,17 @@ async function adminLoanAct(id,action,btn){
 }
 async function sendBroadcast(){
   const msg=E('bc-msg')?.value?.trim();if(!msg)return toast('Enter a message first','err');
-  try{await api('/api/admin/broadcast',{method:'POST',body:JSON.stringify({message:msg})});
-    toast('📢 Broadcast sent to all members!','ok',4000);E('bc-msg').value='';
-  }catch(e){toast(e.message,'err');}
+  const viaSms=E('bc-sms')?.checked||false;
+  const statusEl=E('bc-status');
+  if(statusEl)statusEl.textContent='Sending...';
+  try{
+    await api('/api/admin/broadcast',{method:'POST',body:JSON.stringify({message:msg,send_sms:viaSms})});
+    const smsNote=viaSms?' + SMS queued to all members':'';
+    toast('📢 Broadcast sent'+smsNote+'!','ok',5000);
+    if(statusEl)statusEl.textContent='✅ Sent successfully'+smsNote;
+    E('bc-msg').value='';
+    if(E('bc-sms'))E('bc-sms').checked=false;
+  }catch(e){toast(e.message,'err');if(statusEl)statusEl.textContent='';}
 }
 
 // ── AUDIT LOG ─────────────────────────────────────────────────────────────────
@@ -2369,24 +2454,47 @@ Generated: ${new Date().toLocaleString('en-KE')} &nbsp;·&nbsp; This is an offic
 async function doDeposit(){
   const phone=E('dp')?.value?.trim(),amt=parseFloat(E('da')?.value||0);
   if(!phone)return showE('dep-err','Enter M-Pesa phone number');
-  if(amt<100)return showE('dep-err','Minimum deposit is KSh 100');
-  const btn=E('dep-btn');btn.disabled=true;btn.textContent='Sending request...';
+  if(amt<10)return showE('dep-err','Minimum deposit is KSh 10');
+  if(amt>150000)return showE('dep-err','Maximum deposit is KSh 150,000');
+  const btn=E('dep-btn');btn.disabled=true;btn.textContent='📡 Sending M-Pesa request...';
+  showE('dep-err','');showE('dep-ok','');
   try{
-    await api('/api/me/deposit',{method:'POST',body:JSON.stringify({phone,amount:amt})});
-    showE('dep-ok','✅ STK Push sent! Confirm on your phone.');showE('dep-err','');
-    setTimeout(()=>{cMo();loadMe();},4000);
-  }catch(e){showE('dep-err',e.message);}
-  finally{btn.disabled=false;btn.textContent='Send M-Pesa Request';}
+    const r=await api('/api/me/stk_deposit',{method:'POST',body:JSON.stringify({phone,amount:amt})});
+    if(r.status==='demo'){
+      showE('dep-ok','✅ KSh '+amt.toLocaleString()+' credited (demo mode)');
+      setTimeout(()=>{cMo();loadMe();},3000);
+    } else {
+      showE('dep-ok','📱 M-Pesa prompt sent! Enter your PIN on your phone.');
+      btn.textContent='⏳ Waiting for confirmation...';
+      // Poll balance for up to 30s to detect confirmation
+      let polls=0;
+      const origBal=(ME?.balance||0);
+      const poll=setInterval(async()=>{
+        polls++;
+        const me=await api('/api/me').catch(()=>null);
+        if(me&&me.balance>origBal){
+          clearInterval(poll);
+          toast('✅ Deposit confirmed! KSh '+amt.toLocaleString()+' added.','ok',5000);
+          ME=me;localStorage.setItem('hm',JSON.stringify(me));
+          cMo();home();
+        }
+        if(polls>=15)clearInterval(poll);
+      },2000);
+    }
+  }catch(e){showE('dep-err',e.message);btn.disabled=false;btn.textContent='Send M-Pesa Request';}
 }
 async function doLoan(){
   const amt=parseFloat(E('la')?.value||0),pur=E('lp2')?.value?.trim(),term=E('lt')?.value;
   if(amt<1000)return showE('loan-err','Minimum loan is KSh 1,000');
+  if(amt>500000)return showE('loan-err','Maximum loan is KSh 500,000');
   if(!pur)return showE('loan-err','Enter loan purpose');
   const btn=E('loan-btn');btn.disabled=true;btn.textContent='Submitting...';
+  showE('loan-err','');
   try{
-    await api('/api/me/loans',{method:'POST',body:JSON.stringify({amount:amt,purpose:pur,term_months:parseInt(term)})});
-    showE('loan-ok','✅ Application submitted! We will review within 24 hours.');showE('loan-err','');
-    setTimeout(()=>cMo(),3000);
+    const r=await api('/api/me/loan_apply',{method:'POST',body:JSON.stringify({amount:amt,purpose:pur,term_months:parseInt(term)})});
+    showE('loan-ok','✅ Application submitted! You will receive an SMS confirmation shortly.');
+    showE('loan-err','');
+    setTimeout(()=>cMo(),3500);
   }catch(e){showE('loan-err',e.message);}
   finally{btn.disabled=false;btn.textContent='Submit Application';}
 }
