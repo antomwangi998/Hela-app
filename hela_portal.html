@@ -928,7 +928,7 @@ function updateTBar(){
   E('tb-init').textContent=init;
   E('tb-name').textContent=n;
   E('tb-mem').textContent='Member No. '+(ME.member_no||'—');
-  const av=localStorage.getItem('hela-avatar');
+  const av=localStorage.getItem(_avKey());
   const img=E('tb-av-img');
   if(av&&img){img.src=av;img.style.display='block';E('tb-init').style.display='none';}
   E('n-dot').style.display='block';E('m-dot').style.display='block';
@@ -1261,7 +1261,7 @@ async function profile(){
     await loadMe();const m=ME;
     const init=(m.name||'M').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     const kyc=m.kyc_status==='verified';
-    const av=localStorage.getItem('hela-avatar');
+    const av=localStorage.getItem(_avKey());
     const bioReg=!!localStorage.getItem('hela-bio-cred');
     c.innerHTML=`<div style="padding:0 20px">
       <div class="card" style="text-align:center;padding:28px 20px">
@@ -1298,10 +1298,15 @@ async function profile(){
   }catch(e){errPage(e.message);}
 }
 
+function _avKey(){return 'hela-avatar-'+(ME?.id||ME?.member_no||'shared');}
 function uploadAv(inp){
   const f=inp.files?.[0];if(!f)return;
+  if(f.size>2*1024*1024)return toast('Photo too large — max 2MB','err');
   const r=new FileReader();
-  r.onload=e=>{localStorage.setItem('hela-avatar',e.target.result);updateTBar();profile();toast('Profile photo updated!','ok');};
+  r.onload=e=>{
+    localStorage.setItem(_avKey(),e.target.result);
+    updateTBar();profile();toast('Profile photo updated! ✅','ok');
+  };
   r.readAsDataURL(f);
 }
 
@@ -1689,36 +1694,72 @@ function getAIReply(raw,m){
     return `Habari ${name}! Niko hapa kukusaidia kwa Kiswahili! 🇰🇪<br><br><strong>Huduma za HELA SACCO:</strong><br>💰 Akiba: faida ya <strong>8% kwa mwaka</strong><br>💳 Mkopo: kuanzia <strong>1.5% kwa mwezi</strong><br>📈 Amana: hadi <strong>14% kwa mwaka</strong><br>📱 Amana kupitia M-Pesa<br><br>Una swali gani?`;
 
   // ── OFF-TOPIC — friendly redirect
-  if(/weather|news|sports|football|politics|president|election/.test(q))
-    return `I\'m HELA AI, a <strong>financial assistant</strong> — not a news or weather service! 😊<br><br>For that, try Google or a news app.<br><br>But I\'m great at helping with:<br>💳 Loans | 💰 Savings | 📈 Investments | 📋 Budgets<br><br>Any financial question I can help with?`;
+  // ── OFF-TOPIC RESPONSES (with financial bridge) ──────────────────────────────
+  if(/^(hi|hello|hey|hii|habari|mambo|sasa|niaje|vipi)[\s!?]*$/.test(q))
+    return `Habari ${name}! 👋 Niko hapa kusaidia. Unaweza kuuliza kuhusu akiba, mikopo, uwekezaji, au huduma yoyote ya HELA SACCO. Niambie nikujengee!`;
 
-  if(/recipe|food|cook|restaurant/.test(q))
-    return `Ha! I\'m a finance expert, not a chef 😄<br><br>For food, try Uber Eats or Google Maps. But for <strong>saving money for better meals</strong> — that\'s my specialty! Want a savings tip?`;
+  if(/weather|hali ya hewa|mvua|jua|baridi/.test(q))
+    return `🌤️ Sijui hali ya hewa — angalia <strong>Weather app</strong> au Google!<br><br>Lakini hapa kuna "hali ya fedha" yako:<br>💰 Akiba yako: <strong>KSh ${bal.toLocaleString('en-KE')}</strong><br>📈 Inakua kwa 8% p.a. — hii ni hali nzuri! 😄`;
 
-  if(/doctor|hospital|sick|medicine|medical/.test(q))
-    return `Hope you\'re well! I focus on <strong>financial health</strong>, not physical health. For medical concerns, visit a doctor or call Kenya health helpline: <strong>0800 720 021</strong>.<br><br>On the finance side — did you know HELA offers emergency loans? They can help with unexpected costs!`;
+  if(/football|soccer|harambee|arsenal|chelsea|manchester|premier league|sportpesa|bet|betting|gambling/.test(q))
+    return `⚽ Mimi ni mshauri wa fedha, si mchambuzi wa mpira! 😄<br><br><strong>Ukweli kuhusu kubeti:</strong> Takwimu zinaonyesha 95% ya wabeti wanapoteza pesa kwa muda mrefu.<br><br>💡 <strong>Badala yake</strong> — weka KSh 200/siku kwenye HELA = <strong>KSh 73,000/mwaka</strong> + riba 8%!<br><br>Ungependa kujua zaidi kuhusu akiba ya kiotomatiki?`;
 
-  if(/love|relationship|marriage|girlfriend|boyfriend/.test(q))
-    return `😄 I\'m HELA AI — a financial assistant, not a relationship counsellor! But financial stability does strengthen relationships. Want to set a <strong>savings goal</strong> for something special?`;
+  if(/news|habari|politics|siasa|president|rais|election|uchaguzi/.test(q))
+    return `📰 Kwa habari za siku, angalia <strong>Nation, Standard, KBC</strong> au Google News.<br><br>Habari yangu kubwa leo: akiba yako iko salama na inakua! 💰<br>Kama una swali kuhusu fedha zako, niko tayari kusaidia.`;
 
-  if(/joke|funny|laugh/.test(q))
-    return `😄 Finance joke:<br><br><em>"Why did the man put his money in the freezer? He wanted <strong>cold hard cash!</strong>"</em> 🥶💰<br><br>On a serious note: at <strong>8% interest</strong>, your savings at HELA grow while you sleep. Want to know how much?`;
+  if(/recipe|food|cook|chakula|pika|ugali|nyama|sukuma|restaurant|pizza/.test(q))
+    return `🍳 Mimi ni mshauri wa fedha, si mpishi! 😄 Angalia <strong>YouTube au Google</strong> kwa mapishi.<br><br>Lakini hapa tip: ukiosha sabuni kwa bei ya chini zaidi na kutumia akiba hiyo — KSh 500/wiki = <strong>KSh 26,000/mwaka</strong> + riba!`;
 
-  if(/crypto|bitcoin|forex|stock|shares/.test(q))
-    return `<strong>HELA vs Crypto:</strong><br><br>Crypto is high-risk and volatile. HELA offers <strong>guaranteed, risk-free returns:</strong><br>• Savings: <strong>8% p.a.</strong><br>• Fixed deposits: up to <strong>14% p.a.</strong><br><br>For general investment advice, consult a CMA Kenya licensed advisor: 0800 724 222.`;
+  if(/doctor|hospital|daktari|hospitali|sick|mgonjwa|medicine|dawa|malaria|covid/.test(q))
+    return `🏥 Kwa maswali ya afya, wasiliana na daktari au piga simu <strong>0800 720 021</strong> (Kenya Health Helpline — bure).<br><br>Ninakusaidia na <strong>afya ya fedha</strong>! Mkopo wa dharura wa HELA unaweza kusaidia na gharama za hospitali. Nataka kukueleza zaidi?`;
 
-  if(/how.*use.*app|guide|tutorial|navigate/.test(q))
-    return `<strong>📱 HELA App Guide:</strong><br><br>🏠 <strong>Home</strong> — Balance, quick actions, transactions<br>🕐 <strong>Activity</strong> — Statement history<br>💳 <strong>Loans</strong> — Apply, track & repay<br>📊 <strong>Insights</strong> — Analytics, budget, health score<br>☰ <strong>More</strong> — Profile, KYC, member card, settings<br>🤖 <strong>AI button</strong> (bottom right) — brings you here!`;
+  if(/love|upendo|relationship|mahusiano|marriage|ndoa|girlfriend|boyfriend|mchumba/.test(q))
+    return `❤️ Mimi ni mshauri wa fedha, si wa mahusiano! 😄<br><br>Lakini hapa siri: <strong>fedha imara inaimarisha mahusiano</strong>.<br>Weka akiba sasa kwa:<br>🏠 Nyumba<br>💍 Sherehe ya harusi<br>👶 Watoto<br><br>Ungependa kuweka lengo la akiba?`;
+
+  if(/joke|mcheshi|funny|kuchekesha|laugh|cheka/.test(q))
+    return `😄 Jokes za fedha:<br><br><em>"Mwizi aliingia benki na kusema: 'Toa mikono yote juu!' Kasha aliomba kukopa."</em> 😂<br><br><em>"Kwa nini mtu aliweka pesa jokofu? Alitaka <strong>pesa baridi na ngumu!</strong>"</em> 🥶💰<br><br>Ukweli mzuri zaidi: Akiba yako HELA inakua bila kulala! Want to check your balance?`;
+
+  if(/crypto|bitcoin|ethereum|nft|forex|shares|stocks|nairobi securities|nse/.test(q))
+    return `📊 <strong>HELA vs Uwekezaji mwingine:</strong><br><br>| Uwekezaji | Faida | Hatari |<br>|---------|-------|--------|<br>| 🔴 Crypto | 0-1000% | Kubwa sana |<br>| 🟡 Forex | 5-50% | Kubwa |<br>| 🟢 HELA Savings | <strong>8% p.a.</strong> | Zero |<br>| 🟢 HELA FD | <strong>14% p.a.</strong> | Zero |<br><br>HELA ina <strong>uhakika wa serikali</strong> — pesa yako haiwezi kupotea. Unataka kufungua akiba ya miaka?`;
+
+  if(/travel|safari|nairobi|mombasa|vacation|likizo|holiday|ndege|flight/.test(q))
+    return `✈️ Likizo nzuri inahitaji bajeti nzuri! 😄<br><br>💡 <strong>HELA Safari Fund:</strong><br>• Weka KSh 5,000/mwezi kwa miezi 6 = <strong>KSh 30,000+</strong> kwa likizo<br>• Fanya Fixed Deposit — pata riba <strong>14% p.a.</strong><br><br>Ningependa kukusaidia kupanga bajeti ya likizo yako. Una lengo gani?`;
+
+  if(/school|shule|fees|ada|university|chuo|education|masomo|child|mtoto|watoto/.test(q))
+    return `🎓 Elimu ni uwekezaji bora!<br><br><strong>HELA Education Loan:</strong><br>💳 Hadi KSh ${fmt((bal||10000)*3)} (mara 3 ya akiba yako)<br>📅 Kulipa miezi 1-36<br>💰 Riba 1.5%/mwezi tu<br><br>Mfano: Mkopo KSh 50,000 kwa miezi 12 = KSh 4,583/mwezi<br><br>Omba mkopo sasa kwenye tab ya Loans!`;
+
+  if(/job|kazi|unemployed|lost job|retrenchment|redundancy/.test(q))
+    return `🤝 Pole sana. Kipindi hiki ni kigumu.<br><br>HELA inaweza kusaidia:<br>💳 <strong>Emergency loan</strong> — pata haraka<br>💰 <strong>Akiba yako</strong> inabaki salama<br>📞 <strong>Wasiliana nasi:</strong> 0704363089<br><br>Usijali — pamoja tutafanya njia. Una akiba kiasi gani sasa?`;
+
+  if(/business|biashara|entrepreneur|startup|capital|mtaji/.test(q))
+    return `🚀 <strong>HELA Business Loan!</strong><br><br>✅ Hadi KSh ${fmt((bal||10000)*3)} za mtaji<br>✅ Riba ya chini — 1.5%/mwezi<br>✅ Kulipa miezi 1-36<br>✅ Hakuna dhamana ya ardhi<br><br>Biashara nyingi za Kenya zilianza na mkopo wa SACCO. Anza leo — omba kwenye tab ya Loans! 💪`;
+
+  if(/withdraw|toa pesa|withdrawal|cash out|kutoa/.test(q))
+    return `<strong>💸 Kutoa Pesa HELA:</strong><br><br>1️⃣ Home → Tap <strong>Withdraw</strong><br>2️⃣ Weka nambari ya M-Pesa<br>3️⃣ Weka kiasi unachotaka<br>4️⃣ Confirm STK push kwenye simu<br><br>⏱️ Inachukua chini ya <strong>dakika 2</strong>!<br>📞 Tatizo? Piga 0704363089`;
+
+  if(/transfer|hamisha|send money|tuma pesa/.test(q))
+    return `<strong>💸 Kuhamisha Pesa:</strong><br><br>Kwa sasa, unaweza:<br>• Toa kwako M-Pesa → tuma kwa mtu<br>• Tuma pesa kwa jibu la mkopo<br><br>📍 <em>Member-to-member transfer inakuja hivi karibuni!</em><br><br>Una swali lingine?`;
+
+  if(/how.*use.*app|guide|tutorial|navigate|jinsi.*kutumia/.test(q))
+    return `<strong>📱 Mwongozo wa HELA App:</strong><br><br>🏠 <strong>Home</strong> — Salio, vitendo vya haraka, miamala<br>🕐 <strong>Activity</strong> — Historia ya miamala<br>💳 <strong>Loans</strong> — Omba, fuatilia & lipa mkopo<br>📊 <strong>Insights</strong> — Analytics, bajeti, health score<br>☰ <strong>More</strong> — Profile, KYC, kadi ya mwanachama, mipangilio<br>🤖 <strong>AI button</strong> (chini kulia) — unaletea hapa!<br><br>Una swali kuhusu sehemu fulani?`;
+
+  if(/thank|asante|thanks|sawa|okay|ok|got it/.test(q))
+    return `Karibu sana ${name}! 😊 Niko hapa ukihitaji msaada mwingine. Kumbuka — akiba ndogo leo ni utajiri mkubwa kesho! 💰`;
+
+  if(/who.*you|wewe ni nani|nini.*wewe|about.*you|tell.*yourself/.test(q))
+    return `Mimi ni <strong>HELA AI</strong> — msaidizi wako wa fedha wa kibinafsi! 🤖<br><br>Ninaweza kukusaidia na:<br>💰 Akiba na malengo<br>💳 Mikopo na ustahili<br>📈 Uwekezaji na amana<br>📋 Bajeti na mipango ya fedha<br>🏥 Mkopo wa dharura<br>📱 M-Pesa na miamala<br><br>Niliundwa na timu ya HELA SMART SACCO kukusaidia kufanya maamuzi mazuri ya fedha. Niulize chochote!`;
 
   // ── DEFAULT
   const tips=[
-    'Saving KSh 500/week gives you KSh 26,000/year — plus 8% interest at HELA!',
-    'Members who maintain consistent savings for 6+ months get priority loan processing.',
-    'A fixed deposit of KSh 50,000 at 14% p.a. earns KSh 14,000 in 2 years!',
-    'Set a savings goal in Insights → it keeps you motivated and on track.',
-    'HELA loans start from just 1.5%/month — one of Kenya\'s most affordable rates.'
+    `Akiba ya KSh 500/wiki = KSh 26,000/mwaka — pamoja na riba 8% HELA!`,
+    `Wanachama wanaohifadhi mara kwa mara kwa miezi 6+ wanapata kipaumbele cha mkopo.`,
+    `Amana ya KSh 50,000 kwa 14% p.a. inapata KSh 14,000 zaidi kwa miaka 2!`,
+    `Weka lengo la akiba kwenye Insights — inakusaidia kubaki kwenye njia.`,
+    `Mikopo ya HELA inaanza 1.5%/mwezi — moja ya bei za chini zaidi Kenya.`,
+    `KYC iliyokamilika inakupa kikomo cha juu cha mkopo na huduma zote.`,
+    `Unaweza kuweka amana ya miezi 3, 6, au 12 — riba ya juu zaidi kwa muda mrefu.`,
   ];
-  return `Interesting! I\'m HELA AI — specialized in <strong>HELA SACCO financial services</strong>. I might not have the best answer for that specific question, but here\'s a financial tip:<br><br>💡 <em>${tips[Math.floor(Math.random()*tips.length)]}</em><br><br>Feel free to ask about loans, savings, investments, or your account! 😊`;
+  return `Kwa hiyo! Mimi ni <strong>HELA AI</strong> — mshauri wako wa fedha. Sijui kila kitu, lakini hapa kuna tip ya leo:<br><br>💡 <em>${tips[Math.floor(Math.random()*tips.length)]}</em><br><br>Niulize kuhusu akiba, mikopo, uwekezaji, au akaunti yako! 😊`;
 }
 
 
@@ -1779,40 +1820,122 @@ async function memberCard(){
   try{
     await loadMe();const m=ME;
     const kyc=m.kyc_status==='verified';
+    const av=localStorage.getItem(_avKey());
+    const init=(m.name||'M').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    // Format card number from member no
+    const mno=m.member_no||'HLS00001';
+    const cardNum='4752 '+mno.replace('HLS','').padStart(4,'0')+' '+
+      (m.phone||'07000').slice(-4).padStart(4,'0')+' '+
+      String(m.id||'').slice(-4).padStart(4,'0');
+    const joined=(m.membership_date||m.created_at||'2024-01-01').slice(0,7);
+    const expiry=new Date(joined);expiry.setFullYear(expiry.getFullYear()+5);
+    const expStr=(expiry.getMonth()+1).toString().padStart(2,'0')+'/'+String(expiry.getFullYear()).slice(-2);
+    
     c.innerHTML=`<div style="padding:0 20px">
       <div class="sh"><div class="sht">💳 Digital Member Card</div></div>
-      <div id="the-card">
-        <div class="mc" style="margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
-            <div style="font-size:22px">🐷</div>
-            <div><div style="font-size:11px;font-weight:700;opacity:.8;letter-spacing:2px">HELA SMART SACCO</div>
-              <div style="font-size:10px;opacity:.6">Licensed by CBK</div></div>
-            <div style="margin-left:auto;width:38px;height:28px;background:rgba(245,197,24,.35);border-radius:5px;border:1px solid rgba(245,197,24,.5)"></div>
+      
+      <!-- FRONT CARD -->
+      <div id="the-card" style="perspective:1000px;margin-bottom:16px">
+        <div style="
+          background:linear-gradient(135deg,#0d5c30 0%,#1a8a4a 40%,#0a3d20 100%);
+          border-radius:20px;padding:24px 22px;color:#fff;
+          box-shadow:0 20px 60px rgba(13,92,48,.4),0 8px 20px rgba(0,0,0,.3);
+          position:relative;overflow:hidden;min-height:200px;
+        ">
+          <!-- Background circles -->
+          <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.05)"></div>
+          <div style="position:absolute;bottom:-60px;left:-30px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
+          
+          <!-- Top row -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+            <div>
+              <div style="font-size:11px;font-weight:800;letter-spacing:3px;opacity:.9">HELA SMART SACCO</div>
+              <div style="font-size:9px;opacity:.55;letter-spacing:1px">LICENSED BY CBK</div>
+            </div>
+            <!-- Chip -->
+            <div style="width:42px;height:32px;background:linear-gradient(135deg,#f5c518,#d4a017);border-radius:6px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+              <div style="width:28px;height:22px;border:1px solid rgba(0,0,0,.2);border-radius:3px;display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:3px">
+                <div style="background:rgba(0,0,0,.15);border-radius:1px"></div>
+                <div style="background:rgba(0,0,0,.15);border-radius:1px"></div>
+                <div style="background:rgba(0,0,0,.15);border-radius:1px"></div>
+                <div style="background:rgba(0,0,0,.15);border-radius:1px"></div>
+              </div>
+            </div>
           </div>
-          <div style="font-size:19px;font-weight:900">${m.name||'—'}</div>
-          <div style="font-size:12px;opacity:.65;letter-spacing:2px;margin:4px 0 16px">No: ${m.member_no||'—'}</div>
+          
+          <!-- Card number -->
+          <div style="font-size:16px;letter-spacing:4px;font-weight:600;font-family:monospace;margin-bottom:18px;opacity:.95">
+            ${cardNum}
+          </div>
+          
+          <!-- Bottom row -->
           <div style="display:flex;justify-content:space-between;align-items:flex-end">
             <div>
-              <div style="font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.5px">Savings Balance</div>
-              <div style="font-size:26px;font-weight:900">KSh ${fmt(m.balance)}</div>
-              <div style="font-size:10px;opacity:.55;margin-top:4px">Account: ${m.account_no||'—'}</div>
+              <div style="font-size:9px;opacity:.6;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Card Holder</div>
+              <div style="font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:1px">${m.name||'—'}</div>
+              <div style="font-size:10px;opacity:.65;margin-top:3px">${mno}</div>
             </div>
-            <span style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${kyc?'rgba(255,255,255,.2)':'rgba(255,200,0,.3)'}">${kyc?'✓ Verified':'⏳ Pending KYC'}</span>
+            <div style="text-align:right">
+              <div style="font-size:9px;opacity:.6;letter-spacing:1px;margin-bottom:4px">VALID THRU</div>
+              <div style="font-size:14px;font-weight:700;font-family:monospace">${expStr}</div>
+              <div style="margin-top:6px">
+                <span style="font-size:10px;padding:3px 8px;border-radius:10px;font-weight:700;background:${kyc?'rgba(255,255,255,.2)':'rgba(255,200,0,.25)'};border:1px solid ${kyc?'rgba(255,255,255,.3)':'rgba(255,200,0,.4)'}">
+                  ${kyc?'✓ VERIFIED':'⏳ PENDING'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Mastercard-style circles -->
+          <div style="position:absolute;bottom:20px;right:20px;display:flex">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,60,0,.7)"></div>
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,160,0,.7);margin-left:-14px"></div>
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:12px">
-        <button class="btn btn-g" onclick="window.open('https://wa.me/?text=My+HELA+SACCO+card%0A${encodeURIComponent(m.name||'')}+%7C+${m.member_no||''}%0Ahttps://hela-app-2.onrender.com')" style="flex:1;border-radius:12px;padding:12px;font-size:13px">📤 Share Card</button>
-        <button class="btn btn-soft" onclick="toast('Use your phone screenshot button to save the card','info',3000)" style="flex:1;border-radius:12px;padding:12px;font-size:13px">📸 Screenshot</button>
+      
+      <!-- BALANCE STRIP -->
+      <div style="background:#f0fdf4;border-radius:14px;padding:14px 18px;margin-bottom:14px;border:1px solid #bbf7d0;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;color:#166534;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Current Balance</div>
+          <div style="font-size:24px;font-weight:900;color:#0d5c30">KSh ${fmt(m.balance)}</div>
+          <div style="font-size:11px;color:#64748b">Account: ${m.account_no||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#64748b">Loan Limit</div>
+          <div style="font-size:16px;font-weight:800;color:#0d5c30">KSh ${fmt((m.balance||0)*3)}</div>
+          <div style="font-size:10px;color:#94a3b8">3× savings</div>
+        </div>
       </div>
+      
+      <!-- ACTION BUTTONS -->
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="btn btn-g" onclick="shareCard('${encodeURIComponent(m.name||'')}','${mno}')" style="flex:1;border-radius:12px;padding:12px;font-size:13px">📤 Share Card</button>
+        <button class="btn btn-soft" onclick="screenshotCard()" style="flex:1;border-radius:12px;padding:12px;font-size:13px">📸 Save Card</button>
+      </div>
+      
+      <!-- DETAILS -->
       <div class="card"><div class="ct">Card Details</div>
         <div class="ir"><span class="il">Full Name</span><span class="iv">${m.name||'—'}</span></div>
         <div class="ir"><span class="il">Phone</span><span class="iv">${m.phone||'—'}</span></div>
-        <div class="ir"><span class="il">Email</span><span class="iv">${m.email||'—'}</span></div>
-        <div class="ir"><span class="il">KYC</span><span class="iv ${kyc?'cr':'b-pend'}">${kyc?'✓ Verified':'⏳ Pending'}</span></div>
+        <div class="ir"><span class="il">Email</span><span class="iv" style="font-size:12px">${m.email||'—'}</span></div>
+        <div class="ir"><span class="il">Account No</span><span class="iv">${m.account_no||'—'}</span></div>
+        <div class="ir"><span class="il">Member Since</span><span class="iv">${joined}</span></div>
+        <div class="ir"><span class="il">Valid Thru</span><span class="iv">${expStr}</span></div>
+        <div class="ir"><span class="il">KYC Status</span><span class="iv ${kyc?'cr':''}" style="${kyc?'color:#0d5c30;font-weight:800':'color:#f59e0b;font-weight:800'}">${kyc?'✓ Verified':'⏳ Pending KYC'}</span></div>
+        <div class="ir"><span class="il">Loan Limit</span><span class="iv cr" style="font-weight:900">KSh ${fmt((m.balance||0)*3)}</span></div>
       </div>
     </div>`;
   }catch(e){errPage(e.message);}
+}
+
+function shareCard(name,mno){
+  const txt='My HELA SMART SACCO Member Card\nName: '+decodeURIComponent(name)+'\nMember No: '+mno+'\nJoin us: https://hela-app-2.onrender.com';
+  if(navigator.share){navigator.share({title:'HELA SACCO Member Card',text:txt}).catch(()=>{});}
+  else{window.open('https://wa.me/?text='+encodeURIComponent(txt));}
+}
+function screenshotCard(){
+  toast('📸 Take a screenshot now — press Volume Down + Power simultaneously','info',4000);
 }
 
 // ── BUDGET PLANNER ────────────────────────────────────────────────────────────
@@ -2024,9 +2147,11 @@ async function adminDash(){
         <div style="font-size:9px;color:#00ff4166">UPTIME: <span id="uptime">00:28:14</span> // STATUS: SCANNING // THREAT LEVEL: <span style="color:#ffff00">MODERATE</span></div>
       </div>
       <div style="display:flex;gap:8px">
-        <button onclick="adm_tab('members')" id="tab-mbr" style="background:#00ff4120;border:1px solid #00ff4155;color:#00ff41;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">MEMBERS</button>
-        <button onclick="adm_tab('loans')" id="tab-loans" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">LOANS</button>
-        <button onclick="adm_tab('broadcast')" id="tab-bc" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">BROADCAST</button>
+        <button onclick="adm_tab('members')" id="tab-mbr" style="background:#00ff4120;border:1px solid #00ff4155;color:#00ff41;padding:6px 10px;font-size:9px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">MEMBERS</button>
+        <button onclick="adm_tab('loans')" id="tab-loans" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 10px;font-size:9px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">LOANS</button>
+        <button onclick="adm_tab('settings')" id="tab-settings" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 10px;font-size:9px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">SETTINGS</button>
+        <button onclick="adm_tab('kyc')" id="tab-kyc" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 10px;font-size:9px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">KYC</button>
+        <button onclick="adm_tab('broadcast')" id="tab-bc" style="background:transparent;border:1px solid #00ff4133;color:#00ff4180;padding:6px 10px;font-size:9px;cursor:pointer;font-family:inherit;border-radius:4px;letter-spacing:1px">BROADCAST</button>
       </div>
     </div>
 
@@ -2275,7 +2400,7 @@ async function adminDash(){
 
 // ── ADMIN TABS ────────────────────────────────────────────────────────────────
 function adm_tab(tab){
-  const tabs=['members','loans','broadcast'];
+  const tabs=['members','loans','broadcast','settings','kyc'];
   tabs.forEach(t=>{
     const btn=E('tab-'+t.replace('broadcast','bc'));
     if(btn){btn.style.background=t===tab?'#00ff4120':'transparent';
@@ -2286,6 +2411,8 @@ function adm_tab(tab){
   w.style.display='block';
   if(tab==='members')adm_members();
   else if(tab==='loans')adm_loans();
+  else if(tab==='settings')adm_settings();
+  else if(tab==='kyc')adm_kyc();
   else adm_broadcast();
 }
 
@@ -2304,23 +2431,42 @@ async function adm_members(){
   }catch(e){w.innerHTML='<p style="padding:16px;color:red">'+e.message+'</p>';}
 }
 
-async function adm_loans(){
+async function adm_loans(status='pending'){
   const w=E('adm-content');if(!w)return;w.innerHTML='<div class="sp"></div>';
   try{
-    const d=await api('/api/admin/loans?status=pending');const ls=d.loans||[];
-    w.innerHTML=`<div class="sh"><div class="sht">💳 Pending Loans (${ls.length})</div></div>`+
-      (!ls.length?'<div class="empty"><div class="empty-ico">✅</div><p>No pending loan requests</p></div>':
-      ls.map(l=>`<div class="card">
-        <div style="font-size:16px;font-weight:800;margin-bottom:4px">KSh ${fmt(l.amount)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${l.member_name||'—'} · ${l.member_no||'—'}</div>
-        <div class="ir"><span class="il">Purpose</span><span class="iv">${l.purpose||'—'}</span></div>
-        <div class="ir"><span class="il">Term</span><span class="iv">${l.term_months||'—'} months</span></div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button onclick="adminLoanAct('${l.id}','approved',this)" style="flex:1;padding:10px;background:#dcfce7;color:#15803d;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">✓ Approve</button>
-          <button onclick="adminLoanAct('${l.id}','rejected',this)" style="flex:1;padding:10px;background:#fee2e2;color:#dc2626;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">✗ Reject</button>
-        </div>
-      </div>`).join(''));
-  }catch(e){w.innerHTML='<p style="padding:16px;color:red">'+e.message+'</p>';}
+    const d=await api('/api/admin/loans?status='+status+'&limit=50');const ls=d.loans||[];
+    const statusColors={pending:'#f59e0b',approved:'#10b981',rejected:'#ef4444',active:'#3b82f6',overdue:'#ef4444'};
+    w.innerHTML=`
+      <div class="sh"><div class="sht">💳 Loans</div><div class="sha" onclick="adm_loans('${status}')">↻</div></div>
+      <div style="display:flex;gap:6px;padding:0 0 12px;overflow-x:auto;white-space:nowrap">
+        ${['pending','all','active','overdue','approved','rejected'].map(s=>
+          `<button onclick="adm_loans('${s}')" style="padding:6px 12px;border-radius:20px;border:1px solid ${s===status?'#0d5c30':'#e2e8f0'};background:${s===status?'#0d5c30':'#fff'};color:${s===status?'#fff':'#475569'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">
+            ${s.charAt(0).toUpperCase()+s.slice(1)}
+          </button>`).join('')}
+      </div>
+      ${!ls.length?'<div class="card"><div class="empty"><div class="empty-ico">✅</div><p>No '+status+' loans</p></div></div>':
+      ls.map(l=>{
+        const isPending=l.status==='pending';
+        const monthly=(l.amount*(1.015)**(l.term_months||12)/( l.term_months||12)).toFixed(0);
+        return `<div class="card" style="border-left:4px solid ${statusColors[l.status]||'#e2e8f0'}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div>
+              <div style="font-size:18px;font-weight:900;color:#0d5c30">KSh ${fmt(l.amount||l.principal_amount/100||0)}</div>
+              <div style="font-size:12px;color:#475569">${l.member_name||l.full_name||'—'} · ${l.member_no||'—'}</div>
+            </div>
+            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${statusColors[l.status]||'#e2e8f0'}22;color:${statusColors[l.status]||'#64748b'};border:1px solid ${statusColors[l.status]||'#e2e8f0'}44">${l.status||'—'}</span>
+          </div>
+          <div class="ir"><span class="il">Purpose</span><span class="iv">${l.loan_purpose||l.purpose||'—'}</span></div>
+          <div class="ir"><span class="il">Term</span><span class="iv">${l.term_months||'—'} months</span></div>
+          <div class="ir"><span class="il">Rate</span><span class="iv">1.5%/month</span></div>
+          <div class="ir"><span class="il">Monthly</span><span class="iv cr" style="font-weight:800">~KSh ${fmt(parseFloat(monthly))}</span></div>
+          <div class="ir"><span class="il">Applied</span><span class="iv">${(l.created_at||'').slice(0,10)}</span></div>
+          ${isPending?`<div style="display:flex;gap:8px;margin-top:12px">
+            <button onclick="adminLoanAct('${l.id}','approved',this)" style="flex:1;padding:11px;background:#dcfce7;color:#15803d;border:2px solid #bbf7d0;border-radius:10px;font-weight:800;cursor:pointer;font-family:inherit;font-size:13px">✓ Approve</button>
+            <button onclick="adminLoanAct('${l.id}','rejected',this)" style="flex:1;padding:11px;background:#fee2e2;color:#dc2626;border:2px solid #fecaca;border-radius:10px;font-weight:800;cursor:pointer;font-family:inherit;font-size:13px">✗ Reject</button>
+          </div>`:''}
+        </div>`;}).join('')}`;
+  }catch(e){w.innerHTML='<div class="card"><p style="color:red">'+e.message+'</p></div>';}
 }
 
 function adm_broadcast(){
@@ -2350,6 +2496,188 @@ function adm_broadcast(){
 function adminMembers(){adm_tab('members');}
 function adminLoans(){adm_tab('loans');}
 function adminBroadcast(){adm_tab('broadcast');}
+
+// ── ADMIN SETTINGS — interest rates, loan limits, fees ──────────────────────
+async function adm_settings(){
+  const w=E('adm-content');if(!w)return;
+  // Load current settings from server
+  let cfg={loan_rate:1.5,savings_rate:8,fd_rate:14,loan_multiplier:3,min_loan:1000,max_loan:500000};
+  try{const d=await api('/api/admin/config');Object.assign(cfg,d);}catch(e){}
+  w.innerHTML=`
+    <div style="background:#fff;border-radius:16px;margin:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;background:#f8fafc">
+        <div style="font-size:15px;font-weight:800">⚙️ SACCO Settings</div>
+        <div style="font-size:12px;color:#64748b">Interest rates, loan limits & fees</div>
+      </div>
+      
+      <!-- INTEREST RATES -->
+      <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9">
+        <div style="font-size:13px;font-weight:800;color:#0d5c30;margin-bottom:12px">💰 Interest Rates</div>
+        <div class="fld">
+          <label>Loan Interest Rate (% per month)</label>
+          <div class="fi"><span class="fi-ic">📊</span><input type="number" id="cfg-loan-rate" class="plain-in" value="${cfg.loan_rate||1.5}" step="0.1" min="0.5" max="10" style="padding-left:42px"></div>
+          <div style="font-size:11px;color:#64748b;margin-top:4px">Current: ${cfg.loan_rate||1.5}%/month = ${((cfg.loan_rate||1.5)*12).toFixed(1)}% p.a.</div>
+        </div>
+        <div class="fld">
+          <label>Savings Interest Rate (% per annum)</label>
+          <div class="fi"><span class="fi-ic">💵</span><input type="number" id="cfg-sav-rate" class="plain-in" value="${cfg.savings_rate||8}" step="0.5" min="1" max="25" style="padding-left:42px"></div>
+        </div>
+        <div class="fld">
+          <label>Fixed Deposit Rate (% per annum)</label>
+          <div class="fi"><span class="fi-ic">📈</span><input type="number" id="cfg-fd-rate" class="plain-in" value="${cfg.fd_rate||14}" step="0.5" min="1" max="30" style="padding-left:42px"></div>
+        </div>
+      </div>
+      
+      <!-- LOAN LIMITS -->
+      <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9">
+        <div style="font-size:13px;font-weight:800;color:#0d5c30;margin-bottom:12px">💳 Loan Limits</div>
+        <div class="fld">
+          <label>Loan Multiplier (× savings balance)</label>
+          <div class="fi"><span class="fi-ic">✖️</span><input type="number" id="cfg-multiplier" class="plain-in" value="${cfg.loan_multiplier||3}" step="0.5" min="1" max="10" style="padding-left:42px"></div>
+          <div style="font-size:11px;color:#64748b;margin-top:4px">e.g. 3× → KSh 10,000 savings = KSh 30,000 max loan</div>
+        </div>
+        <div class="fld">
+          <label>Minimum Loan (KSh)</label>
+          <div class="fi"><span class="fi-ic">⬇️</span><input type="number" id="cfg-min-loan" class="plain-in" value="${cfg.min_loan||1000}" step="500" min="100" style="padding-left:42px"></div>
+        </div>
+        <div class="fld">
+          <label>Maximum Loan (KSh)</label>
+          <div class="fi"><span class="fi-ic">⬆️</span><input type="number" id="cfg-max-loan" class="plain-in" value="${cfg.max_loan||500000}" step="10000" style="padding-left:42px"></div>
+        </div>
+      </div>
+      
+      <!-- MEMBER LOAN RESET -->
+      <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9">
+        <div style="font-size:13px;font-weight:800;color:#0d5c30;margin-bottom:12px">🔄 Reset Member Loan Limit</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:10px">Manually override loan limit for a specific member</div>
+        <div class="fld">
+          <label>Member No. or Phone</label>
+          <div class="fi"><span class="fi-ic">👤</span><input type="text" id="cfg-reset-member" class="plain-in" placeholder="e.g. HLS00002 or 0712345678" style="padding-left:42px"></div>
+        </div>
+        <div class="fld">
+          <label>New Loan Limit (KSh)</label>
+          <div class="fi"><span class="fi-ic">💰</span><input type="number" id="cfg-reset-limit" class="plain-in" placeholder="e.g. 150000" inputmode="numeric" style="padding-left:42px"></div>
+        </div>
+        <button onclick="admResetLoanLimit()" class="btn btn-g" style="border-radius:10px;margin-top:4px;width:100%">🔄 Reset Loan Limit</button>
+      </div>
+      
+      <!-- SAVE BUTTON -->
+      <div style="padding:16px 20px">
+        <button onclick="admSaveSettings()" class="btn btn-g" style="border-radius:12px;font-size:15px;font-weight:800">💾 Save All Settings</button>
+        <div id="cfg-status" style="margin-top:10px;font-size:13px;text-align:center;color:#0d5c30"></div>
+      </div>
+    </div>`;
+}
+
+async function admSaveSettings(){
+  const rate=parseFloat(E('cfg-loan-rate')?.value||1.5);
+  const savRate=parseFloat(E('cfg-sav-rate')?.value||8);
+  const fdRate=parseFloat(E('cfg-fd-rate')?.value||14);
+  const mult=parseFloat(E('cfg-multiplier')?.value||3);
+  const minL=parseFloat(E('cfg-min-loan')?.value||1000);
+  const maxL=parseFloat(E('cfg-max-loan')?.value||500000);
+  try{
+    await api('/api/admin/config',{method:'POST',body:JSON.stringify({
+      loan_rate:rate,savings_rate:savRate,fd_rate:fdRate,
+      loan_multiplier:mult,min_loan:minL,max_loan:maxL
+    })});
+    if(E('cfg-status'))E('cfg-status').textContent='✅ Settings saved successfully!';
+    toast('✅ SACCO settings updated!','ok',3000);
+  }catch(e){toast(e.message,'err');}
+}
+
+async function admResetLoanLimit(){
+  const member=E('cfg-reset-member')?.value?.trim();
+  const limit=parseFloat(E('cfg-reset-limit')?.value||0);
+  if(!member)return toast('Enter member number or phone','err');
+  if(limit<1000)return toast('Enter a valid loan limit (min KSh 1,000)','err');
+  try{
+    await api('/api/admin/reset_loan_limit',{method:'POST',body:JSON.stringify({member,limit})});
+    toast('✅ Loan limit reset to KSh '+fmt(limit)+' for '+member,'ok',4000);
+    E('cfg-reset-member').value='';E('cfg-reset-limit').value='';
+  }catch(e){toast(e.message,'err');}
+}
+
+// ── ADMIN KYC — review and approve/reject ────────────────────────────────────
+async function adm_kyc(){
+  const w=E('adm-content');if(!w)return;w.innerHTML='<div class="sp"></div>';
+  try{
+    const d=await api('/api/admin/kyc_pending');const ks=d.members||[];
+    w.innerHTML=`
+      <div class="sh"><div class="sht">🪪 KYC Review (${ks.length} pending)</div><div class="sha" onclick="adm_kyc()">↻</div></div>
+      ${!ks.length?'<div class="card"><div class="empty"><div class="empty-ico">✅</div><p>All KYC verified!</p></div></div>':
+      ks.map(m=>`<div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#0d5c30">
+            ${(m.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2)}
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:800">${m.full_name||'—'}</div>
+            <div style="font-size:12px;color:#64748b">${m.member_no||'—'} · ${m.phone||'—'}</div>
+          </div>
+          <span style="margin-left:auto;padding:3px 10px;border-radius:20px;background:#fef9c3;color:#92400e;font-size:11px;font-weight:700">⏳ ${m.kyc_status||'pending'}</span>
+        </div>
+        <div class="ir"><span class="il">Email</span><span class="iv">${m.email||'—'}</span></div>
+        <div class="ir"><span class="il">ID Number</span><span class="iv">${m.id_number||'—'}</span></div>
+        <div class="ir"><span class="il">Registered</span><span class="iv">${(m.created_at||'').slice(0,10)}</span></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="admKycAct('${m.id}','verified',this)" style="flex:1;padding:10px;background:#dcfce7;color:#15803d;border:2px solid #bbf7d0;border-radius:10px;font-weight:800;cursor:pointer;font-family:inherit">✓ Approve KYC</button>
+          <button onclick="admKycAct('${m.id}','rejected',this)" style="flex:1;padding:10px;background:#fee2e2;color:#dc2626;border:2px solid #fecaca;border-radius:10px;font-weight:800;cursor:pointer;font-family:inherit">✗ Reject</button>
+        </div>
+      </div>`).join('')}`;
+  }catch(e){w.innerHTML='<div class="card"><p style="color:red">'+e.message+'</p></div>';}
+}
+
+async function admKycAct(memberId, action, btn){
+  btn.disabled=true;btn.textContent=action==='verified'?'Approving...':'Rejecting...';
+  try{
+    await api('/api/admin/kyc/'+memberId+'/'+action,{method:'POST'});
+    toast(action==='verified'?'✅ KYC approved!':'KYC rejected','ok');
+    btn.closest('.card').style.opacity='.4';
+  }catch(e){toast(e.message,'err');btn.disabled=false;}
+}
+
+// ── ENHANCED MEMBER LIST with search and actions ──────────────────────────────
+async function adm_members(){
+  const w=E('adm-content');if(!w)return;w.innerHTML='<div class="sp"></div>';
+  try{
+    const d=await api('/api/admin/members?limit=200');const ms=d.members||[];
+    w.innerHTML=`
+      <div class="sh"><div class="sht">👥 Members (${ms.length})</div><div class="sha" onclick="adm_members()">↻</div></div>
+      <div class="fld" style="padding:0 0 12px">
+        <div class="fi"><span class="fi-ic">🔍</span><input type="text" id="mem-search" class="plain-in" placeholder="Search by name, phone or member no..." oninput="filterMembers()" style="padding-left:42px"></div>
+      </div>
+      <div id="mem-list">
+      ${ms.map(m=>{
+        const init=(m.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const isAdmin=m.role==='admin';
+        return `<div class="mem-row" data-search="${(m.full_name||'').toLowerCase()} ${(m.phone||'')} ${(m.member_no||'')}">
+          <div class="mem-av" style="background:${isAdmin?'#fef9c3':'#dcfce7'};color:${isAdmin?'#92400e':'#0d5c30'}">${init}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700">${m.full_name||'—'} ${isAdmin?'<span style="font-size:10px;color:#f59e0b;font-weight:800">ADMIN</span>':''}</div>
+            <div style="font-size:11px;color:var(--muted)">${m.member_no||'—'} · ${m.phone||'—'}</div>
+            <div style="font-size:11px;color:#0d5c30;font-weight:700">KSh ${fmt(m.balance||0)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="badge ${m.kyc_status==='verified'?'b-act':'b-pend'}">${m.kyc_status==='verified'?'✓ KYC':'⏳ KYC'}</span>
+            <button onclick="admMemberDetail('${m.id}','${m.full_name}')" style="font-size:10px;padding:3px 8px;background:#f1f5f9;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600">Details →</button>
+          </div>
+        </div>`;}).join('')}
+      </div>`;
+  }catch(e){w.innerHTML='<div class="card"><p style="color:red">'+e.message+'</p></div>';}
+}
+
+function filterMembers(){
+  const q=(E('mem-search')?.value||'').toLowerCase();
+  document.querySelectorAll('[data-search]').forEach(el=>{
+    el.style.display=el.dataset.search.includes(q)?'':'none';
+  });
+}
+
+async function admMemberDetail(memberId, name){
+  toast('Loading '+name+'...','ok',2000);
+  // Future: show member detail modal
+}
 
 async function adminLoanAct(id,action,btn){
   btn.disabled=true;btn.textContent=action==='approved'?'Approving...':'Rejecting...';
