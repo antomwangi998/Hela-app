@@ -808,7 +808,7 @@ async def get_me(u: dict = Depends(_auth_user)):
     member_id = user_row.get("member_id")
     mem_row = db1("SELECT * FROM members WHERE id=?", (member_id,)) if member_id else None
     if not mem_row:
-        # No member record yet — return basic info from users table
+        # No member record yet — return basic info from users table, including role
         return {
             "id": uid,
             "name": user_row.get("full_name",""),
@@ -819,6 +819,7 @@ async def get_me(u: dict = Depends(_auth_user)):
             "balance": 0,
             "account_no": "",
             "account_id": "",
+            "role": user_row.get("role","member"),  # Always include role
             "loans": [],
         }
     m = {**mem_row, "username": user_row.get("username",""),
@@ -838,6 +839,7 @@ async def get_me(u: dict = Depends(_auth_user)):
         "phone": m.get("phone", ""),
         "email": m.get("email", ""),
         "kyc_status": m.get("kyc_status", "pending"),
+        "role": user_row.get("role", "member"),  # Always from users table — never from client
         "balance": (acc or {}).get("balance_minor", 0) / 100,
         "account_no": (acc or {}).get("account_no", ""),
         "account_id": (acc or {}).get("id", ""),
