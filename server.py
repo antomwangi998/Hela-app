@@ -1,25 +1,93 @@
 import os, hashlib, base64, json, time, hmac as _hmac
-import uuid as _uuid, datetime, logging
+import uuid as _uuid, datetime, logging, threading, collections
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 log = logging.getLogger("hela")
+logging.basicConfig(level=logging.WARNING)
+
+# ── RATE LIMITER (in-memory, no extra deps) ───────────────────────────────────
+# Tracks requests per IP per endpoint with sliding window
+_rl_store: dict = {}  # {key: deque of timestamps}
+
+def _rate_limit(key: str, max_calls: int, window_secs: int):
+    """Raise 429 if key has exceeded max_calls in window_secs."""
+    now = time.time()
+    if key not in _rl_store:
+        _rl_store[key] = collections.deque()
+    dq = _rl_store[key]
+    # Remove expired
+    while dq and dq[0] < now - window_secs:
+        dq.popleft()
+    if len(dq) >= max_calls:
+        retry = int(window_secs - (now - dq[0])) + 1
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many requests. Try again in {retry}s.",
+            headers={"Retry-After": str(retry)}
+        )
+    dq.append(now)
+
+def _get_ip(request: Request) -> str:
+    """Get real client IP (handles Render/Cloudflare proxies)."""
+    return (request.headers.get("X-Forwarded-For","").split(",")[0].strip()
+            or request.headers.get("X-Real-IP","")
+            or (request.client.host if request.client else "unknown"))
+
+# Cleanup old rate limit entries every 10 mins
+def _rl_cleanup():
+    while True:
+        time.sleep(600)
+        cutoff = time.time() - 3600
+        keys = list(_rl_store.keys())
+        for k in keys:
+            try:
+                dq = _rl_store[k]
+                while dq and dq[0] < cutoff: dq.popleft()
+                if not dq: del _rl_store[k]
+            except: pass
+threading.Thread(target=_rl_cleanup, daemon=True).start()
+
+# ── BRUTE FORCE TRACKER ───────────────────────────────────────────────────────
+_login_fails: dict = {}  # {ip: {count, locked_until}}
+
+def _check_login_throttle(ip: str):
+    rec = _login_fails.get(ip, {})
+    if rec.get("locked_until", 0) > time.time():
+        wait = int(rec["locked_until"] - time.time())
+        raise HTTPException(429, f"Too many failed attempts. Locked for {wait}s.")
+
+def _record_login_fail(ip: str):
+    rec = _login_fails.setdefault(ip, {"count": 0, "locked_until": 0})
+    rec["count"] += 1
+    # Progressive lockout: 5 fails=30s, 10=5min, 15+=30min
+    if rec["count"] >= 15:   rec["locked_until"] = time.time() + 1800
+    elif rec["count"] >= 10: rec["locked_until"] = time.time() + 300
+    elif rec["count"] >= 5:  rec["locked_until"] = time.time() + 30
+
+def _clear_login_fail(ip: str):
+    _login_fails.pop(ip, None)
+
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 SYNC_SECRET  = os.environ.get("HELA_SYNC_SECRET", "hela_sync_secret")
 _SECRET      = os.environ.get("HELA_JWT_SECRET", "hela_sacco_jwt_v3")
 
-# ── Email (Gmail App Password or SendGrid SMTP) ───────────────────────────────
+# ── Email (Gmail App Password) ────────────────────────────────────────────────
+# Render env vars needed:
+#   EMAIL_USER = mwangiantony557@gmail.com
+#   EMAIL_PASS = xxxx xxxx xxxx xxxx  (16-char Gmail App Password)
+#   EMAIL_FROM = HELA SMART SACCO <mwangiantony557@gmail.com>
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 EMAIL_HOST  = os.environ.get("EMAIL_HOST",  "smtp.gmail.com")
 EMAIL_PORT  = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_USER  = os.environ.get("EMAIL_USER",  "")          # mwangiantony557@gmail.com
-EMAIL_PASS  = os.environ.get("EMAIL_PASS",  "")          # Gmail App Password (16 chars)
+EMAIL_USER  = os.environ.get("EMAIL_USER",  "")
+EMAIL_PASS  = os.environ.get("EMAIL_PASS",  "")
 EMAIL_FROM  = os.environ.get("EMAIL_FROM",  "HELA SMART SACCO <helasacco@gmail.com>")
 
 def send_email(to: str, subject: str, html_body: str, text_body: str = ""):
@@ -614,16 +682,20 @@ async def startup():
 
 @app.post("/api/auth/login")
 async def login(request: Request):
+    ip = _get_ip(request)
+    # Rate limit: 20 login attempts per IP per 5 minutes
+    _rate_limit(f"login:{ip}", 20, 300)
+    # Brute force protection
+    _check_login_throttle(ip)
+
     b     = await request.json()
     phone = str(b.get("phone", "")).strip()
     pw    = str(b.get("password", "")).strip()
     if not phone or not pw:
         raise HTTPException(400, "Phone and password required")
     p = _phone(phone)
-    # Build all possible formats for the identifier
-    raw  = phone  # original input
-    norm = _phone(raw)  # 254XXXXXXXXX format
-    # Also try 0XXXXXXXXX format
+    raw   = phone
+    norm  = _phone(raw)
     local = "0" + norm[3:] if norm.startswith("254") and len(norm) == 12 else raw
 
     m = (db1(
@@ -661,14 +733,19 @@ async def login(request: Request):
     else:
         ok = False
     if not ok:
+        _record_login_fail(ip)
         raise HTTPException(401, "Phone number or password is incorrect")
+    _clear_login_fail(ip)
     role = (m.get("role") or "member").lower()
+    _log_audit(uid, "login", f"Login from {ip}")
     return {"token": sign_jwt({"sub": uid, "role": role}),
             "role": role, "name": m.get("full_name") or ""}
 
 
 @app.post("/api/auth/register")
 async def register(request: Request):
+    ip = _get_ip(request)
+    _rate_limit(f"register:{ip}", 5, 3600)  # Max 5 registrations/IP/hour
     b     = await request.json()
     first = str(b.get("first_name", "")).strip()
     last  = str(b.get("last_name",  "")).strip()
@@ -708,11 +785,15 @@ async def register(request: Request):
         "balance_minor,is_active,opening_date,created_at,updated_at) "
         "VALUES (?,?,?,'savings',0,1,?,?,?)",
         (str(_uuid.uuid4()), mid, f"SAV{mno[3:]}", now[:10], now, now))
-    # Send welcome email in background
+    # Send welcome email + SMS in background
     try:
-        import threading
         threading.Thread(target=_email_welcome, args=(full, email, mno, p), daemon=True).start()
     except Exception: pass
+    try:
+        welcome_sms = f"Welcome to HELA SMART SACCO, {first}! 🎉 Your member no: {mno}. Start saving today at hela-app-2.onrender.com"
+        threading.Thread(target=_send_sms, args=(p, welcome_sms), daemon=True).start()
+    except Exception: pass
+    _log_audit(uid, "register", f"New member {mno} from {_get_ip(request)}")
     return {"token": sign_jwt({"sub": uid, "role": "member"}),
             "role": "member", "name": full, "member_no": mno,
             "message": "Account created! Visit a branch to complete KYC."}
@@ -824,6 +905,8 @@ async def get_investments(u: dict = Depends(_auth_user)):
 
 @app.post("/api/me/loan_apply")
 async def loan_apply(request: Request, u: dict = Depends(_auth_user)):
+    ip = _get_ip(request)
+    _rate_limit(f"loan:{u['sub']}", 3, 3600)  # 3 loan apps per user per hour
     mid  = _mid(u["sub"])
     b    = await request.json()
     amt  = float(b.get("amount", 0))
@@ -840,12 +923,22 @@ async def loan_apply(request: Request, u: dict = Depends(_auth_user)):
         "outstanding_principal_minor,term_months,loan_purpose,status,"
         "interest_rate,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'pending',1.5,?,?)",
         (lid, lno, mid, int(amt * 100), int(amt * 100), term, purp, now, now))
-    return {"status": "submitted", "loan_id": lid,
+    # Notify member via SMS
+    try:
+        me = db1("SELECT u.full_name,u.phone,u.email,mem.member_no FROM users u "
+                 "LEFT JOIN members mem ON mem.id=u.member_id WHERE u.member_id=?", (mid,))
+        if me:
+            sms = f"HELA SACCO: Loan application KSh {int(amt):,} received. Ref: {lno}. We'll review within 24hrs."
+            threading.Thread(target=_send_sms, args=(me.get("phone",""), sms), daemon=True).start()
+    except Exception: pass
+    return {"status": "submitted", "loan_id": lid, "loan_no": lno,
             "message": "Application submitted. We'll contact you within 24 hours."}
 
 
 @app.post("/api/me/stk_deposit")
 async def stk_deposit(request: Request, u: dict = Depends(_auth_user)):
+    ip = _get_ip(request)
+    _rate_limit(f"stk:{u['sub']}", 10, 300)  # 10 STK pushes per user per 5 min
     b = await request.json()
     phone  = str(b.get("phone", "")).strip()
     amount = int(b.get("amount", 0))
@@ -923,14 +1016,15 @@ async def stk_cb(request: Request):
                 dbx("INSERT INTO transactions (id,account_id,member_id,transaction_type,amount_minor,description,channel,reference_number,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
                     (_uuid.uuid4().hex, acc["id"], uid, "deposit", amount*100, "M-Pesa Deposit", "mpesa", ref, now))
                 _log_audit(uid, "deposit", f"M-Pesa KSh {amount} ref {ref}")
-                # Send email receipt
-                me = db1("SELECT full_name, email FROM users WHERE id=?", (uid,))
+                # Send email + SMS receipt
+                me = db1("SELECT u.full_name,u.email,u.phone FROM users u WHERE u.id=?", (uid,))
                 if me:
-                    import threading
                     new_balance = new_bal / 100
                     threading.Thread(target=_email_deposit,
                         args=(me["full_name"], me.get("email",""), float(amount), new_balance, ref),
                         daemon=True).start()
+                    sms = f"HELA SACCO: KSh {amount:,} deposited via M-Pesa. Ref: {ref}. New balance: KSh {new_balance:,.2f}. Thank you!"
+                    threading.Thread(target=_send_sms, args=(me.get("phone",""), sms), daemon=True).start()
             log.info(f"STK success: KSh {amount} for {uid} ref {ref}")
         else:
             log.warning(f"STK failed/cancelled: code={result_code} checkout={checkout_id}")
@@ -990,10 +1084,59 @@ async def ai_chat(request: Request, u: dict = Depends(_auth_user)):
 
 
 # ══════════════════════════════════════════════════════════
-# OTP — Send & Verify
+# SMS — Africa's Talking
+# Set AT_API_KEY + AT_USERNAME (or "sandbox") in Render env
+# AT_SENDER_ID = your approved sender name e.g. "HELASACCO"
 # ══════════════════════════════════════════════════════════
 import random, string
 _otp_store = {}  # {phone: {otp, expires}}
+
+_AT_KEY      = os.environ.get("AT_API_KEY", "")
+_AT_USER     = os.environ.get("AT_USERNAME", "sandbox")
+_AT_SENDER   = os.environ.get("AT_SENDER_ID", "HELASACCO")  # must be approved
+_AT_SANDBOX  = _AT_USER == "sandbox"
+
+def _send_sms(phone: str, message: str) -> bool:
+    """Send SMS via Africa's Talking. Returns True on success."""
+    import urllib.request as _ur, urllib.parse as _up
+    if not phone:
+        return False
+    # Normalize phone
+    p = str(phone).strip().replace(" ","").replace("-","").replace("+","")
+    if p.startswith("0") and len(p) == 10: p = "254" + p[1:]
+    if not p.startswith("254"): p = "254" + p
+    p = "+" + p
+
+    if not _AT_KEY:
+        log.warning(f"[SMS-MOCK] To {p}: {message}")
+        return False
+
+    try:
+        payload = {"username": _AT_USER, "to": p, "message": message}
+        if not _AT_SANDBOX and _AT_SENDER:
+            payload["from"] = _AT_SENDER
+        data = _up.urlencode(payload).encode()
+        req = _ur.Request(
+            "https://api.africastalking.com/version1/messaging",
+            data=data,
+            headers={
+                "apiKey": _AT_KEY,
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        )
+        with _ur.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+            status = result.get("SMSMessageData",{}).get("Recipients",[{}])[0].get("status","")
+            if status == "Success":
+                log.info(f"SMS sent to {p}")
+                return True
+            else:
+                log.warning(f"SMS to {p} status: {status}")
+                return False
+    except Exception as e:
+        log.error(f"SMS error to {p}: {e}")
+        return False
 
 def _norm_phone(p):
     p = str(p).strip().replace(" ", "").replace("-","")
@@ -1003,29 +1146,17 @@ def _norm_phone(p):
 
 @app.post("/api/auth/send_otp")
 async def send_otp(request: Request):
+    ip = _get_ip(request)
+    _rate_limit(f"otp:{ip}", 10, 600)   # 10 OTPs per IP per 10 min
     b = await request.json()
     phone = _norm_phone(b.get("phone",""))
     if not phone: raise HTTPException(400,"Phone required")
+    _rate_limit(f"otp:{phone}", 5, 300)  # 5 OTPs per phone per 5 min
     otp = "".join(random.choices(string.digits,k=6))
     _otp_store[phone] = {"otp":otp,"expires":time.time()+120}
-    # Send via Africa's Talking (or log if no key)
-    at_key = os.environ.get("AT_API_KEY","")
-    at_user = os.environ.get("AT_USERNAME","sandbox")
-    msg = f"Your HELA SMART SACCO verification code is: {otp}. Valid for 2 minutes. Do not share."
-    if at_key:
-        try:
-            import urllib.request as _ur2, urllib.parse as _up
-            data = _up.urlencode({"username":at_user,"to":"+"+phone,"message":msg}).encode()
-            req2 = _ur2.Request("https://api.africastalking.com/version1/messaging",
-                data=data,
-                headers={"apiKey":at_key,"Accept":"application/json",
-                         "Content-Type":"application/x-www-form-urlencoded"})
-            with _ur2.urlopen(req2,timeout=10) as resp:
-                log.info(f"OTP SMS sent to {phone}")
-        except Exception as e:
-            log.error(f"SMS failed: {e}")
-    else:
-        log.warning(f"OTP for {phone}: {otp} (no AT_API_KEY set)")
+    msg = f"Your HELA SMART SACCO code is {otp}. Valid 2 mins. Do NOT share with anyone."
+    threading.Thread(target=_send_sms, args=(phone, msg), daemon=True).start()
+    log.warning(f"OTP for {phone}: {otp}")
     return {"status":"ok","message":f"OTP sent to {phone[-4:].rjust(10,'*')}"}
 
 @app.post("/api/auth/verify_otp")
@@ -1127,34 +1258,64 @@ async def admin_loan_action(loan_id:str, action:str, u:dict=Depends(_require_adm
     if not loan: raise HTTPException(404,"Loan not found")
     dbx("UPDATE loans SET status=?,updated_at=? WHERE id=?",(action,now,loan_id))
     _log_audit(u["sub"],"loan_"+action,f"Loan {loan_id} {action}")
-    # ── Email member about loan decision
+    # ── Notify member about loan decision (email + SMS)
     try:
         mid = loan.get("member_id","")
-        me = db1("SELECT u.full_name, u.email FROM users u JOIN members m ON m.id=u.member_id WHERE m.id=?",(mid,))
-        if me and me.get("email"):
-            amt  = float(loan.get("amount") or loan.get("principal_amount_minor",0)/100)
-            term = int(loan.get("term_months",12))
-            import threading
+        me = db1("SELECT u.full_name,u.email,u.phone FROM users u "
+                 "JOIN members m ON m.id=u.member_id WHERE m.id=?",(mid,))
+        if me:
+            name  = me.get("full_name","Member")
+            email = me.get("email","")
+            phone = me.get("phone","")
+            amt   = float(loan.get("amount") or loan.get("principal_amount_minor",0)/100)
+            term  = int(loan.get("term_months",12))
             if action == "approved":
-                threading.Thread(target=_email_loan_approved,
-                    args=(me["full_name"],me["email"],amt,term),daemon=True).start()
+                if email:
+                    threading.Thread(target=_email_loan_approved,
+                        args=(name,email,amt,term),daemon=True).start()
+                sms = (f"HELA SACCO: Congratulations {name.split()[0]}! "
+                       f"Your loan of KSh {int(amt):,} for {term} months is APPROVED. "
+                       f"Funds will be disbursed shortly.")
+                threading.Thread(target=_send_sms, args=(phone, sms), daemon=True).start()
             elif action == "rejected":
-                threading.Thread(target=_email_loan_rejected,
-                    args=(me["full_name"],me["email"],""),daemon=True).start()
-    except Exception as _em: log.error(f"Loan email: {_em}")
+                if email:
+                    threading.Thread(target=_email_loan_rejected,
+                        args=(name,email,""),daemon=True).start()
+                sms = (f"HELA SACCO: We regret your loan application could not be approved. "
+                       f"Visit a branch or call 0704363089 for guidance.")
+                threading.Thread(target=_send_sms, args=(phone, sms), daemon=True).start()
+    except Exception as _em: log.error(f"Loan notification: {_em}")
     return {"status":"ok","message":f"Loan {action}"}
 
 _broadcasts = []  # In-memory broadcast store
+
 @app.post("/api/admin/broadcast")
 async def broadcast(request:Request, u:dict=Depends(_require_admin)):
+    ip = _get_ip(request)
+    _rate_limit(f"broadcast:{u['sub']}", 10, 3600)  # 10 broadcasts/hour
     b = await request.json()
-    msg = str(b.get("message","")).strip()
+    msg     = str(b.get("message","")).strip()
+    via_sms = bool(b.get("send_sms", False))
     if not msg: raise HTTPException(400,"Message required")
     _broadcasts.insert(0,{"id":_uuid.uuid4().hex,"message":msg,
                            "created_at":datetime.datetime.now().isoformat(),"sender":u["sub"]})
-    _broadcasts[:] = _broadcasts[:50]  # Keep last 50
-    _log_audit(u["sub"],"broadcast",f"Sent: {msg[:50]}")
-    return {"status":"ok","sent_to":"all members"}
+    _broadcasts[:] = _broadcasts[:50]
+
+    sms_sent = 0
+    if via_sms:
+        # Send SMS to all active members (in background)
+        def _bulk_sms():
+            nonlocal sms_sent
+            members = dba("SELECT phone FROM members WHERE is_active=1 AND phone IS NOT NULL")
+            for m in members:
+                if _send_sms(m["phone"], f"HELA SACCO: {msg}"):
+                    sms_sent += 1
+                time.sleep(0.1)  # 10/sec rate limit for AT
+            log.warning(f"Broadcast SMS sent to {sms_sent}/{len(members)} members")
+        threading.Thread(target=_bulk_sms, daemon=True).start()
+
+    _log_audit(u["sub"],"broadcast",f"Sent: {msg[:50]} | SMS: {via_sms}")
+    return {"status":"ok","sent_to":"all members","sms_queued": via_sms}
 
 # ── ONE-TIME ADMIN SETUP (no auth, protected by secret key) ──────────────────
 @app.get("/api/setup-admin")
@@ -1215,6 +1376,16 @@ async def debug_status(secret: str = ""):
         }
     except Exception as e:
         return {"status": "error", "detail": str(e), "db_path": db_path}
+
+@app.get("/api/health")
+async def health():
+    """Public health check — used by uptime monitors."""
+    try:
+        cnt = (db1("SELECT COUNT(*) as c FROM users") or {}).get("c", 0)
+        return {"status": "ok", "db": "connected", "users": cnt,
+                "pg": _USE_PG, "time": datetime.datetime.utcnow().isoformat()}
+    except Exception as e:
+        return JSONResponse({"status": "error", "detail": str(e)}, status_code=503)
 
 @app.get("/api/notifications")
 async def get_notifications(u:dict=Depends(_auth_user)):
