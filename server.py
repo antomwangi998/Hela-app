@@ -1422,6 +1422,93 @@ async def kyc_action(member_id: str, action: str, u: dict = Depends(_require_adm
     _log_audit(u["sub"], f"kyc_{action}", f"KYC {action} for member {member_id}")
     return {"status": "ok", "message": f"KYC {action}"}
 
+
+# ── PAYBILL PAYMENT ──────────────────────────────────────────────────────────
+@app.post("/api/me/paybill")
+async def pay_bill(request: Request, u: dict = Depends(_auth_user)):
+    b = await request.json()
+    paybill = str(b.get("paybill","")).strip()
+    account = str(b.get("account","")).strip()
+    amount  = float(b.get("amount", 0))
+    if not paybill or not account:
+        raise HTTPException(400, "Paybill and account number required")
+    if amount < 10:
+        raise HTTPException(400, "Minimum payment is KSh 10")
+    mid = _mid(u["sub"])
+    acc = db1("SELECT id, balance_minor FROM accounts WHERE member_id=? AND account_type='savings' AND is_active=1", (mid,))
+    if not acc:
+        raise HTTPException(404, "Account not found")
+    bal = acc["balance_minor"] / 100
+    if amount > bal:
+        raise HTTPException(400, f"Insufficient balance. Available: KSh {bal:,.2f}")
+    new_bal = int((bal - amount) * 100)
+    now = datetime.datetime.now().isoformat()
+    tid = str(uuid.uuid4())
+    dbx("UPDATE accounts SET balance_minor=?,updated_at=? WHERE id=?", (new_bal, now, acc["id"]))
+    dbx("INSERT INTO transactions (id,account_id,member_id,transaction_type,amount_minor,description,channel,reference_number,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+        (tid, acc["id"], mid, "withdrawal", int(amount*100),
+         f"Bill Payment - Paybill {paybill} Acct {account}", "web", paybill, now))
+    mem = db1("SELECT full_name,phone FROM members WHERE id=?", (mid,))
+    if mem:
+        _add_notif(mid, "Bill Payment", f"KSh {amount:,.2f} paid to Paybill {paybill} (Acct: {account})", "success")
+        sms = f"HELA: KSh {amount:,.0f} paid to Paybill {paybill}. New balance: KSh {new_bal/100:,.2f}"
+        threading.Thread(target=_send_sms, args=(mem.get("phone",""), sms), daemon=True).start()
+    _log_audit(u["sub"], "paybill_payment", f"Paybill {paybill} Acct {account} KSh {amount}")
+    return {"status":"ok","message":f"KSh {amount:,.2f} paid to Paybill {paybill}. New balance: KSh {new_bal/100:,.2f}"}
+
+# ── TRANSFER ─────────────────────────────────────────────────────────────────
+@app.post("/api/me/transfer")
+async def do_transfer(request: Request, u: dict = Depends(_auth_user)):
+    b = await request.json()
+    amount    = float(b.get("amount", 0))
+    ttype     = str(b.get("type", "mpesa"))
+    phone     = str(b.get("phone","")).strip()
+    recipient = str(b.get("recipient","")).strip()
+    note      = str(b.get("note","Transfer"))[:100]
+    if amount < 100:
+        raise HTTPException(400, "Minimum transfer is KSh 100")
+    mid = _mid(u["sub"])
+    acc = db1("SELECT id, balance_minor FROM accounts WHERE member_id=? AND account_type='savings' AND is_active=1", (mid,))
+    if not acc:
+        raise HTTPException(404, "Account not found")
+    bal = acc["balance_minor"] / 100
+    if amount > bal:
+        raise HTTPException(400, f"Insufficient balance. Available: KSh {bal:,.2f}")
+    now = datetime.datetime.now().isoformat()
+    tid = str(uuid.uuid4())
+    new_bal = int((bal - amount) * 100)
+    if ttype == "member":
+        rec = (db1("SELECT id FROM members WHERE member_no=? OR phone=?", (recipient, recipient)) or
+               db1("SELECT id FROM members WHERE phone=?", (_phone(recipient),)))
+        if not rec:
+            raise HTTPException(404, f"Member not found: {recipient}")
+        if rec["id"] == mid:
+            raise HTTPException(400, "Cannot transfer to yourself")
+        dbx("UPDATE accounts SET balance_minor=?,updated_at=? WHERE id=?", (new_bal, now, acc["id"]))
+        dbx("INSERT INTO transactions (id,account_id,member_id,transaction_type,amount_minor,description,channel,reference_number,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            (tid, acc["id"], mid, "withdrawal", int(amount*100), f"Transfer to {recipient} - {note}", "web", tid, now))
+        rec_acc = db1("SELECT id, balance_minor FROM accounts WHERE member_id=? AND account_type='savings'", (rec["id"],))
+        if rec_acc:
+            new_rec = rec_acc["balance_minor"] + int(amount * 100)
+            dbx("UPDATE accounts SET balance_minor=?,updated_at=? WHERE id=?", (new_rec, now, rec_acc["id"]))
+            dbx("INSERT INTO transactions (id,account_id,member_id,transaction_type,amount_minor,description,channel,reference_number,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                (str(uuid.uuid4()), rec_acc["id"], rec["id"], "deposit", int(amount*100),
+                 f"Transfer received - {note}", "web", tid, now))
+            _add_notif(rec["id"], "Money Received", f"KSh {amount:,.2f} received. Note: {note}", "success")
+        msg = f"KSh {amount:,.2f} sent to member {recipient}"
+    else:
+        dbx("UPDATE accounts SET balance_minor=?,updated_at=? WHERE id=?", (new_bal, now, acc["id"]))
+        dbx("INSERT INTO transactions (id,account_id,member_id,transaction_type,amount_minor,description,channel,reference_number,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            (tid, acc["id"], mid, "withdrawal", int(amount*100), f"Transfer to M-Pesa {phone} - {note}", "web", tid, now))
+        msg = f"KSh {amount:,.2f} withdrawal initiated to {phone}."
+    mem = db1("SELECT full_name,phone FROM members WHERE id=?", (mid,))
+    if mem:
+        sms = f"HELA: KSh {amount:,.0f} transferred. Note: {note}. New balance: KSh {new_bal/100:,.2f}"
+        threading.Thread(target=_send_sms, args=(mem.get("phone",""), sms), daemon=True).start()
+        _add_notif(mid, "Transfer Sent", msg, "success")
+    _log_audit(u["sub"], "transfer", f"{ttype} KSh {amount} to {phone or recipient}")
+    return {"status":"ok","message":msg,"new_balance":new_bal/100}
+
 @app.get("/api/debug")
 async def debug_status(secret: str = ""):
     """Check server status, DB, and admin account."""
