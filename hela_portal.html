@@ -1004,7 +1004,7 @@ function go(page){
   const nav=E(nm[page]||'nav-home');if(nav)nav.classList.add('on');
   const fab=E('ai-fab');if(fab)fab.style.display=page==='helaAI'?'none':'flex';
   window.scrollTo(0,0);
-  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support,helaAI,analytics,memberCard,budgetPlanner,healthScore,kycUpload,adminDash,auditLog,pdfStatement,insights})[page]?.();
+  ({home,statement,loans,investments,profile,payments,notifications,referrals,settings,help,more,support,helaAI,analytics,memberCard,budgetPlanner,healthScore,kycUpload,adminDash,auditLog,pdfStatement,insights,transfer,goals,loanCalc})[page]?.();
 }
 function oMo(id){
   E(id)?.classList.add('open');
@@ -1071,7 +1071,7 @@ async function home(){
           <div class="qa-item" onclick="oMo('loan-mo')"><div class="qa-ico" style="background:linear-gradient(145deg,#fef9c3,#fef08a)">💵</div><div class="qa-lbl">Loan</div></div>
           <div class="qa-item" onclick="go('statement')"><div class="qa-ico" style="background:linear-gradient(145deg,#dbeafe,#bfdbfe)">📄</div><div class="qa-lbl">Statements</div></div>
           <div class="qa-item" onclick="go('payments')"><div class="qa-ico" style="background:linear-gradient(145deg,#fce7f3,#fbcfe8)">💸</div><div class="qa-lbl">Pay Bills</div></div>
-          <div class="qa-item" onclick="toast('Transfer — coming soon','info')"><div class="qa-ico" style="background:linear-gradient(145deg,#cffafe,#a5f3fc)">🔄</div><div class="qa-lbl">Transfer</div></div>
+          <div class="qa-item" onclick="go('transfer')"><div class="qa-ico" style="background:linear-gradient(145deg,#cffafe,#a5f3fc)">🔄</div><div class="qa-lbl">Transfer</div></div>
           <div class="qa-item" onclick="go('referrals')"><div class="qa-ico" style="background:linear-gradient(145deg,#ede9fe,#ddd6fe)">🤝</div><div class="qa-lbl">Refer</div></div>
           <div class="qa-item" onclick="go('helaAI')"><div class="qa-ico" style="background:linear-gradient(145deg,#d1fae5,#bfdbfe)">🤖</div><div class="qa-lbl">AI Chatbot</div></div>
           <div class="qa-item" onclick="go('analytics')"><div class="qa-ico" style="background:linear-gradient(145deg,#dcfce7,#d1fae5)">📊</div><div class="qa-lbl">Analytics</div></div>
@@ -1322,23 +1322,115 @@ function removeBiometric(){
 // ── PAYMENTS ──────────────────────────────────────────────────────────────────
 function payments(){
   const bills=[
-    {ico:'⚡',name:'Electricity',bg:'#fffbeb'},{ico:'💧',name:'Water',bg:'#eff6ff'},
-    {ico:'📺',name:'TV/DSTV',bg:'#fce4ec'},{ico:'📡',name:'Internet',bg:'#e8eaf6'},
-    {ico:'🎓',name:'School Fees',bg:'#e8f5e9'},{ico:'🏥',name:'Insurance',bg:'#f3e5f5'},
-    {ico:'🏠',name:'Rent',bg:'#fff3e0'},{ico:'📱',name:'Airtime',bg:'#e0f7fa'},
-    {ico:'💸',name:'Send Money',bg:'#e8f5e9'},
+    {ico:'⚡',name:'Electricity',bg:'#fffbeb',paybill:'888880',desc:'KPLC Token'},
+    {ico:'💧',name:'Water',bg:'#eff6ff',paybill:'888991',desc:'Nairobi Water'},
+    {ico:'📺',name:'DStv/Gotv',bg:'#fce4ec',paybill:'444700',desc:'DStv & GOtv'},
+    {ico:'📡',name:'Safaricom Home',bg:'#e8eaf6',paybill:'220220',desc:'Broadband/Fibre'},
+    {ico:'🎓',name:'School Fees',bg:'#e8f5e9',paybill:null,desc:'Enter paybill no.'},
+    {ico:'🏥',name:'NHIF',bg:'#f3e5f5',paybill:'200222',desc:'Health Insurance'},
+    {ico:'🏠',name:'Rent',bg:'#fff3e0',paybill:null,desc:'Enter paybill no.'},
+    {ico:'📱',name:'Airtime',bg:'#e0f7fa',paybill:'airtime',desc:'Buy airtime'},
+    {ico:'🔋',name:'Zuku',bg:'#e8eaf6',paybill:'303030',desc:'Zuku Internet/TV'},
+    {ico:'🏦',name:'KRA Tax',bg:'#fef9c3',paybill:'572572',desc:'Pay taxes'},
+    {ico:'💊',name:'Pharmacy',bg:'#fce4ec',paybill:null,desc:'Enter paybill no.'},
+    {ico:'➕',name:'Other',bg:'#f1f5f9',paybill:'custom',desc:'Any paybill'},
   ];
   E('pc').innerHTML=`<div style="padding:0 20px">
-    <div class="sh"><div class="sht">💸 Bill Payments</div></div>
-    <div style="background:#fffbeb;border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400e">
-      ⚠️ Bill payments require M-Pesa integration. Contact us on 0704363089 to activate.</div>
-    <div class="pay-grid">
-      ${bills.map(b=>`<div class="pay-item" onclick="toast('${b.name} — coming soon. Call 0704363089','info',3000)">
-        <div style="width:48px;height:48px;border-radius:14px;background:${b.bg};display:flex;align-items:center;justify-content:center;font-size:24px">${b.ico}</div>
-        <div style="font-size:11px;font-weight:700;text-align:center">${b.name}</div>
+    <div class="sh"><div class="sht">💸 Pay Bills</div></div>
+    
+    <!-- Search -->
+    <div class="fld" style="padding:0 0 12px">
+      <div class="fi"><span class="fi-ic">🔍</span>
+        <input type="text" id="bill-search" class="plain-in" placeholder="Search bills..." oninput="filterBills()" style="padding-left:42px">
+      </div>
+    </div>
+    
+    <div class="pay-grid" id="bill-grid">
+      ${bills.map(b=>`<div class="pay-item bill-item" data-name="${b.name.toLowerCase()}" onclick="openBillModal('${b.name}','${b.paybill||''}','${b.desc}','${b.ico}')">
+        <div style="width:52px;height:52px;border-radius:16px;background:${b.bg};display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 2px 8px rgba(0,0,0,.08)">${b.ico}</div>
+        <div style="font-size:11px;font-weight:700;text-align:center;margin-top:4px">${b.name}</div>
+        <div style="font-size:9px;color:#94a3b8;text-align:center">${b.desc}</div>
       </div>`).join('')}
     </div>
+    
+    <!-- Bill payment modal -->
+    <div id="bill-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-end">
+      <div style="background:#fff;border-radius:24px 24px 0 0;padding:24px 20px;width:100%;max-width:480px;margin:0 auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-size:16px;font-weight:800" id="bm-title">Pay Bill</div>
+          <button onclick="closeBillModal()" style="background:#f1f5f9;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer">✕</button>
+        </div>
+        <div class="fld">
+          <label>Paybill Number</label>
+          <div class="fi"><span class="fi-ic">🏦</span><input type="tel" id="bm-paybill" class="plain-in" placeholder="e.g. 888880" inputmode="numeric" style="padding-left:42px"></div>
+        </div>
+        <div class="fld">
+          <label>Account Number</label>
+          <div class="fi"><span class="fi-ic">📋</span><input type="text" id="bm-account" class="plain-in" placeholder="e.g. Meter no., ID no." style="padding-left:42px"></div>
+        </div>
+        <div class="fld">
+          <label>Amount (KSh)</label>
+          <div class="fi"><span class="fi-ic">💰</span><input type="number" id="bm-amount" class="plain-in" placeholder="e.g. 500" inputmode="numeric" style="padding-left:42px"></div>
+          <!-- Quick amounts -->
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            ${[100,200,500,1000,2000,5000].map(a=>`<span onclick="E('bm-amount').value=${a}" style="padding:5px 10px;background:#f0fdf4;color:#0d5c30;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #bbf7d0">${a}</span>`).join('')}
+          </div>
+        </div>
+        <div style="font-size:12px;color:#64748b;background:#f8fafc;padding:10px 12px;border-radius:10px;margin-bottom:16px">
+          💡 Funds will be deducted from your HELA savings balance and paid to the paybill via M-Pesa.
+        </div>
+        <button onclick="doBillPayment()" class="btn btn-g" style="border-radius:14px;font-size:15px;font-weight:800">💸 Pay Now</button>
+        <div id="bm-status" style="margin-top:10px;text-align:center;font-size:13px"></div>
+      </div>
+    </div>
+    
   </div>`;
+}
+
+function filterBills(){
+  const q=(E('bill-search')?.value||'').toLowerCase();
+  document.querySelectorAll('.bill-item').forEach(el=>{
+    el.style.display=el.dataset.name.includes(q)?'':'none';
+  });
+}
+
+function openBillModal(name,paybill,desc,ico){
+  const modal=E('bill-modal');if(!modal)return;
+  E('bm-title').textContent=ico+' Pay '+name;
+  E('bm-paybill').value=paybill&&paybill!=='custom'&&paybill!=='airtime'?paybill:'';
+  E('bm-paybill').readOnly=!!(paybill&&paybill!=='custom'&&paybill!=='airtime');
+  E('bm-account').placeholder=name==='Electricity'?'Meter Number':
+    name==='NHIF'?'National ID Number':
+    name==='DStv/Gotv'?'Customer Number':
+    name==='Airtime'?'Phone Number (07XX...)':
+    'Account Number';
+  if(name==='Airtime'){E('bm-paybill').value='airtime';E('bm-paybill').readOnly=true;}
+  E('bm-amount').value='';
+  E('bm-status').textContent='';
+  modal.style.display='flex';
+}
+
+function closeBillModal(){const m=E('bill-modal');if(m)m.style.display='none';}
+
+async function doBillPayment(){
+  const paybill=E('bm-paybill')?.value?.trim();
+  const account=E('bm-account')?.value?.trim();
+  const amount=parseFloat(E('bm-amount')?.value||0);
+  const st=E('bm-status');
+  if(!paybill)return toast('Enter paybill number','err');
+  if(!account)return toast('Enter account number','err');
+  if(amount<10)return toast('Enter a valid amount (min KSh 10)','err');
+  if(!ME||amount>(ME.balance||0))return toast('Insufficient balance','err');
+  if(st)st.textContent='⏳ Processing...';
+  try{
+    const res=await api('/api/me/paybill',{method:'POST',body:JSON.stringify({paybill,account,amount})});
+    closeBillModal();
+    toast('✅ '+res.message,'ok',4000);
+    loadMe();
+  }catch(e){
+    if(st)st.textContent='';
+    toast(e.message,'err');
+  }
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
@@ -1392,6 +1484,299 @@ function referrals(){
       <div class="stat-box"><div class="stat-v">KSh 0</div><div class="stat-l">Earned</div></div>
     </div>
   </div>`;
+}
+
+// ── TRANSFER ─────────────────────────────────────────────────────────────────
+async function transfer(){
+  await loadMe();const m=ME;
+  E('pc').innerHTML=`<div style="padding:0 20px">
+    <div class="sh"><div class="sht">🔄 Transfer Money</div></div>
+    
+    <!-- Balance strip -->
+    <div style="background:#f0fdf4;border-radius:14px;padding:14px 16px;margin-bottom:14px;border:1px solid #bbf7d0;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:11px;color:#166534;font-weight:600">Available Balance</div>
+        <div style="font-size:22px;font-weight:900;color:#0d5c30">KSh ${fmt(m.balance)}</div></div>
+      <div style="font-size:28px">💰</div>
+    </div>
+    
+    <!-- Transfer type tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button id="tt-mpesa" onclick="setTransferType('mpesa')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #0d5c30;background:#0d5c30;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px">📱 To M-Pesa</button>
+      <button id="tt-member" onclick="setTransferType('member')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;color:#475569;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px">👤 To Member</button>
+    </div>
+    
+    <div class="card" id="transfer-form">
+      <!-- M-Pesa (default) -->
+      <div id="tf-mpesa">
+        <div class="ct">Send to M-Pesa</div>
+        <div class="fld">
+          <label>Recipient Phone Number</label>
+          <div class="fi"><span class="fi-ic">📱</span><input type="tel" id="tf-phone" class="plain-in" placeholder="07XX XXX XXX" inputmode="tel" style="padding-left:42px" value="${m.phone||''}"></div>
+        </div>
+      </div>
+      <!-- Member (hidden by default) -->
+      <div id="tf-member" style="display:none">
+        <div class="ct">Send to HELA Member</div>
+        <div class="fld">
+          <label>Member No. or Phone</label>
+          <div class="fi"><span class="fi-ic">👤</span><input type="text" id="tf-member-id" class="plain-in" placeholder="e.g. HLS00002 or 0712345678" style="padding-left:42px"></div>
+        </div>
+      </div>
+      
+      <div class="fld">
+        <label>Amount (KSh)</label>
+        <div class="fi"><span class="fi-ic">💰</span><input type="number" id="tf-amount" class="plain-in" placeholder="Minimum KSh 100" inputmode="numeric" style="padding-left:42px"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          ${[500,1000,2000,5000,10000].map(a=>`<span onclick="E('tf-amount').value=${a}" style="padding:5px 12px;background:#f0fdf4;color:#0d5c30;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #bbf7d0">${a}</span>`).join('')}
+        </div>
+      </div>
+      <div class="fld">
+        <label>Reason (optional)</label>
+        <div class="fi"><span class="fi-ic">📝</span><input type="text" id="tf-note" class="plain-in" placeholder="e.g. Rent, loan repayment..." style="padding-left:42px"></div>
+      </div>
+      
+      <div style="font-size:12px;color:#64748b;background:#f8fafc;padding:10px 12px;border-radius:10px;margin-bottom:16px">
+        ⚠️ Transfers are <strong>instant and irreversible</strong>. Double-check the recipient before sending.
+      </div>
+      <button onclick="doTransfer()" class="btn btn-g" style="border-radius:14px;font-size:15px;font-weight:800">🔄 Send Money</button>
+      <div id="tf-status" style="margin-top:10px;text-align:center;font-size:13px"></div>
+    </div>
+    
+    <!-- Recent transfers -->
+    <div class="sh" style="margin-top:8px"><div class="sht">Recent Transfers</div></div>
+    <div class="card" id="tf-history"><div class="sp"></div></div>
+  </div>`;
+  
+  // Load recent transfers
+  api('/api/me/statement?limit=20').then(d=>{
+    const txns=(d.transactions||[]).filter(t=>t.transaction_type==='withdrawal'||t.description?.toLowerCase().includes('transfer'));
+    const el=E('tf-history');if(!el)return;
+    if(!txns.length){el.innerHTML='<div class="empty"><p>No transfers yet</p></div>';return;}
+    el.innerHTML=txns.slice(0,5).map(t=>`
+      <div class="ir">
+        <span class="il" style="color:#ef4444">↗ ${(t.description||'Transfer').slice(0,25)}</span>
+        <span class="iv" style="font-weight:800;color:#ef4444">-KSh ${fmt(t.amount||0)}</span>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+
+let _tfType='mpesa';
+function setTransferType(type){
+  _tfType=type;
+  E('tf-mpesa').style.display=type==='mpesa'?'':'none';
+  E('tf-member').style.display=type==='member'?'':'none';
+  const mb=E('tt-mpesa'),mem=E('tt-member');
+  if(mb){mb.style.background=type==='mpesa'?'#0d5c30':'#fff';mb.style.color=type==='mpesa'?'#fff':'#475569';mb.style.borderColor=type==='mpesa'?'#0d5c30':'#e2e8f0';}
+  if(mem){mem.style.background=type==='member'?'#0d5c30':'#fff';mem.style.color=type==='member'?'#fff':'#475569';mem.style.borderColor=type==='member'?'#0d5c30':'#e2e8f0';}
+}
+
+async function doTransfer(){
+  const amount=parseFloat(E('tf-amount')?.value||0);
+  const note=E('tf-note')?.value?.trim()||'Transfer';
+  const st=E('tf-status');
+  if(amount<100)return toast('Minimum transfer is KSh 100','err');
+  if(!ME||amount>(ME.balance||0))return toast('Insufficient balance','err');
+  let body={amount,note};
+  if(_tfType==='mpesa'){
+    const phone=E('tf-phone')?.value?.trim();
+    if(!phone||phone.length<10)return toast('Enter a valid phone number','err');
+    body.phone=phone;body.type='mpesa';
+  }else{
+    const recipient=E('tf-member-id')?.value?.trim();
+    if(!recipient)return toast('Enter member number or phone','err');
+    body.recipient=recipient;body.type='member';
+  }
+  if(!confirm('Send KSh '+fmt(amount)+' to '+(_tfType==='mpesa'?body.phone:body.recipient)+'?'))return;
+  if(st)st.textContent='⏳ Processing...';
+  try{
+    const res=await api('/api/me/transfer',{method:'POST',body:JSON.stringify(body)});
+    if(st)st.textContent='';
+    toast('✅ '+res.message,'ok',4000);
+    E('tf-amount').value='';
+    loadMe();
+  }catch(e){
+    if(st)st.textContent='';
+    toast(e.message,'err');
+  }
+}
+
+// ── SAVINGS GOALS ────────────────────────────────────────────────────────────
+async function goals(){
+  await loadMe();const m=ME;
+  const saved=JSON.parse(localStorage.getItem('hela-goals-'+m.id)||'[]');
+  function renderGoals(){
+    const gl=JSON.parse(localStorage.getItem('hela-goals-'+m.id)||'[]');
+    const el=E('goals-list');if(!el)return;
+    if(!gl.length){el.innerHTML='<div class="card"><div class="empty"><div class="empty-ico">🎯</div><p>No goals yet — add one below!</p></div></div>';return;}
+    el.innerHTML=gl.map((g,i)=>{
+      const pct=Math.min(100,Math.round((m.balance/g.target)*100));
+      const left=Math.max(0,g.target-m.balance);
+      return `<div class="card" style="border-left:4px solid #0d5c30">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-size:16px;font-weight:800">${g.emoji||'🎯'} ${g.name}</div>
+            <div style="font-size:12px;color:#64748b">Target: KSh ${fmt(g.target)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:900;color:#0d5c30">${pct}%</div>
+            <button onclick="deleteGoal(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px">🗑️ Delete</button>
+          </div>
+        </div>
+        <div style="background:#f1f5f9;border-radius:8px;height:10px;margin-bottom:8px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#0d5c30,#1a8a4a);border-radius:8px;transition:width .8s ease"></div>
+        </div>
+        <div style="font-size:12px;color:#64748b">
+          ${pct>=100?'✅ <strong style="color:#0d5c30">Goal achieved! 🎉</strong>':'KSh '+fmt(left)+' more to go · ETA at KSh 500/week: '+(Math.ceil(left/2000))+' months'}
+        </div>
+        ${g.deadline?`<div style="font-size:11px;color:#94a3b8;margin-top:4px">🗓️ Deadline: ${g.deadline}</div>`:''}
+      </div>`;}).join('');
+  }
+  E('pc').innerHTML=`<div style="padding:0 20px">
+    <div class="sh"><div class="sht">🎯 Savings Goals</div></div>
+    <div id="goals-list"></div>
+    <div class="card" style="margin-top:8px">
+      <div class="ct">➕ Add New Goal</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        ${['🏠','🚗','📱','✈️','🎓','💍','👶','🏥','💻','🎯'].map(e=>`<span onclick="E('goal-emoji').value='${e}';this.style.background='#dcfce7'" style="font-size:22px;cursor:pointer;padding:4px;border-radius:8px">${e}</span>`).join('')}
+      </div>
+      <div class="fld">
+        <label>Goal Name</label>
+        <div class="fi"><input type="text" id="goal-name" class="plain-in" placeholder="e.g. Buy a Car, Rent Deposit..." style="padding-left:42px"><span class="fi-ic">🎯</span></div>
+        <input type="hidden" id="goal-emoji" value="🎯">
+      </div>
+      <div class="fld">
+        <label>Target Amount (KSh)</label>
+        <div class="fi"><span class="fi-ic">💰</span><input type="number" id="goal-target" class="plain-in" placeholder="e.g. 100000" inputmode="numeric" style="padding-left:42px"></div>
+      </div>
+      <div class="fld">
+        <label>Deadline (optional)</label>
+        <div class="fi"><span class="fi-ic">🗓️</span><input type="date" id="goal-date" class="plain-in" style="padding-left:42px"></div>
+      </div>
+      <button onclick="addGoal()" class="btn btn-g" style="border-radius:12px">✅ Save Goal</button>
+    </div>
+  </div>`;
+  renderGoals();
+  window._renderGoals=renderGoals;
+}
+
+function addGoal(){
+  const name=E('goal-name')?.value?.trim();
+  const target=parseFloat(E('goal-target')?.value||0);
+  const emoji=E('goal-emoji')?.value||'🎯';
+  const deadline=E('goal-date')?.value||'';
+  if(!name)return toast('Enter a goal name','err');
+  if(target<500)return toast('Enter target amount (min KSh 500)','err');
+  const key='hela-goals-'+(ME?.id||'');
+  const gl=JSON.parse(localStorage.getItem(key)||'[]');
+  gl.push({name,target,emoji,deadline,created:new Date().toISOString().slice(0,10)});
+  localStorage.setItem(key,JSON.stringify(gl));
+  E('goal-name').value='';E('goal-target').value='';E('goal-date').value='';
+  toast('✅ Goal added!','ok');
+  if(window._renderGoals)window._renderGoals();
+}
+
+function deleteGoal(idx){
+  if(!confirm('Delete this goal?'))return;
+  const key='hela-goals-'+(ME?.id||'');
+  const gl=JSON.parse(localStorage.getItem(key)||'[]');
+  gl.splice(idx,1);localStorage.setItem(key,JSON.stringify(gl));
+  if(window._renderGoals)window._renderGoals();
+  toast('Goal deleted','ok');
+}
+
+// ── LOAN CALCULATOR ───────────────────────────────────────────────────────────
+function loanCalc(){
+  E('pc').innerHTML=`<div style="padding:0 20px">
+    <div class="sh"><div class="sht">🧮 Loan Calculator</div></div>
+    <div class="card">
+      <div class="ct">Calculate Your Repayment</div>
+      <div class="fld">
+        <label>Loan Amount (KSh)</label>
+        <div class="fi"><span class="fi-ic">💰</span><input type="number" id="lc-amount" class="plain-in" placeholder="e.g. 50000" inputmode="numeric" oninput="calcLoan()" style="padding-left:42px"></div>
+      </div>
+      <div class="fld">
+        <label>Repayment Period</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="lc-terms">
+          ${[3,6,12,18,24,36].map(t=>`<button onclick="setLcTerm(${t})" id="lct-${t}" style="padding:8px 14px;border-radius:10px;border:2px solid ${t===12?'#0d5c30':'#e2e8f0'};background:${t===12?'#0d5c30':'#fff'};color:${t===12?'#fff':'#475569'};font-weight:700;cursor:pointer;font-family:inherit;font-size:13px">${t} months</button>`).join('')}
+        </div>
+      </div>
+      <div class="fld">
+        <label>Interest Rate (% per month)</label>
+        <div class="fi"><span class="fi-ic">📊</span><input type="number" id="lc-rate" class="plain-in" value="1.5" step="0.1" min="0.5" oninput="calcLoan()" style="padding-left:42px"></div>
+      </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="card" id="lc-result" style="background:#f0fdf4;border:2px solid #bbf7d0">
+      <div class="ct" style="color:#0d5c30">📊 Repayment Summary</div>
+      <div class="ir"><span class="il">Monthly Payment</span><span class="iv cr" style="font-size:22px;font-weight:900" id="lc-monthly">—</span></div>
+      <div class="ir"><span class="il">Total Repayment</span><span class="iv" id="lc-total">—</span></div>
+      <div class="ir"><span class="il">Total Interest</span><span class="iv" style="color:#f59e0b" id="lc-interest">—</span></div>
+      <div class="ir"><span class="il">Effective Annual Rate</span><span class="iv" id="lc-apr">—</span></div>
+    </div>
+    
+    <!-- Schedule (collapsible) -->
+    <div class="card" id="lc-schedule" style="display:none"></div>
+    
+    <button class="btn btn-g" onclick="go('loans')" style="border-radius:12px;margin-bottom:24px">💳 Apply for This Loan →</button>
+  </div>`;
+  window._lcTerm=12;calcLoan();
+}
+
+function setLcTerm(t){
+  window._lcTerm=t;
+  [3,6,12,18,24,36].forEach(n=>{
+    const b=E('lct-'+n);if(!b)return;
+    b.style.background=n===t?'#0d5c30':'#fff';
+    b.style.color=n===t?'#fff':'#475569';
+    b.style.borderColor=n===t?'#0d5c30':'#e2e8f0';
+  });
+  calcLoan();
+}
+
+function calcLoan(){
+  const P=parseFloat(E('lc-amount')?.value||0);
+  const r=parseFloat(E('lc-rate')?.value||1.5)/100;
+  const n=window._lcTerm||12;
+  if(!P||P<1000){
+    ['lc-monthly','lc-total','lc-interest','lc-apr'].forEach(id=>{const el=E(id);if(el)el.textContent='—';});
+    return;
+  }
+  // Reducing balance formula
+  const monthly = r===0 ? P/n : P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  const total = monthly*n;
+  const interest = total-P;
+  const apr = (Math.pow(1+r,12)-1)*100;
+  const mEl=E('lc-monthly');if(mEl)mEl.textContent='KSh '+fmt(monthly);
+  const tEl=E('lc-total');if(tEl)tEl.textContent='KSh '+fmt(total);
+  const iEl=E('lc-interest');if(iEl)iEl.textContent='KSh '+fmt(interest);
+  const aEl=E('lc-apr');if(aEl)aEl.textContent=apr.toFixed(1)+'% p.a.';
+  // Build schedule
+  const sch=E('lc-schedule');if(!sch)return;
+  let bal=P;const rows=[];
+  for(let i=1;i<=n;i++){
+    const int=bal*r;const prin=monthly-int;bal=Math.max(0,bal-prin);
+    rows.push({i,monthly,int,prin,bal});
+  }
+  sch.style.display='';
+  sch.innerHTML=`<div class="ct">📅 Repayment Schedule</div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <tr style="background:#f1f5f9;font-weight:700">
+        <td style="padding:6px 8px">Month</td>
+        <td style="padding:6px 8px;text-align:right">Payment</td>
+        <td style="padding:6px 8px;text-align:right">Interest</td>
+        <td style="padding:6px 8px;text-align:right">Principal</td>
+        <td style="padding:6px 8px;text-align:right">Balance</td>
+      </tr>
+      ${rows.map(r=>`<tr style="border-bottom:1px solid #f1f5f9">
+        <td style="padding:5px 8px;color:#64748b">${r.i}</td>
+        <td style="padding:5px 8px;text-align:right;font-weight:600">KSh ${fmt(r.monthly)}</td>
+        <td style="padding:5px 8px;text-align:right;color:#f59e0b">KSh ${fmt(r.int)}</td>
+        <td style="padding:5px 8px;text-align:right;color:#0d5c30">KSh ${fmt(r.prin)}</td>
+        <td style="padding:5px 8px;text-align:right">KSh ${fmt(r.bal)}</td>
+      </tr>`).join('')}
+    </table></div>`;
 }
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
@@ -1532,11 +1917,20 @@ function more(){
         ['⚙️','Settings','App preferences','settings','#f1f5f9'],
         ['❓','Help &amp; FAQ','Get support','help','#f9f9f9'],
         ['⬇️','Download Statement','Export CSV','statement','#e8f5e9'],
-        ['👨‍💼','Admin Dashboard','Manage members','adminDash','#fffbeb'],
+        ['🔄','Transfer Money','Send to M-Pesa or member','transfer','#e0f7fa'],
+        ['💸','Pay Bills','Electricity, water, TV...','payments','#fce4ec'],
+        ['🎯','Savings Goals','Track your targets','goals','#f0fdf4'],
+        ['📊','Loan Calculator','Estimate repayments','loanCalc','#fffbeb'],
+        ['📜','Audit Log','Your activity history','auditLog','#e8eaf6'],
       ].map(([ic,lbl,sub,pg,bg])=>`<div class="set-row" onclick="go('${pg}')">
         <div class="set-l"><div class="set-ic" style="background:${bg}">${ic}</div>
           <div><div class="set-lbl">${lbl}</div><div class="set-sub">${sub}</div></div></div>
         <span style="color:#ccc">›</span></div>`).join('')}
+      ${ME && ME.role==='admin' ? `<div class="set-row" onclick="go('adminDash')" style="border:2px solid #fbbf24;border-radius:12px;margin-top:8px">
+        <div class="set-l"><div class="set-ic" style="background:#fef9c3">\u{1F468}\u200D\u{1F4BC}</div>
+          <div><div class="set-lbl" style="color:#92400e;font-weight:900">Admin Dashboard</div>
+          <div class="set-sub">Manage members, loans &amp; settings</div></div></div>
+        <span style="color:#f59e0b;font-weight:800">&#8250;</span></div>` : ''}
     </div>
     <div style="text-align:center;padding:16px 0 8px;font-size:11px;color:var(--muted)">
       HELA SMART SACCO v3.0 · Licensed by CBK<br>helasacco@gmail.com · 0704363089</div>
@@ -1875,22 +2269,31 @@ async function memberCard(){
               <div style="font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:1px">${m.name||'—'}</div>
               <div style="font-size:10px;opacity:.65;margin-top:3px">${mno}</div>
             </div>
-            <div style="text-align:right">
-              <div style="font-size:9px;opacity:.6;letter-spacing:1px;margin-bottom:4px">VALID THRU</div>
-              <div style="font-size:14px;font-weight:700;font-family:monospace">${expStr}</div>
-              <div style="margin-top:6px">
-                <span style="font-size:10px;padding:3px 8px;border-radius:10px;font-weight:700;background:${kyc?'rgba(255,255,255,.2)':'rgba(255,200,0,.25)'};border:1px solid ${kyc?'rgba(255,255,255,.3)':'rgba(255,200,0,.4)'}">
-                  ${kyc?'✓ VERIFIED':'⏳ PENDING'}
-                </span>
+            <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <div>
+                <div style="font-size:9px;opacity:.6;letter-spacing:1px;margin-bottom:2px">VALID THRU</div>
+                <div style="font-size:14px;font-weight:700;font-family:monospace">${expStr}</div>
+              </div>
+              <span style="font-size:10px;padding:3px 10px;border-radius:10px;font-weight:700;background:${kyc?'rgba(255,255,255,.2)':'rgba(255,200,0,.25)'};border:1px solid ${kyc?'rgba(255,255,255,.3)':'rgba(255,200,0,.4)'};letter-spacing:.5px">
+                ${kyc?'✓ VERIFIED':'⏳ PENDING'}
+              </span>
+            </div>
+          </div>
+          
+          <!-- Signature strip -->
+          <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.15)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="flex:1;background:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0px,rgba(255,255,255,.06) 6px,transparent 6px,transparent 10px);height:28px;border-radius:4px;display:flex;align-items:center;padding:0 10px">
+                <span style="font-family:Georgia,serif;font-style:italic;font-size:14px;opacity:.75;letter-spacing:1px;color:#fff">${m.name||'—'}</span>
+              </div>
+              <div style="margin-left:12px;text-align:right">
+                <div style="font-size:9px;opacity:.5;letter-spacing:1px">HELA SACCO</div>
+                <div style="font-size:8px;opacity:.4">CBK Licensed</div>
               </div>
             </div>
           </div>
           
-          <!-- Mastercard-style circles -->
-          <div style="position:absolute;bottom:20px;right:20px;display:flex">
-            <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,60,0,.7)"></div>
-            <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,160,0,.7);margin-left:-14px"></div>
-          </div>
+
         </div>
       </div>
       
@@ -1909,9 +2312,10 @@ async function memberCard(){
       </div>
       
       <!-- ACTION BUTTONS -->
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <button class="btn btn-g" onclick="shareCard('${encodeURIComponent(m.name||'')}','${mno}')" style="flex:1;border-radius:12px;padding:12px;font-size:13px">📤 Share Card</button>
-        <button class="btn btn-soft" onclick="screenshotCard()" style="flex:1;border-radius:12px;padding:12px;font-size:13px">📸 Save Card</button>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-g" onclick="shareCard('${encodeURIComponent(m.name||'')}','${mno}')" style="flex:1;border-radius:12px;padding:12px;font-size:13px;min-width:100px">📤 Share</button>
+        <button class="btn btn-soft" onclick="downloadCardImg()" style="flex:1;border-radius:12px;padding:12px;font-size:13px;min-width:100px">⬇️ Download</button>
+        <button class="btn btn-soft" onclick="printCard()" style="flex:1;border-radius:12px;padding:12px;font-size:13px;min-width:100px">🖨️ Print</button>
       </div>
       
       <!-- DETAILS -->
@@ -1934,8 +2338,49 @@ function shareCard(name,mno){
   if(navigator.share){navigator.share({title:'HELA SACCO Member Card',text:txt}).catch(()=>{});}
   else{window.open('https://wa.me/?text='+encodeURIComponent(txt));}
 }
-function screenshotCard(){
-  toast('📸 Take a screenshot now — press Volume Down + Power simultaneously','info',4000);
+
+async function downloadCardImg(){
+  const card=E('the-card');if(!card)return;
+  toast('Preparing image...','ok',2000);
+  // Load html2canvas dynamically
+  if(!window.html2canvas){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload=res;s.onerror=rej;document.head.appendChild(s);
+    });
+  }
+  try{
+    const canvas=await html2canvas(card,{
+      backgroundColor:null,scale:3,useCORS:true,
+      logging:false,allowTaint:true
+    });
+    const link=document.createElement('a');
+    link.download='HELA-Member-Card-'+(ME?.member_no||'card')+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    toast('✅ Card saved to your downloads!','ok',3000);
+  }catch(e){
+    toast('Could not save — try screenshot instead','err');
+  }
+}
+
+function printCard(){
+  const card=E('the-card');if(!card)return;
+  const w=window.open('','_blank','width=600,height=400');
+  w.document.write(`<!DOCTYPE html><html><head>
+    <style>
+      body{margin:20px;background:#f0f0f0;display:flex;flex-direction:column;align-items:center;font-family:Arial}
+      h3{color:#0d5c30;margin-bottom:12px}
+      .wrap{background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+    </style>
+    </head><body>
+    <h3>HELA SMART SACCO — Member Card</h3>
+    <div class="wrap">${card.innerHTML}</div>
+    <p style="margin-top:16px;font-size:12px;color:#666">Printed: ${new Date().toLocaleDateString('en-KE')}</p>
+    <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  w.document.close();
 }
 
 // ── BUDGET PLANNER ────────────────────────────────────────────────────────────
@@ -2088,9 +2533,18 @@ function _admKill(){_admTimers.forEach(clearInterval);_admTimers=[];}
 async function adminDash(){
   _admKill();
   const c=E('pc');
-  const myRole=ME?.role||localStorage.getItem('hela-role')||'member';
-  if(myRole==='member'){
-    c.innerHTML='<div style="padding:20px"><div class="empty"><div class="empty-ico">🔒</div><h3>Admin Only</h3><p>Your role: '+myRole+'</p></div></div>';return;
+  // Always verify role from server — never trust localStorage alone
+  await loadMe();
+  const myRole = ME?.role || 'member';
+  if(myRole !== 'admin'){
+    c.innerHTML=`<div style="padding:20px"><div class="empty">
+      <div class="empty-ico">🔒</div>
+      <h3 style="color:#dc2626">Access Denied</h3>
+      <p>This area is for administrators only.</p>
+      <p style="font-size:12px;color:#94a3b8">Your role: <strong>${myRole}</strong></p>
+      <button class="btn btn-g" onclick="go('home')" style="margin-top:16px;border-radius:12px">← Go Home</button>
+    </div></div>`;
+    return;
   }
 
   // Fetch real stats (graceful fallback)
