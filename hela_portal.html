@@ -1344,7 +1344,7 @@ function notifications(){
     c.innerHTML=`<div style="padding:0 20px">
       <div class="sh"><div class="sht">🔔 Notifications</div></div>
       ${!notes.length?
-        '<div class="card"><div class="empty"><div class="empty-ico">🔔</div><p>No notifications yet</p><p style="font-size:12px;color:#94a3b8">You'll receive updates on deposits, loans and more here</p></div></div>':
+        '<div class="card"><div class="empty"><div class="empty-ico">🔔</div><p>No notifications yet</p><p style="font-size:12px;color:#94a3b8">You\'ll receive updates on deposits, loans and more here</p></div></div>':
         '<div class="card">'+notes.map(n=>`
           <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9;${!n.is_read?'background:#f0fdf4;margin:0 -12px;padding:12px':''}">
             <div style="font-size:22px;flex-shrink:0">${n.type==='success'?'✅':n.type==='warning'?'⚠️':n.type==='loan'?'💵':n.type==='deposit'?'💳':'🔔'}</div>
