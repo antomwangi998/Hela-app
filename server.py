@@ -1388,13 +1388,18 @@ async def health():
         return JSONResponse({"status": "error", "detail": str(e)}, status_code=503)
 
 @app.get("/api/notifications")
-async def get_notifications(u:dict=Depends(_auth_user)):
-    """Return broadcasts + personal notifications"""
-    notes = list(_broadcasts[:10])
-    return {"notifications":notes}
+async def get_notifications(limit:int=20, u:dict=Depends(_auth_user)):
+    mid = _mid(u["sub"])
+    notes = dba("SELECT * FROM notifications WHERE member_id=? ORDER BY created_at DESC LIMIT ?",
+                (mid, limit))
+    return {"notifications": [dict(n) for n in notes]}
 
-# ── FORGOT PASSWORD ──────────────────────────────────────────────────────────
-_reset_tokens = {}  # {token: {uid, email, expires}}
+@app.post("/api/notifications/read")
+async def mark_notifications_read(u:dict=Depends(_auth_user)):
+    mid = _mid(u["sub"])
+    try: dbx("UPDATE notifications SET is_read=1 WHERE member_id=?", (mid,))
+    except: pass
+    return {"status":"ok"}
 
 @app.post("/api/auth/forgot_password")
 async def forgot_password(request: Request):
