@@ -232,119 +232,183 @@ def _mpesa_stk_push(phone: str, amount: int, account_ref: str, description: str)
 # In-flight STK push tracker {checkout_request_id: {uid, amount, phone}}
 _stk_pending = {}
 
+# ══════════════════════════════════════════════════════════════════════════════
+# DATABASE — PostgreSQL (production) with SQLite fallback
+# Set DATABASE_URL env var on Render to use PostgreSQL
+# ══════════════════════════════════════════════════════════════════════════════
+_SCHEMA = [
+    """CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL, salt TEXT NOT NULL,
+        iterations INTEGER DEFAULT 10000, role TEXT DEFAULT 'member',
+        full_name TEXT, email TEXT, phone TEXT, member_id TEXT,
+        is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS members (
+        id TEXT PRIMARY KEY, member_no TEXT UNIQUE NOT NULL,
+        first_name TEXT, last_name TEXT, full_name TEXT, full_name_search TEXT,
+        phone TEXT, email TEXT, id_number TEXT,
+        kyc_status TEXT DEFAULT 'pending', is_active INTEGER DEFAULT 1,
+        membership_date TEXT, created_at TEXT, updated_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS accounts (
+        id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
+        account_no TEXT UNIQUE NOT NULL, account_type TEXT DEFAULT 'savings',
+        balance_minor INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1,
+        opening_date TEXT, created_at TEXT, updated_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS transactions (
+        id TEXT PRIMARY KEY, account_id TEXT, member_id TEXT,
+        transaction_type TEXT NOT NULL, amount_minor INTEGER NOT NULL,
+        description TEXT, channel TEXT DEFAULT 'web',
+        reference_number TEXT, created_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS loans (
+        id TEXT PRIMARY KEY, loan_no TEXT, member_id TEXT NOT NULL,
+        amount REAL DEFAULT 0, principal_amount_minor INTEGER DEFAULT 0,
+        outstanding_principal_minor INTEGER DEFAULT 0,
+        term_months INTEGER NOT NULL, interest_rate REAL DEFAULT 1.5,
+        purpose TEXT, loan_purpose TEXT, status TEXT DEFAULT 'pending',
+        next_payment_date TEXT, next_payment_amount_minor INTEGER DEFAULT 0,
+        disbursed_at TEXT, created_at TEXT, updated_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS investments (
+        id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
+        name TEXT, investment_type TEXT, principal_minor INTEGER DEFAULT 0,
+        interest_earned_minor INTEGER DEFAULT 0, interest_rate REAL DEFAULT 0,
+        start_date TEXT, maturity_date TEXT, status TEXT DEFAULT 'active',
+        created_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS audit_log (
+        id TEXT PRIMARY KEY, user_id TEXT, action TEXT, detail TEXT,
+        level TEXT DEFAULT 'info', created_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS kyc_documents (
+        id TEXT PRIMARY KEY, member_id TEXT NOT NULL, doc_type TEXT,
+        front_image TEXT, back_image TEXT, status TEXT DEFAULT 'submitted',
+        submitted_at TEXT, reviewed_at TEXT)""",
+    """CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY, member_id TEXT, title TEXT, body TEXT,
+        type TEXT DEFAULT 'info', is_read INTEGER DEFAULT 0, created_at TEXT)""",
+]
+
+_PG_MIGRATIONS = [
+    "ALTER TABLE members ADD COLUMN IF NOT EXISTS full_name TEXT",
+    "ALTER TABLE members ADD COLUMN IF NOT EXISTS first_name TEXT",
+    "ALTER TABLE members ADD COLUMN IF NOT EXISTS last_name TEXT",
+    "ALTER TABLE members ADD COLUMN IF NOT EXISTS full_name_search TEXT",
+    "ALTER TABLE loans ADD COLUMN IF NOT EXISTS amount REAL DEFAULT 0",
+    "ALTER TABLE loans ADD COLUMN IF NOT EXISTS purpose TEXT",
+    "ALTER TABLE loans ADD COLUMN IF NOT EXISTS disbursed_at TEXT",
+    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS member_id TEXT",
+    "CREATE TABLE IF NOT EXISTS kyc_documents (id TEXT PRIMARY KEY, member_id TEXT NOT NULL, doc_type TEXT, front_image TEXT, back_image TEXT, status TEXT DEFAULT 'submitted', submitted_at TEXT, reviewed_at TEXT)",
+    "CREATE TABLE IF NOT EXISTS notifications (id TEXT PRIMARY KEY, member_id TEXT, title TEXT, body TEXT, type TEXT DEFAULT 'info', is_read INTEGER DEFAULT 0, created_at TEXT)",
+]
+
+_USE_PG = False
+
 if DATABASE_URL.startswith("postgres"):
-    import psycopg2, psycopg2.extras
-    _pg = None
+    try:
+        import psycopg2
+        import psycopg2.extras
+        import psycopg2.pool
+        _USE_PG = True
+        log.warning("=== HELA: psycopg2 OK — using PostgreSQL ===")
+    except Exception as _pg_err:
+        log.error(f"=== HELA: psycopg2 failed ({_pg_err}) — falling back to SQLite ===")
+        DATABASE_URL = ""
+
+if _USE_PG:
+    # ── PostgreSQL with connection pool ──────────────────────────────────────
+    _pool = None
+
+    def _pg_url():
+        return DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+    def _get_pool():
+        global _pool
+        if _pool is None:
+            _pool = psycopg2.pool.ThreadedConnectionPool(
+                1, 5, _pg_url(),
+                cursor_factory=psycopg2.extras.RealDictCursor)
+        return _pool
 
     def _con():
-        global _pg
-        try:
-            if _pg is None or _pg.closed:
-                _pg = psycopg2.connect(DATABASE_URL,
-                      cursor_factory=psycopg2.extras.RealDictCursor)
-                _pg.autocommit = True
-        except Exception:
-            _pg = psycopg2.connect(DATABASE_URL,
-                  cursor_factory=psycopg2.extras.RealDictCursor)
-            _pg.autocommit = True
-        return _pg
+        return _get_pool().getconn()
+
+    def _ret(c):
+        try: _get_pool().putconn(c)
+        except: pass
 
     def db1(sql, p=()):
         sql = sql.replace("?", "%s")
+        conn = None
         try:
-            with _con().cursor() as c:
-                c.execute(sql, p)
-                r = c.fetchone()
-                return dict(r) if r else None
+            conn = _con()
+            with conn.cursor() as c: c.execute(sql, p); r = c.fetchone()
+            conn.commit()
+            return dict(r) if r else None
         except Exception as e:
-            log.error(f"db1: {e} | SQL: {sql[:80]}")
-            if "no such table" in str(e) or "does not exist" in str(e):
-                try: init_db()
+            log.error(f"db1: {e}")
+            if conn:
+                try: conn.rollback()
                 except: pass
             return None
+        finally:
+            if conn: _ret(conn)
 
     def dba(sql, p=()):
         sql = sql.replace("?", "%s")
+        conn = None
         try:
-            with _con().cursor() as c:
-                c.execute(sql, p)
-                rows = c.fetchall()
-                return [dict(r) for r in rows] if rows else []
+            conn = _con()
+            with conn.cursor() as c: c.execute(sql, p); rows = c.fetchall()
+            conn.commit()
+            return [dict(r) for r in rows] if rows else []
         except Exception as e:
-            log.error(f"dba: {e} | SQL: {sql[:80]}")
-            if "no such table" in str(e) or "does not exist" in str(e):
-                try: init_db()
+            log.error(f"dba: {e}")
+            if conn:
+                try: conn.rollback()
                 except: pass
             return []
+        finally:
+            if conn: _ret(conn)
 
     def dbx(sql, p=()):
         sql = sql.replace("?", "%s")
+        conn = None
         try:
-            with _con().cursor() as c:
-                c.execute(sql, p)
+            conn = _con()
+            with conn.cursor() as c: c.execute(sql, p)
+            conn.commit()
         except Exception as e:
-            log.error(f"dbx: {e} | SQL: {sql[:80]}")
+            log.error(f"dbx: {e}")
+            if conn:
+                try: conn.rollback()
+                except: pass
             raise
+        finally:
+            if conn: _ret(conn)
 
     def init_db():
-        log.warning("Creating PostgreSQL tables if not exist...")
-        global _pg
-        # Force fresh connection for init
         try:
-            _pg = psycopg2.connect(DATABASE_URL,
-                  cursor_factory=psycopg2.extras.RealDictCursor)
-            _pg.autocommit = True
-        except Exception as ce:
-            log.error(f"DB connect failed: {ce}")
+            conn = psycopg2.connect(_pg_url(), cursor_factory=psycopg2.extras.RealDictCursor)
+            conn.autocommit = True
+            with conn.cursor() as c:
+                for stmt in _SCHEMA: c.execute(stmt)
+                for m in _PG_MIGRATIONS:
+                    try: c.execute(m)
+                    except: pass
+            conn.close()
+            log.warning("=== PostgreSQL schema ready ===")
+        except Exception as e:
+            log.error(f"init_db PG: {e}")
             raise
-        dbx("""CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL, salt TEXT NOT NULL,
-            iterations INTEGER DEFAULT 10000, role TEXT DEFAULT 'member',
-            full_name TEXT, email TEXT, phone TEXT, member_id TEXT,
-            is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)""")
-        dbx("""CREATE TABLE IF NOT EXISTS members (
-            id TEXT PRIMARY KEY, member_no TEXT UNIQUE NOT NULL,
-            first_name TEXT, last_name TEXT, full_name_search TEXT,
-            phone TEXT, email TEXT, id_number TEXT,
-            kyc_status TEXT DEFAULT 'pending', is_active INTEGER DEFAULT 1,
-            membership_date TEXT, created_at TEXT, updated_at TEXT)""")
-        dbx("""CREATE TABLE IF NOT EXISTS accounts (
-            id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
-            account_no TEXT UNIQUE NOT NULL, account_type TEXT DEFAULT 'savings',
-            balance_minor INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1,
-            opening_date TEXT, created_at TEXT, updated_at TEXT)""")
-        dbx("""CREATE TABLE IF NOT EXISTS transactions (
-            id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
-            transaction_type TEXT NOT NULL, amount_minor INTEGER NOT NULL,
-            description TEXT, channel TEXT DEFAULT 'web',
-            reference_number TEXT, created_at TEXT)""")
-        dbx("""CREATE TABLE IF NOT EXISTS loans (
-            id TEXT PRIMARY KEY, loan_no TEXT,
-            member_id TEXT NOT NULL, principal_amount_minor INTEGER NOT NULL,
-            outstanding_principal_minor INTEGER DEFAULT 0,
-            term_months INTEGER NOT NULL, interest_rate REAL DEFAULT 1.5,
-            loan_purpose TEXT, status TEXT DEFAULT 'pending',
-            next_payment_date TEXT, next_payment_amount_minor INTEGER DEFAULT 0,
-            created_at TEXT, updated_at TEXT)""")
-        dbx("""CREATE TABLE IF NOT EXISTS investments (
-            id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
-            name TEXT, investment_type TEXT, principal_minor INTEGER DEFAULT 0,
-            interest_earned_minor INTEGER DEFAULT 0, interest_rate REAL DEFAULT 0,
-            start_date TEXT, maturity_date TEXT, status TEXT DEFAULT 'active',
-            created_at TEXT)""")
-        dbx("""CREATE TABLE IF NOT EXISTS audit_log (
-            id TEXT PRIMARY KEY, user_id TEXT, action TEXT, detail TEXT,
-            level TEXT DEFAULT 'info', created_at TEXT)""")
+
 else:
+    # ── SQLite fallback ───────────────────────────────────────────────────────
     import sqlite3, threading
     _loc = threading.local()
-    _DB  = os.environ.get("SQLITE_PATH", "kivy_app.db")
+    _DB  = os.environ.get("SQLITE_PATH", "hela.db")
 
     def _con():
         if not hasattr(_loc, "c") or _loc.c is None:
             _loc.c = sqlite3.connect(_DB, check_same_thread=False)
             _loc.c.row_factory = sqlite3.Row
+            _loc.c.execute("PRAGMA journal_mode=WAL")
         return _loc.c
 
     def db1(sql, p=()):
@@ -364,54 +428,16 @@ else:
 
     def dbx(sql, p=()):
         try:
-            _con().execute(sql, p)
-            _con().commit()
+            _con().execute(sql, p); _con().commit()
         except Exception as e:
-            log.error(f"dbx: {e}")
-            raise
+            log.error(f"dbx: {e}"); raise
 
     def init_db():
         c = _con()
-        c.execute("""CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL, salt TEXT NOT NULL,
-            iterations INTEGER DEFAULT 10000, role TEXT DEFAULT 'member',
-            full_name TEXT, email TEXT, phone TEXT, member_id TEXT,
-            is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS members (
-            id TEXT PRIMARY KEY, member_no TEXT UNIQUE NOT NULL,
-            full_name TEXT, phone TEXT, email TEXT, id_number TEXT,
-            kyc_status TEXT DEFAULT 'pending', balance REAL DEFAULT 0,
-            is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS accounts (
-            id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
-            account_no TEXT UNIQUE NOT NULL, account_type TEXT DEFAULT 'savings',
-            balance_minor INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1,
-            opening_date TEXT, created_at TEXT, updated_at TEXT)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS transactions (
-            id TEXT PRIMARY KEY, account_id TEXT, member_id TEXT,
-            transaction_type TEXT NOT NULL, amount_minor INTEGER NOT NULL,
-            description TEXT, channel TEXT DEFAULT 'web',
-            reference_number TEXT, created_at TEXT)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS loans (
-            id TEXT PRIMARY KEY, loan_no TEXT, member_id TEXT NOT NULL,
-            amount REAL DEFAULT 0, principal_amount_minor INTEGER DEFAULT 0,
-            outstanding_principal_minor INTEGER DEFAULT 0,
-            term_months INTEGER NOT NULL, interest_rate REAL DEFAULT 1.5,
-            purpose TEXT, loan_purpose TEXT, status TEXT DEFAULT 'pending',
-            next_payment_date TEXT, next_payment_amount_minor INTEGER DEFAULT 0,
-            created_at TEXT, updated_at TEXT)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS investments (
-            id TEXT PRIMARY KEY, member_id TEXT NOT NULL,
-            name TEXT, investment_type TEXT, principal_minor INTEGER DEFAULT 0,
-            interest_earned_minor INTEGER DEFAULT 0, interest_rate REAL DEFAULT 0,
-            start_date TEXT, maturity_date TEXT, status TEXT DEFAULT 'active',
-            created_at TEXT)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS audit_log (
-            id TEXT PRIMARY KEY, user_id TEXT, action TEXT, detail TEXT,
-            level TEXT DEFAULT 'info', created_at TEXT)""")
+        for stmt in _SCHEMA: c.execute(stmt)
         c.commit()
-        log.warning("SQLite tables created/verified")
+        log.warning(f"=== SQLite ready: {_DB} ===")
+
 
 
 def _b64u(b):
