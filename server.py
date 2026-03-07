@@ -1351,6 +1351,77 @@ async def list_users(secret: str):
     return {"users": [dict(u) for u in users]}
 
 
+# ── SACCO CONFIG (interest rates, loan limits) ───────────────────────────────
+# Stored in memory — persists until server restart
+# TODO: store in DB for true persistence
+_sacco_config = {
+    "loan_rate": 1.5,       # % per month
+    "savings_rate": 8.0,    # % per annum
+    "fd_rate": 14.0,        # % per annum
+    "loan_multiplier": 3.0, # × savings balance
+    "min_loan": 1000,       # KSh
+    "max_loan": 500000,     # KSh
+}
+
+@app.get("/api/admin/config")
+async def get_config(u: dict = Depends(_require_admin)):
+    return _sacco_config
+
+@app.post("/api/admin/config")
+async def save_config(request: Request, u: dict = Depends(_require_admin)):
+    b = await request.json()
+    allowed = ["loan_rate","savings_rate","fd_rate","loan_multiplier","min_loan","max_loan"]
+    for k in allowed:
+        if k in b:
+            _sacco_config[k] = float(b[k])
+    _log_audit(u["sub"], "config_update", f"Updated: {list(b.keys())}")
+    return {"status": "ok", "config": _sacco_config}
+
+@app.post("/api/admin/reset_loan_limit")
+async def reset_loan_limit(request: Request, u: dict = Depends(_require_admin)):
+    b = await request.json()
+    member = str(b.get("member", "")).strip()
+    limit  = float(b.get("limit", 0))
+    if not member or limit < 1000:
+        raise HTTPException(400, "Member and valid limit required")
+    # Find member
+    mem = (db1("SELECT id FROM members WHERE member_no=? OR phone=?", (member, member)) or
+           db1("SELECT id FROM members WHERE phone=?", (_phone(member),)))
+    if not mem:
+        raise HTTPException(404, f"Member not found: {member}")
+    # Store custom limit in members table (add column if needed)
+    try:
+        dbx("ALTER TABLE members ADD COLUMN custom_loan_limit REAL DEFAULT 0")
+    except: pass
+    dbx("UPDATE members SET custom_loan_limit=? WHERE id=?", (limit, mem["id"]))
+    _log_audit(u["sub"], "loan_limit_reset", f"Member {member} limit set to KSh {limit:,.0f}")
+    return {"status": "ok", "message": f"Loan limit set to KSh {limit:,.0f}"}
+
+@app.get("/api/admin/kyc_pending")
+async def kyc_pending(u: dict = Depends(_require_admin)):
+    members = dba("""SELECT id,member_no,full_name,phone,email,id_number,
+                            kyc_status,created_at
+                     FROM members WHERE kyc_status IN ('pending','submitted')
+                     AND is_active=1 ORDER BY created_at DESC""")
+    return {"members": [dict(m) for m in members]}
+
+@app.post("/api/admin/kyc/{member_id}/{action}")
+async def kyc_action(member_id: str, action: str, u: dict = Depends(_require_admin)):
+    if action not in ("verified", "rejected", "pending"):
+        raise HTTPException(400, "Invalid action")
+    now = datetime.datetime.now().isoformat()
+    dbx("UPDATE members SET kyc_status=?,updated_at=? WHERE id=?", (action, now, member_id))
+    # Notify member
+    mem = db1("SELECT full_name,phone,email FROM members WHERE id=?", (member_id,))
+    if mem:
+        if action == "verified":
+            sms = f"HELA SACCO: Your KYC has been APPROVED! ✅ You can now access full loan services. Welcome, {mem['full_name'].split()[0]}!"
+        else:
+            sms = f"HELA SACCO: Your KYC was not approved. Please visit a branch with your original ID for assistance."
+        threading.Thread(target=_send_sms, args=(mem.get("phone",""), sms), daemon=True).start()
+    _log_audit(u["sub"], f"kyc_{action}", f"KYC {action} for member {member_id}")
+    return {"status": "ok", "message": f"KYC {action}"}
+
 @app.get("/api/debug")
 async def debug_status(secret: str = ""):
     """Check server status, DB, and admin account."""
@@ -1407,20 +1478,41 @@ async def forgot_password(request: Request):
     identifier = str(b.get("email", b.get("phone", ""))).strip()
     if not identifier:
         raise HTTPException(400, "Email or phone required")
-    # Find user
-    user = (db1("SELECT u.id, u.full_name, u.email, u.phone FROM users u WHERE u.email=? OR u.phone=? OR u.username=?",
+    norm = _norm_phone(identifier) if not "@" in identifier else identifier
+    # Search users table first, then cross-join with members for email
+    user = None
+    # Try users table directly
+    user = (db1("SELECT u.id, u.full_name, u.email, u.phone, u.member_id FROM users u WHERE u.email=? OR u.phone=? OR u.username=?",
                (identifier, identifier, identifier)) or
-            db1("SELECT u.id, u.full_name, u.email, u.phone FROM users u WHERE u.phone=?",
-               (_norm_phone(identifier),)))
+            db1("SELECT u.id, u.full_name, u.email, u.phone, u.member_id FROM users u WHERE u.phone=?", (norm,)))
+    # If no email on user, pull it from members table
+    if user and not user.get("email"):
+        mid = user.get("member_id") or _mid(user["id"])
+        if mid:
+            mem = db1("SELECT full_name, email, phone FROM members WHERE id=?", (mid,))
+            if mem:
+                user = dict(user)
+                user["email"] = mem.get("email","")
+                user["full_name"] = mem.get("full_name", user.get("full_name","Member"))
+    # Also search by email in members table (user may have registered with email)
+    if not user and "@" in identifier:
+        mem = db1("SELECT m.id as member_id, m.full_name, m.email, m.phone FROM members m WHERE m.email=?", (identifier,))
+        if mem:
+            u_row = db1("SELECT u.id FROM users u WHERE u.member_id=?", (mem["member_id"],))
+            if u_row:
+                user = {"id": u_row["id"], "full_name": mem["full_name"],
+                        "email": mem["email"], "phone": mem["phone"]}
     # Always return 200 to prevent user enumeration
     if not user:
         return {"status": "ok", "message": "If that account exists, a reset link has been sent."}
+    email_to = user.get("email","")
+    name_to  = user.get("full_name","Member")
+    if not email_to:
+        log.warning(f"forgot_password: no email on file for {identifier}")
+        return {"status": "ok", "message": "If that account exists, a reset link has been sent."}
     token = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip("=")
-    _reset_tokens[token] = {"uid": user["id"], "email": user.get("email",""), "expires": time.time() + 1800}
-    import threading
-    threading.Thread(target=_email_password_reset,
-        args=(user.get("email",""), user.get("full_name","Member"), token),
-        daemon=True).start()
+    _reset_tokens[token] = {"uid": user["id"], "email": email_to, "expires": time.time() + 1800}
+    threading.Thread(target=_email_password_reset, args=(email_to, name_to, token), daemon=True).start()
     _log_audit(user["id"], "forgot_password", f"Reset requested for {identifier}")
     return {"status": "ok", "message": "If that account exists, a reset link has been sent."}
 
