@@ -539,30 +539,74 @@ async def startup():
             else:
                 log.warning("=== HELA: Admin already exists ===")
         else:
-            # CREATE admin user from scratch
-            import uuid as _u2
-            uid  = str(_u2.uuid4())
-            mid  = str(_u2.uuid4())
-            mno  = "HLS00001"
-            pw_hash, salt = _hash(admin_pw)
-            now  = datetime.datetime.utcnow().isoformat()
-            # Insert member
+            # CREATE admin account (works on both PostgreSQL and SQLite)
             try:
-                dbx(
-                    "INSERT OR IGNORE INTO members "
-                    "(id,member_no,full_name,phone,email,kyc_status,balance,created_at,updated_at) "
-                    "VALUES (?,?,?,?,?,?,0,?,?)",
-                    (mid, mno, admin_name, admin_phone, admin_email, "verified", now, now)
-                )
-                dbx(
-                    "INSERT OR IGNORE INTO users "
-                    "(id,username,password_hash,salt,iterations,role,full_name,phone,email,member_id,is_active,created_at,updated_at) "
-                    "VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?)",
-                    (uid, admin_phone, pw_hash, salt, 10000, "admin", admin_name, admin_phone, admin_email, mid, now, now)
-                )
-                log.warning(f"=== HELA: Admin account CREATED: {admin_phone} / {admin_pw} ===")
+                uid  = str(_uuid.uuid4())
+                mid  = str(_uuid.uuid4())
+                cnt  = (db1("SELECT COUNT(*) as c FROM members") or {}).get("c", 0)
+                mno  = f"HLS{str(cnt + 1).zfill(5)}"
+                pw_hash, salt = _hash(admin_pw)
+                now  = datetime.datetime.utcnow().isoformat()
+                first = admin_name.split()[0]
+                last  = " ".join(admin_name.split()[1:]) or first
+
+                if _USE_PG:
+                    # PostgreSQL — use ON CONFLICT DO NOTHING
+                    dbx(
+                        "INSERT INTO members "
+                        "(id,member_no,first_name,last_name,full_name,full_name_search,"
+                        "phone,email,id_number,kyc_status,is_active,membership_date,created_at,updated_at) "
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?,?) ON CONFLICT DO NOTHING",
+                        (mid, mno, first, last, admin_name, admin_name.lower(),
+                         admin_phone, admin_email, "ADMIN001", "verified", now[:10], now, now)
+                    )
+                    dbx(
+                        "INSERT INTO users "
+                        "(id,username,password_hash,salt,iterations,role,full_name,"
+                        "phone,email,member_id,is_active,created_at,updated_at) "
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT DO NOTHING",
+                        (uid, admin_phone, pw_hash, salt, 10000, "admin", admin_name,
+                         admin_phone, admin_email, mid, now, now)
+                    )
+                else:
+                    # SQLite — use OR IGNORE
+                    dbx(
+                        "INSERT OR IGNORE INTO members "
+                        "(id,member_no,first_name,last_name,full_name,full_name_search,"
+                        "phone,email,id_number,kyc_status,is_active,membership_date,created_at,updated_at) "
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?,?)",
+                        (mid, mno, first, last, admin_name, admin_name.lower(),
+                         admin_phone, admin_email, "ADMIN001", "verified", now[:10], now, now)
+                    )
+                    dbx(
+                        "INSERT OR IGNORE INTO users "
+                        "(id,username,password_hash,salt,iterations,role,full_name,"
+                        "phone,email,member_id,is_active,created_at,updated_at) "
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?)",
+                        (uid, admin_phone, pw_hash, salt, 10000, "admin", admin_name,
+                         admin_phone, admin_email, mid, now, now)
+                    )
+
+                # Create savings account (same syntax for both)
+                try:
+                    acc_id = str(_uuid.uuid4())
+                    if _USE_PG:
+                        dbx("INSERT INTO accounts (id,member_id,account_no,account_type,"
+                            "balance_minor,is_active,opening_date,created_at,updated_at) "
+                            "VALUES (?,?,?,?,0,1,?,?,?) ON CONFLICT DO NOTHING",
+                            (acc_id, mid, f"SAV{mno[3:]}", "savings", now[:10], now, now))
+                    else:
+                        dbx("INSERT OR IGNORE INTO accounts (id,member_id,account_no,account_type,"
+                            "balance_minor,is_active,opening_date,created_at,updated_at) "
+                            "VALUES (?,?,?,?,0,1,?,?,?)",
+                            (acc_id, mid, f"SAV{mno[3:]}", "savings", now[:10], now, now))
+                except Exception: pass
+
+                log.warning(f"=== HELA: Admin CREATED ✅ {admin_phone} / {admin_pw} ===")
             except Exception as seed_err:
-                log.error(f"=== HELA: Admin seed error: {seed_err} ===")
+                import traceback
+                log.error(f"=== HELA: Admin seed FAILED: {seed_err} ===")
+                traceback.print_exc()
     except Exception as e:
         log.error(f"=== HELA: startup FAILED: {e} ===")
         import traceback; traceback.print_exc()
