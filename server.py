@@ -87,8 +87,10 @@ from email.mime.text import MIMEText
 EMAIL_HOST  = os.environ.get("EMAIL_HOST",  "smtp.gmail.com")
 EMAIL_PORT  = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_USER  = os.environ.get("EMAIL_USER",  "")
-EMAIL_PASS  = os.environ.get("EMAIL_PASS",  "")
-EMAIL_FROM  = os.environ.get("EMAIL_FROM",  "HELA SMART SACCO <helasacco@gmail.com>")
+EMAIL_PASS  = os.environ.get("EMAIL_PASS",  "").replace(" ", "")  # strip spaces from App Password
+# EMAIL_FROM must match EMAIL_USER — Gmail rejects mismatched From address
+_eu = os.environ.get("EMAIL_USER", "")
+EMAIL_FROM  = os.environ.get("EMAIL_FROM",  f"HELA SMART SACCO <{_eu}>" if _eu else "")
 
 def send_email(to: str, subject: str, html_body: str, text_body: str = ""):
     """Send email via Gmail SMTP. Silently logs on failure."""
@@ -110,6 +112,12 @@ def send_email(to: str, subject: str, html_body: str, text_body: str = ""):
             srv.sendmail(EMAIL_USER, to, msg.as_string())
         log.info(f"Email sent: {subject} → {to}")
         return True
+    except smtplib.SMTPAuthenticationError as e:
+        log.error(f"Email auth failed — check Gmail App Password: {e}")
+        return False
+    except smtplib.SMTPException as e:
+        log.error(f"Email SMTP error: {e}")
+        return False
     except Exception as e:
         log.error(f"Email failed: {e}")
         return False
@@ -1511,6 +1519,51 @@ async def do_transfer(request: Request, u: dict = Depends(_auth_user)):
     _log_audit(u["sub"], "transfer", f"{ttype} KSh {amount} to {phone or recipient}")
     return {"status":"ok","message":msg,"new_balance":new_bal/100}
 
+# ═══ SEO — Sitemap & Robots.txt ═══════════════════════════════════════════
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap():
+    from fastapi.responses import Response
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://hela-app-2.onrender.com/</loc>
+    <lastmod>2026-03-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>"""
+    return Response(content=xml, media_type="application/xml")
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots():
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(
+        "User-agent: *\nAllow: /\nSitemap: https://hela-app-2.onrender.com/sitemap.xml\n"
+    )
+
+@app.get("/og-image.png", include_in_schema=False)
+async def og_image():
+    """Serve a simple OG image — SVG converted to redirect for now"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/favicon.ico")
+
+@app.get("/api/test_email")
+async def test_email(u: dict = Depends(_require_admin)):
+    """Admin only — test if email is working"""
+    user_row = db1("SELECT email FROM users WHERE id=?", (u["sub"],))
+    to = (user_row or {}).get("email","")
+    if not to:
+        return {"status":"error","message":"No email on your admin account"}
+    if not EMAIL_USER or not EMAIL_PASS:
+        return {"status":"error","message":f"EMAIL_USER or EMAIL_PASS not set in Render env vars. EMAIL_USER={EMAIL_USER!r}"}
+    result = send_email(to, "HELA SACCO — Email Test ✅",
+        "<h2 style='color:#0d5c30'>Email is working! ✅</h2><p>Your HELA SACCO email notifications are configured correctly.</p>",
+        "Email is working! HELA SACCO email notifications are configured correctly.")
+    if result:
+        return {"status":"ok","message":f"Test email sent to {to}. Check your inbox!"}
+    else:
+        return {"status":"error","message":f"Email failed. Check Render logs. EMAIL_USER={EMAIL_USER!r}, PASS set={bool(EMAIL_PASS)}"}
+
 @app.get("/api/debug")
 async def debug_status(secret: str = ""):
     """Check server status, DB, and admin account."""
@@ -1563,10 +1616,13 @@ async def mark_notifications_read(u:dict=Depends(_auth_user)):
 
 @app.post("/api/auth/forgot_password")
 async def forgot_password(request: Request):
-    b = await request.json()
+    try:
+        b = await request.json()
+    except:
+        return {"status": "ok", "message": "If that account exists, a reset link has been sent."}
     identifier = str(b.get("email", b.get("phone", ""))).strip()
     if not identifier:
-        raise HTTPException(400, "Email or phone required")
+        return {"status": "ok", "message": "Please enter your email address."}
     norm = _norm_phone(identifier) if not "@" in identifier else identifier
     # Search users table first, then cross-join with members for email
     user = None
@@ -1602,7 +1658,9 @@ async def forgot_password(request: Request):
     token = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip("=")
     _reset_tokens[token] = {"uid": user["id"], "email": email_to, "expires": time.time() + 1800}
     threading.Thread(target=_email_password_reset, args=(email_to, name_to, token), daemon=True).start()
-    _log_audit(user["id"], "forgot_password", f"Reset requested for {identifier}")
+    try:
+        _log_audit(user["id"], "forgot_password", f"Reset requested for {identifier}")
+    except: pass
     return {"status": "ok", "message": "If that account exists, a reset link has been sent."}
 
 @app.post("/api/auth/reset_password")
