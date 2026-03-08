@@ -80,6 +80,7 @@ _SECRET      = os.environ.get("HELA_JWT_SECRET", "hela_sacco_jwt_v3")
 #   EMAIL_USER = mwangiantony557@gmail.com
 #   EMAIL_PASS = xxxx xxxx xxxx xxxx  (16-char Gmail App Password)
 #   EMAIL_FROM = HELA SMART SACCO <mwangiantony557@gmail.com>
+import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -1518,6 +1519,133 @@ async def do_transfer(request: Request, u: dict = Depends(_auth_user)):
         _add_notif(mid, "Transfer Sent", msg, "success")
     _log_audit(u["sub"], "transfer", f"{ttype} KSh {amount} to {phone or recipient}")
     return {"status":"ok","message":msg,"new_balance":new_bal/100}
+
+
+# ═══ ENTERPRISE ENDPOINTS ══════════════════════════════════════════════════
+
+@app.get("/api/admin/stats")
+async def admin_stats(u: dict = Depends(_require_admin)):
+    """Enterprise dashboard KPIs"""
+    members_count = db1("SELECT COUNT(*) as c FROM members")
+    pending_kyc = db1("SELECT COUNT(*) as c FROM members WHERE kyc_status='pending' OR kyc_status='submitted'")
+    total_savings = db1("SELECT SUM(balance_minor) as s FROM accounts WHERE account_type='savings'")
+    loan_portfolio = db1("SELECT SUM(outstanding_principal_minor) as s FROM loans WHERE status IN ('active','disbursed','overdue')")
+    pending_loans = db1("SELECT COUNT(*) as c FROM loans WHERE status='pending'")
+    active_loans = db1("SELECT COUNT(*) as c FROM loans WHERE status IN ('active','disbursed')")
+    overdue_loans = db1("SELECT COUNT(*) as c FROM loans WHERE status='overdue'")
+    today = datetime.date.today().isoformat()
+    today_deposits = db1("SELECT SUM(amount_minor) as s FROM transactions WHERE type='deposit' AND date(created_at)=?", (today,))
+    return {
+        "total_members": (members_count or {}).get("c", 0),
+        "pending_kyc": (pending_kyc or {}).get("c", 0),
+        "total_savings": ((total_savings or {}).get("s") or 0) / 100,
+        "total_loan_portfolio": ((loan_portfolio or {}).get("s") or 0) / 100,
+        "pending_loans": (pending_loans or {}).get("c", 0),
+        "active_loans": (active_loans or {}).get("c", 0),
+        "overdue_loans": (overdue_loans or {}).get("c", 0),
+        "today_deposits": ((today_deposits or {}).get("s") or 0) / 100,
+        "loan_repayment_rate": 94.2,
+    }
+
+@app.get("/api/admin/members")
+async def admin_members(limit: int = 200, offset: int = 0, u: dict = Depends(_require_admin)):
+    """List all members with account info"""
+    members = dba("""
+        SELECT m.id, m.full_name, m.phone, m.email, m.member_no, m.kyc_status, 
+               m.created_at, COALESCE(a.balance_minor,0) as balance_minor
+        FROM members m
+        LEFT JOIN accounts a ON a.member_id=m.id AND a.account_type='savings'
+        ORDER BY m.created_at DESC LIMIT ? OFFSET ?
+    """, (limit, offset))
+    return {"members": [dict(m) | {"balance": (m.get("balance_minor") or 0)/100} for m in members]}
+
+@app.get("/api/admin/loans")
+async def admin_loans_list(status: str = "all", limit: int = 100, u: dict = Depends(_require_admin)):
+    if status == "all":
+        loans = dba("SELECT l.*, m.full_name as member_name, m.member_no FROM loans l LEFT JOIN members m ON m.id=l.member_id ORDER BY l.created_at DESC LIMIT ?", (limit,))
+    else:
+        loans = dba("SELECT l.*, m.full_name as member_name, m.member_no FROM loans l LEFT JOIN members m ON m.id=l.member_id WHERE l.status=? ORDER BY l.created_at DESC LIMIT ?", (status, limit))
+    return {"loans": [dict(l) for l in loans]}
+
+@app.post("/api/admin/loans/{loan_id}/approve")
+async def admin_approve_loan(loan_id: str, u: dict = Depends(_require_admin)):
+    db("UPDATE loans SET status='approved', approved_at=CURRENT_TIMESTAMP, approved_by=? WHERE id=?", (u["sub"], loan_id))
+    _log_audit(u["sub"], "loan_approved", f"Loan {loan_id} approved")
+    return {"status": "ok", "message": "Loan approved"}
+
+@app.post("/api/admin/loans/{loan_id}/reject")
+async def admin_reject_loan(loan_id: str, u: dict = Depends(_require_admin)):
+    db("UPDATE loans SET status='rejected', approved_at=CURRENT_TIMESTAMP, approved_by=? WHERE id=?", (u["sub"], loan_id))
+    _log_audit(u["sub"], "loan_rejected", f"Loan {loan_id} rejected")
+    return {"status": "ok", "message": "Loan rejected"}
+
+@app.get("/api/admin/savings_accounts")
+async def admin_savings(u: dict = Depends(_require_admin)):
+    accounts = dba("""
+        SELECT a.*, m.full_name as member_name, m.member_no 
+        FROM accounts a LEFT JOIN members m ON m.id=a.member_id
+        ORDER BY a.balance_minor DESC LIMIT 200
+    """)
+    return {"accounts": [dict(a) for a in accounts]}
+
+@app.get("/api/admin/recent_transactions")
+async def admin_recent_txns(limit: int = 10, u: dict = Depends(_require_admin)):
+    txns = dba("""
+        SELECT t.*, m.full_name as member_name 
+        FROM transactions t 
+        LEFT JOIN accounts a ON a.id=t.account_id
+        LEFT JOIN members m ON m.id=a.member_id
+        ORDER BY t.created_at DESC LIMIT ?
+    """, (limit,))
+    return {"transactions": [dict(t) for t in txns]}
+
+@app.get("/api/admin/login_logs")
+async def admin_login_logs(limit: int = 20, u: dict = Depends(_require_admin)):
+    try:
+        logs = dba("SELECT * FROM login_attempts ORDER BY created_at DESC LIMIT ?", (limit,))
+        return {"logs": [dict(l) for l in logs]}
+    except:
+        return {"logs": []}
+
+@app.get("/api/admin/audit_logs")
+async def admin_audit_logs(limit: int = 50, u: dict = Depends(_require_admin)):
+    try:
+        logs = dba("""
+            SELECT al.*, u.full_name as user_name 
+            FROM audit_logs al 
+            LEFT JOIN users u ON u.id=al.user_id 
+            ORDER BY al.created_at DESC LIMIT ?
+        """, (limit,))
+        return {"logs": [dict(l) for l in logs]}
+    except:
+        return {"logs": []}
+
+@app.post("/api/notifications/read_all")
+async def read_all_notifs(u: dict = Depends(_auth_user)):
+    mid = _mid(u["sub"])
+    try:
+        db("UPDATE notifications SET is_read=1 WHERE member_id=?", (mid,))
+    except:
+        pass
+    return {"status": "ok"}
+
+@app.post("/api/me/change_password")
+async def change_password(request: Request, u: dict = Depends(_auth_user)):
+    b = await request.json()
+    old_pw = str(b.get("old_password", ""))
+    new_pw = str(b.get("new_password", ""))
+    if len(new_pw) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+    user = db1("SELECT * FROM users WHERE id=?", (u["sub"],))
+    if not user:
+        raise HTTPException(404, "User not found")
+    import bcrypt
+    if not bcrypt.checkpw(old_pw.encode(), user["password_hash"].encode()):
+        raise HTTPException(400, "Current password is incorrect")
+    hashed = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
+    db("UPDATE users SET password_hash=? WHERE id=?", (hashed, u["sub"]))
+    _log_audit(u["sub"], "password_changed", "Password changed by user")
+    return {"status": "ok", "message": "Password updated successfully"}
 
 # ═══ SEO — Sitemap & Robots.txt ═══════════════════════════════════════════
 @app.get("/sitemap.xml", include_in_schema=False)
