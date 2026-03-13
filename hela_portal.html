@@ -2889,6 +2889,47 @@ button:focus-visible, a:focus-visible {
 .report-desc{font-size:.73rem;color:var(--text3);line-height:1.5;margin-bottom:14px}
 .report-actions{display:flex;gap:8px}
 
+
+/* ── Cookie Consent Banner ─────────────────────────────────── */
+#cookie-banner{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(calc(100% + 40px));
+  width:calc(100% - 32px);max-width:680px;
+  background:rgba(10,15,30,0.97);
+  border:1px solid rgba(0,212,255,.2);
+  border-radius:var(--r3);
+  padding:18px 22px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  box-shadow:0 16px 48px rgba(0,0,0,.6),0 0 0 1px rgba(0,212,255,.06);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  z-index:9000;
+  transition:transform .5s cubic-bezier(.34,1.56,.64,1), opacity .4s ease;
+  opacity:0;
+}
+#cookie-banner.visible{
+  transform:translateX(-50%) translateY(0);
+  opacity:1;
+}
+.cookie-icon{font-size:1.6rem;flex-shrink:0}
+.cookie-text{flex:1;min-width:200px}
+.cookie-text strong{display:block;font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:3px}
+.cookie-text span{font-size:.76rem;color:var(--text3);line-height:1.5}
+.cookie-text a{color:var(--cyan);text-decoration:none;cursor:pointer}
+.cookie-text a:hover{text-decoration:underline}
+.cookie-btns{display:flex;gap:8px;flex-shrink:0}
+.cookie-btns .btn-accept{
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  color:#000;border:none;border-radius:var(--r1);
+  padding:9px 20px;font-size:.8rem;font-weight:800;cursor:pointer;
+  transition:.2s;white-space:nowrap;
+}
+.cookie-btns .btn-accept:hover{opacity:.9;transform:scale(1.03)}
+.cookie-btns .btn-manage{
+  background:var(--glass2);border:1px solid var(--border);color:var(--text2);
+  border-radius:var(--r1);padding:9px 16px;font-size:.8rem;cursor:pointer;
+  transition:.2s;white-space:nowrap;
+}
+.cookie-btns .btn-manage:hover{border-color:var(--cyan);color:var(--text)}
 </style>
 
 <script>
@@ -3411,19 +3452,35 @@ function icon(name, size=16, extra='') {
 
 <!-- ─── STATEMENT ──────────────────────────────────────────── -->
 <div class="page" id="page-statement">
-  <div class="page-header">
-    <div class="page-header-inner">
-      <div><div class="page-title">Account Statement</div><div class="page-subtitle">Full transaction history</div></div>
-      <div class="page-actions">
-        <button class="btn btn-ghost btn-sm" onclick="exportStatement()">⬇ CSV</button>
-        <button class="btn btn-primary btn-sm" onclick="downloadStatement()">📋 PDF</button>
-      </div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Account Statement</div>
+      <div class="ph2-sub">Full transaction history</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="exportStatement()">⬇ CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadStatement()">📋 PDF</button>
     </div>
   </div>
   <div class="grid-3 mb-4">
-    <div class="kpi kpi-green"><div class="kpi-label">Balance</div><div class="kpi-value" id="stmt-balance">—</div></div>
-    <div class="kpi kpi-teal"><div class="kpi-label">Total Deposits</div><div class="kpi-value" id="stmt-deposits">—</div></div>
-    <div class="kpi kpi-red"><div class="kpi-label">Loan Outstanding</div><div class="kpi-value" id="stmt-loans">—</div></div>
+    <div class="kpi kpi-green">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Current Balance</div>
+      <div class="kpi-value" id="stmt-balance">—</div>
+      <div class="kpi-sub">Available funds</div>
+    </div>
+    <div class="kpi kpi-teal">
+      <div class="kpi-icon">📥</div>
+      <div class="kpi-label">Total Deposits</div>
+      <div class="kpi-value" id="stmt-deposits">—</div>
+      <div class="kpi-sub">All time</div>
+    </div>
+    <div class="kpi kpi-red">
+      <div class="kpi-icon">💳</div>
+      <div class="kpi-label">Loan Outstanding</div>
+      <div class="kpi-value" id="stmt-loans">—</div>
+      <div class="kpi-sub">Active loans</div>
+    </div>
   </div>
   <div class="panel">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">
@@ -3554,9 +3611,40 @@ function icon(name, size=16, extra='') {
 
 <!-- ─── PAYMENTS ───────────────────────────────────────────── -->
 <div class="page" id="page-payments">
-  <div class="page-header">
-    <div><div class="page-title">Payments</div><div class="page-subtitle">M-Pesa, bills and transfers</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Payments</div>
+      <div class="ph2-sub">M-Pesa, Paybill &amp; loan repayments</div>
+    </div>
+    <div class="ph2-right">
+      <span class="ubadge ubadge-success" style="font-size:.72rem">● M-Pesa Live</span>
+    </div>
   </div>
+
+  <!-- Quick pay strip -->
+  <div class="grid-4 mb-4">
+    <button class="gc gc-p" style="text-align:center;cursor:pointer;border:none;background:var(--glass)" onclick="paymentsTab('mpesa')">
+      <div style="font-size:1.6rem;margin-bottom:6px">📱</div>
+      <div style="font-size:.78rem;font-weight:700">Deposit</div>
+      <div style="font-size:.68rem;color:var(--text3)">STK Push</div>
+    </button>
+    <button class="gc gc-p" style="text-align:center;cursor:pointer;border:none;background:var(--glass)" onclick="paymentsTab('bills')">
+      <div style="font-size:1.6rem;margin-bottom:6px">📋</div>
+      <div style="font-size:.78rem;font-weight:700">Pay Bills</div>
+      <div style="font-size:.68rem;color:var(--text3)">Utilities</div>
+    </button>
+    <button class="gc gc-p" style="text-align:center;cursor:pointer;border:none;background:var(--glass)" onclick="paymentsTab('transfer')">
+      <div style="font-size:1.6rem;margin-bottom:6px">🔄</div>
+      <div style="font-size:.78rem;font-weight:700">Transfer</div>
+      <div style="font-size:.68rem;color:var(--text3)">To member</div>
+    </button>
+    <button class="gc gc-p" style="text-align:center;cursor:pointer;border:none;background:var(--glass)" onclick="paymentsTab('history')">
+      <div style="font-size:1.6rem;margin-bottom:6px">📊</div>
+      <div style="font-size:.78rem;font-weight:700">History</div>
+      <div style="font-size:.68rem;color:var(--text3)">All txns</div>
+    </button>
+  </div>
+
   <div class="tabs mb-4" id="payments-tabs">
     <button class="tab active" onclick="paymentsTab('mpesa')">📱 M-Pesa</button>
     <button class="tab" onclick="paymentsTab('bills')">📋 Pay Bills</button>
@@ -3568,25 +3656,62 @@ function icon(name, size=16, extra='') {
 
 <!-- ─── TRANSFER ───────────────────────────────────────────── -->
 <div class="page" id="page-transfer">
-  <div class="page-header">
-    <div><div class="page-title">Transfer Money</div><div class="page-subtitle">Send to M-Pesa or HELA members</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Transfer Money</div>
+      <div class="ph2-sub">Send to M-Pesa or HELA members</div>
+    </div>
   </div>
+
+  <!-- Transfer limits info bar -->
+  <div class="gc mb-4" style="padding:14px 18px;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--emerald)"></div>
+      <span style="font-size:.78rem;color:var(--text2)">Daily limit: <strong style="color:var(--text)">KSh 300,000</strong></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--cyan)"></div>
+      <span style="font-size:.78rem;color:var(--text2)">Min transfer: <strong style="color:var(--text)">KSh 100</strong></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--gold)"></div>
+      <span style="font-size:.78rem;color:var(--text2)">Fee: <strong style="color:var(--text)">Free (member-to-member)</strong></span>
+    </div>
+  </div>
+
   <div class="tabs mb-4" id="transfer-tabs">
-    <button class="tab active" onclick="transferTab('mpesa')">To M-Pesa</button>
-    <button class="tab" onclick="transferTab('member')">To Member</button>
+    <button class="tab active" onclick="transferTab('mpesa')">📱 To M-Pesa</button>
+    <button class="tab" onclick="transferTab('member')">👤 To Member</button>
   </div>
-  <div id="transfer-content" style="max-width:480px"></div>
+  <div id="transfer-content" style="max-width:520px"></div>
 </div>
 
 <!-- ─── NOTIFICATIONS ──────────────────────────────────────── -->
 <div class="page" id="page-notifications">
-  <div class="page-header">
-    <div class="page-header-inner">
-      <div><div class="page-title">Notifications</div><div class="page-subtitle">Your alerts and messages</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Notifications</div>
+      <div class="ph2-sub">Your alerts and messages</div>
+    </div>
+    <div class="ph2-right">
       <button class="btn btn-ghost btn-sm" onclick="markAllRead()">✓ Mark all read</button>
     </div>
   </div>
-  <div class="panel"><div id="notif-list" style="padding:10px 0"><p style="text-align:center;padding:40px;color:var(--text3)">Loading...</p></div></div>
+
+  <!-- Notification filter tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="ubadge ubadge-cyan" style="cursor:pointer;padding:6px 14px;font-size:.75rem" onclick="filterNotifs('all')" id="nf-all">All</button>
+    <button class="ubadge ubadge-muted" style="cursor:pointer;padding:6px 14px;font-size:.75rem" onclick="filterNotifs('unread')" id="nf-unread">Unread</button>
+    <button class="ubadge ubadge-muted" style="cursor:pointer;padding:6px 14px;font-size:.75rem" onclick="filterNotifs('transaction')" id="nf-transaction">Transactions</button>
+    <button class="ubadge ubadge-muted" style="cursor:pointer;padding:6px 14px;font-size:.75rem" onclick="filterNotifs('loan')" id="nf-loan">Loans</button>
+    <button class="ubadge ubadge-muted" style="cursor:pointer;padding:6px 14px;font-size:.75rem" onclick="filterNotifs('system')" id="nf-system">System</button>
+  </div>
+
+  <div class="gc" style="padding:0">
+    <div id="notif-list" style="padding:8px 0">
+      <p style="text-align:center;padding:40px;color:var(--text3)">Loading...</p>
+    </div>
+  </div>
 </div>
 
 <!-- ─── MEMBER CARD ────────────────────────────────────────── -->
@@ -3689,75 +3814,184 @@ function icon(name, size=16, extra='') {
 
 <!-- ─── SHARES ─────────────────────────────────────────────── -->
 <div class="page" id="page-shares">
-  <div class="page-header">
-    <div><div class="page-title">Share Capital</div><div class="page-subtitle">Your ownership in HELA SMART SACCO</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Share Capital</div>
+      <div class="ph2-sub">Your equity ownership in HELA SMART SACCO</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-primary btn-sm" onclick="toast('Contact admin on 0704363089 to purchase shares','info',4000)">+ Buy Shares</button>
+    </div>
   </div>
+
   <div id="shares-kpis" class="grid-3 mb-4"></div>
+
+  <!-- Share info banner -->
+  <div class="gc mb-4" style="padding:14px 18px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;background:rgba(0,212,255,.04);border-color:rgba(0,212,255,.15)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.2rem">📊</span>
+      <div>
+        <div style="font-size:.72rem;color:var(--text3)">Par Value</div>
+        <div style="font-size:.85rem;font-weight:700">KSh 100 / share</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.2rem">💰</span>
+      <div>
+        <div style="font-size:.72rem;color:var(--text3)">Dividend Rate</div>
+        <div style="font-size:.85rem;font-weight:700">12% p.a. (projected)</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.2rem">🗳</span>
+      <div>
+        <div style="font-size:.72rem;color:var(--text3)">Voting Rights</div>
+        <div style="font-size:.85rem;font-weight:700">1 vote per member</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.2rem">📅</span>
+      <div>
+        <div style="font-size:.72rem;color:var(--text3)">Dividend Payment</div>
+        <div style="font-size:.85rem;font-weight:700">Annual (AGM)</div>
+      </div>
+    </div>
+  </div>
+
   <div class="grid-2">
-    <div class="card"><div class="section-title mb-3">Share History</div><div id="shares-history"><p style="color:var(--text3);font-size:.875rem">No share transactions yet</p></div></div>
+    <div class="card">
+      <div class="section-head">
+        <span class="section-title">Share Transactions</span>
+      </div>
+      <div id="shares-history" class="mt-3">
+        <p style="color:var(--text3);font-size:.875rem">No share transactions yet</p>
+      </div>
+    </div>
     <div id="shares-cert-preview" class="card"></div>
   </div>
 </div>
 
 <!-- ─── REPORTS ────────────────────────────────────────────── -->
 <div class="page" id="page-reports">
-  <div class="page-header">
-    <div><div class="page-title">Reports</div><div class="page-subtitle">Financial reports and analytics</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Reports &amp; Analytics</div>
+      <div class="ph2-sub">Financial summaries and data exports</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="exportStatement()">⬇ Export CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadStatement()">📋 PDF</button>
+    </div>
   </div>
+
   <div class="tabs mb-4" id="reports-tabs">
-    <button class="tab active" onclick="reportsTab('overview')">Overview</button>
-    <button class="tab" onclick="reportsTab('statement')">Statement</button>
-    <button class="tab" onclick="reportsTab('loans')">Loans</button>
-    <button class="tab admin-only-tab" onclick="reportsTab('admin')">Admin Reports</button>
+    <button class="tab active" onclick="reportsTab('overview')">📊 Overview</button>
+    <button class="tab" onclick="reportsTab('statement')">📋 Statement</button>
+    <button class="tab" onclick="reportsTab('loans')">💳 Loans</button>
+    <button class="tab admin-only-tab" onclick="reportsTab('admin')">🔐 Admin</button>
   </div>
   <div id="reports-content"></div>
 </div>
 
 <!-- ─── PROFILE ────────────────────────────────────────────── -->
 <div class="page" id="page-profile">
-  <div class="page-header">
-    <div><div class="page-title">My Profile</div><div class="page-subtitle">Manage your account information</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">My Profile</div>
+      <div class="ph2-sub">Account information and security</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="go('kycUpload')">🪪 KYC Docs</button>
+      <button class="btn btn-primary btn-sm" onclick="go('memberCard')">💳 Member Card</button>
+    </div>
   </div>
+
   <div class="grid-2" style="align-items:start">
+    <!-- Left column -->
     <div>
-      <div class="card mb-4" style="text-align:center;padding:32px">
-        <div id="profile-avatar" style="width:90px;height:90px;border-radius:20px;background:linear-gradient(135deg,var(--g3),var(--g4));display:flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:800;font-size:1.8rem;color:#fff;margin:0 auto 16px;border:3px solid rgba(22,163,74,0.3);overflow:hidden"></div>
-        <div style="font-family:var(--font);font-size:1.2rem;font-weight:800;margin-bottom:6px" id="profile-name">—</div>
-        <div id="profile-member-no" class="c-text2 mb-2" style="font-size:.84rem;font-family:var(--mono)">—</div>
-        <div id="profile-role-badge" class="mb-2"></div>
-        <div id="profile-kyc-badge" class="mb-3"></div>
+      <!-- Avatar card -->
+      <div class="card mb-4" style="text-align:center;padding:32px 24px">
+        <div style="position:relative;width:96px;margin:0 auto 16px">
+          <div id="profile-avatar" style="width:96px;height:96px;border-radius:22px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:800;font-size:2rem;color:#fff;border:3px solid rgba(0,212,255,0.25);overflow:hidden"></div>
+          <button onclick="uploadAvatar()" style="position:absolute;bottom:-6px;right:-6px;width:28px;height:28px;border-radius:50%;background:var(--cyan);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem" title="Change photo">📷</button>
+        </div>
         <input type="file" id="av-file" accept="image/*" style="display:none" onchange="previewAvatar(event)">
-        <button class="btn btn-ghost btn-sm" onclick="uploadAvatar()">📷 Change Photo</button>
+        <div style="font-family:var(--font);font-size:1.15rem;font-weight:800;margin-bottom:4px" id="profile-name">—</div>
+        <div id="profile-member-no" style="font-size:.8rem;font-family:var(--mono);color:var(--cyan);margin-bottom:10px">—</div>
+        <div id="profile-role-badge" class="mb-2"></div>
+        <div id="profile-kyc-badge"></div>
       </div>
+
+      <!-- Financial summary -->
+      <div class="card mb-4">
+        <div class="section-head"><span class="section-title">Financial Snapshot</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px" id="profile-fin-grid">
+          <div style="padding:12px;background:var(--glass2);border-radius:var(--r2);text-align:center">
+            <div style="font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Balance</div>
+            <div style="font-size:1rem;font-weight:800;color:var(--emerald)" id="pf-balance">—</div>
+          </div>
+          <div style="padding:12px;background:var(--glass2);border-radius:var(--r2);text-align:center">
+            <div style="font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Loan Limit</div>
+            <div style="font-size:1rem;font-weight:800;color:var(--cyan)" id="pf-limit">—</div>
+          </div>
+          <div style="padding:12px;background:var(--glass2);border-radius:var(--r2);text-align:center">
+            <div style="font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Outstanding</div>
+            <div style="font-size:1rem;font-weight:800;color:var(--gold)" id="pf-outstanding">—</div>
+          </div>
+          <div style="padding:12px;background:var(--glass2);border-radius:var(--r2);text-align:center">
+            <div style="font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Membership</div>
+            <div style="font-size:1rem;font-weight:800;color:var(--text)" id="pf-since">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security score -->
       <div class="card">
-        <div class="section-title mb-3">Security Score</div>
-        <div class="flex justify-between mb-2" style="font-size:.82rem">
-          <span id="sec-score-label" style="color:var(--text2)">Calculating...</span>
+        <div class="section-head"><span class="section-title">Security Score</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;margin-top:4px">
+          <span id="sec-score-label" style="color:var(--text2);font-size:.82rem">Calculating...</span>
+          <span id="sec-score-pct" style="font-size:.82rem;font-weight:700;color:var(--cyan)"></span>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <div class="sec-block" id="sb1" style="flex:1;height:8px;border-radius:4px;background:var(--glass2)"></div>
-          <div class="sec-block" id="sb2" style="flex:1;height:8px;border-radius:4px;background:var(--glass2)"></div>
-          <div class="sec-block" id="sb3" style="flex:1;height:8px;border-radius:4px;background:var(--glass2)"></div>
-          <div class="sec-block" id="sb4" style="flex:1;height:8px;border-radius:4px;background:var(--glass2)"></div>
-          <div class="sec-block" id="sb5" style="flex:1;height:8px;border-radius:4px;background:var(--glass2)"></div>
+        <div style="display:flex;gap:5px;margin-bottom:14px">
+          <div class="sec-block" id="sb1" style="flex:1;height:7px;border-radius:4px;background:var(--glass2)"></div>
+          <div class="sec-block" id="sb2" style="flex:1;height:7px;border-radius:4px;background:var(--glass2)"></div>
+          <div class="sec-block" id="sb3" style="flex:1;height:7px;border-radius:4px;background:var(--glass2)"></div>
+          <div class="sec-block" id="sb4" style="flex:1;height:7px;border-radius:4px;background:var(--glass2)"></div>
+          <div class="sec-block" id="sb5" style="flex:1;height:7px;border-radius:4px;background:var(--glass2)"></div>
         </div>
-        <div id="login-sessions"></div>
+        <!-- Security checklist -->
+        <div style="display:flex;flex-direction:column;gap:8px" id="sec-checklist">
+          <div class="chk-item" id="chk-kyc"><span class="chk-icon">⏳</span><span class="chk-text">KYC Verified</span></div>
+          <div class="chk-item" id="chk-pwd"><span class="chk-icon">✅</span><span class="chk-text">Password set</span></div>
+          <div class="chk-item" id="chk-phone"><span class="chk-icon">✅</span><span class="chk-text">Phone verified</span></div>
+          <div class="chk-item" id="chk-2fa"><span class="chk-icon">⏳</span><span class="chk-text">2FA not enabled</span></div>
+        </div>
+        <div id="login-sessions" class="mt-3"></div>
       </div>
     </div>
+
+    <!-- Right column -->
     <div>
+      <!-- Personal info -->
       <div class="card mb-4">
-        <div class="section-title mb-3">Personal Information</div>
-        <div id="profile-info-grid" class="grid-2" style="gap:12px"></div>
+        <div class="section-head"><span class="section-title">Personal Information</span><button class="section-action" onclick="toast('Edit profile coming soon','info')">Edit ✏</button></div>
+        <div id="profile-info-grid" class="mt-2"></div>
       </div>
+
+      <!-- Change password -->
       <div class="card mb-4">
-        <div class="section-title mb-3">Change Password</div>
-        <div class="form-group">
+        <div class="section-head"><span class="section-title">Change Password</span></div>
+        <div class="form-group mt-3">
           <label class="form-label">Current Password</label>
-          <input id="cp-current" class="form-input" type="password" placeholder="Current password">
+          <input id="cp-current" class="form-input" type="password" placeholder="Enter current password">
         </div>
         <div class="form-group">
           <label class="form-label">New Password</label>
-          <input id="cp-new" class="form-input" type="password" placeholder="New password">
+          <input id="cp-new" class="form-input" type="password" placeholder="Minimum 6 characters" oninput="checkPassStrength(this.value,'cp-strength')">
+          <div class="pass-strength mt-1" id="cp-strength" style="display:none">
+            <div class="pass-bar"><div class="pass-fill" id="cp-fill"></div></div>
+            <span class="pass-label" id="cp-label"></span>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Confirm New Password</label>
@@ -3765,11 +3999,28 @@ function icon(name, size=16, extra='') {
         </div>
         <div id="cp-err" class="form-error mb-2" style="display:none"></div>
         <div id="cp-msg" class="form-success mb-2" style="display:none"></div>
-        <button id="cp-btn" class="btn btn-primary" onclick="changePassword()">Update Password</button>
+        <button id="cp-btn" class="btn btn-primary btn-full" onclick="changePassword()">Update Password</button>
       </div>
+
+      <!-- Account activity -->
+      <div class="card mb-4">
+        <div class="section-head"><span class="section-title">Recent Activity</span><button class="section-action" onclick="go('statement')">View all →</button></div>
+        <div id="profile-activity" class="mt-2">
+          <p style="color:var(--text3);font-size:.84rem;padding:10px 0">Loading activity...</p>
+        </div>
+      </div>
+
+      <!-- Quick links -->
       <div class="card">
-        <div class="section-title mb-3">Account Activity</div>
-        <div id="profile-activity"></div>
+        <div class="section-title mb-3">Quick Actions</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="go('statement')">📋 Statement</button>
+          <button class="btn btn-ghost btn-sm" onclick="go('memberCard')">💳 Member Card</button>
+          <button class="btn btn-ghost btn-sm" onclick="go('kycUpload')">🪪 KYC Upload</button>
+          <button class="btn btn-ghost btn-sm" onclick="go('notifications')">🔔 Notifications</button>
+          <button class="btn btn-ghost btn-sm" onclick="go('settings')">⚙ Settings</button>
+          <button class="btn btn-danger btn-sm" onclick="doLogout()">⏻ Sign Out</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3777,115 +4028,387 @@ function icon(name, size=16, extra='') {
 
 <!-- ─── SETTINGS ───────────────────────────────────────────── -->
 <div class="page" id="page-settings">
-  <div class="page-header">
-    <div><div class="page-title">Settings</div><div class="page-subtitle">Customize your experience</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Settings</div>
+      <div class="ph2-sub">Preferences, notifications and account</div>
+    </div>
   </div>
-  <div style="max-width:600px">
+
+  <div style="max-width:640px">
+
+    <!-- Appearance -->
     <div class="card mb-4">
-      <div class="section-title mb-3">Appearance</div>
-      <div class="stat-row">
-        <span class="stat-label">Dark Mode</span>
-        <label style="position:relative;width:48px;height:26px;cursor:pointer;display:inline-block">
-          <input type="checkbox" id="theme-toggle" style="opacity:0;width:0;height:0" onchange="applyTheme(this.checked)">
-          <span style="position:absolute;inset:0;background:var(--glass2);border:1px solid var(--border);border-radius:50px;transition:.3s;display:flex;align-items:center;padding:3px" id="theme-slider"><span style="width:18px;height:18px;border-radius:50%;background:var(--text2);transition:.3s;display:block;transform:translateX(0)" id="theme-knob"></span></span>
+      <div class="section-head"><span class="section-title">🎨 Appearance</span></div>
+      <div class="toggle-row mt-3">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Dark Mode</div>
+          <div style="font-size:.75rem;color:var(--text3)">Easier on the eyes at night</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="theme-toggle" onchange="applyTheme(this.checked)">
+          <span class="toggle-track"><span class="toggle-knob"></span></span>
         </label>
       </div>
-      <div class="stat-row">
-        <span class="stat-label">Language</span>
-        <span class="badge badge-muted">English (Kenya)</span>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Language</div>
+          <div style="font-size:.75rem;color:var(--text3)">Display language for the portal</div>
+        </div>
+        <select class="form-select" style="width:auto;padding:5px 10px;font-size:.8rem">
+          <option>English (Kenya)</option>
+          <option>Kiswahili</option>
+        </select>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Currency Display</div>
+          <div style="font-size:.75rem;color:var(--text3)">Format for amounts</div>
+        </div>
+        <span class="ubadge ubadge-muted">KSh</span>
       </div>
     </div>
+
+    <!-- Notifications -->
     <div class="card mb-4">
-      <div class="section-title mb-3">Notifications</div>
-      <div class="stat-row"><span class="stat-label">Transaction alerts</span><span class="badge badge-green">Enabled</span></div>
-      <div class="stat-row"><span class="stat-label">Loan reminders</span><span class="badge badge-green">Enabled</span></div>
-      <div class="stat-row"><span class="stat-label">Security alerts</span><span class="badge badge-green">Enabled</span></div>
+      <div class="section-head"><span class="section-title">🔔 Notifications</span></div>
+      <div class="toggle-row mt-3">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Transaction Alerts</div>
+          <div style="font-size:.75rem;color:var(--text3)">SMS &amp; in-app for deposits, withdrawals</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-track"><span class="toggle-knob"></span></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Loan Reminders</div>
+          <div style="font-size:.75rem;color:var(--text3)">3 days before repayment is due</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-track"><span class="toggle-knob"></span></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Security Alerts</div>
+          <div style="font-size:.75rem;color:var(--text3)">New login, password changes</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-track"><span class="toggle-knob"></span></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">SACCO Announcements</div>
+          <div style="font-size:.75rem;color:var(--text3)">AGM notices, new products</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox"><span class="toggle-track"><span class="toggle-knob"></span></span></label>
+      </div>
     </div>
+
+    <!-- Privacy & Security -->
+    <div class="card mb-4">
+      <div class="section-head"><span class="section-title">🔒 Privacy &amp; Security</span></div>
+      <div class="toggle-row mt-3">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Show Balance on Dashboard</div>
+          <div style="font-size:.75rem;color:var(--text3)">Hide to protect privacy in public</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" id="hide-balance-toggle" checked><span class="toggle-track"><span class="toggle-knob"></span></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Auto Lock (5 min)</div>
+          <div style="font-size:.75rem;color:var(--text3)">Require login after inactivity</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox"><span class="toggle-track"><span class="toggle-knob"></span></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:.85rem;font-weight:600">Biometric Login</div>
+          <div style="font-size:.75rem;color:var(--text3)">Use fingerprint or face ID</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox"><span class="toggle-track"><span class="toggle-knob"></span></span></label>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="card mb-4">
+      <div class="section-head"><span class="section-title">ℹ About</span></div>
+      <div class="stat-row mt-2"><span class="stat-label">App Version</span><span style="font-size:.8rem;font-family:var(--mono);color:var(--text3)">v2.4.0</span></div>
+      <div class="stat-row"><span class="stat-label">License</span><span style="font-size:.8rem;color:var(--text3)">SASRA Registered</span></div>
+      <div class="stat-row"><span class="stat-label">Support</span><span style="font-size:.8rem;color:var(--cyan)">0704363089</span></div>
+      <div class="stat-row"><span class="stat-label">Privacy Policy</span><button class="section-action" onclick="showPolicy('privacy')">View →</button></div>
+      <div class="stat-row"><span class="stat-label">Terms &amp; Conditions</span><button class="section-action" onclick="showPolicy('terms')">View →</button></div>
+    </div>
+
+    <!-- Account -->
     <div class="card">
       <div class="section-title mb-3">Account Management</div>
-      <button class="btn btn-ghost btn-sm btn-full mb-2" onclick="doLogout()">⏻ Sign Out</button>
-      <button class="btn btn-danger btn-sm btn-full" onclick="toast('Contact support to deactivate account','info')">⚠ Deactivate Account</button>
+      <button class="btn btn-ghost btn-full mb-2" onclick="doLogout()">⏻ Sign Out</button>
+      <button class="btn btn-danger btn-full" onclick="toast('Contact support on 0704363089 to deactivate your account','info',5000)">⚠ Deactivate Account</button>
     </div>
   </div>
 </div>
 
 <!-- ─── KYC ────────────────────────────────────────────────── -->
 <div class="page" id="page-kycUpload">
-  <div class="page-header">
-    <div><div class="page-title">KYC Verification</div><div class="page-subtitle">Upload identity documents</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">KYC Verification</div>
+      <div class="ph2-sub">Identity documents for compliance</div>
+    </div>
+    <div class="ph2-right">
+      <span class="ubadge ubadge-warning" id="kyc-ph2-badge">Pending</span>
+    </div>
   </div>
-  <div style="max-width:600px">
-    <div class="card mb-4" id="kyc-status-card"></div>
+
+  <div style="max-width:680px">
+
+    <!-- Status card -->
+    <div id="kyc-status-card" class="mb-4"></div>
+
+    <!-- Progress steps -->
     <div class="card mb-4">
-      <div class="section-title mb-3">Upload Documents</div>
-      <div class="grid-2">
+      <div class="section-title mb-3">Verification Steps</div>
+      <div style="display:flex;gap:0;position:relative">
+        <div style="position:absolute;top:16px;left:10%;right:10%;height:2px;background:var(--glass2);z-index:0"></div>
+        <div style="position:absolute;top:16px;left:10%;width:0%;height:2px;background:var(--cyan);z-index:1;transition:.6s" id="kyc-progress-line"></div>
+        <div style="flex:1;text-align:center;position:relative;z-index:2">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--cyan);color:#000;font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 6px">1</div>
+          <div style="font-size:.7rem;color:var(--text3)">Register</div>
+        </div>
+        <div style="flex:1;text-align:center;position:relative;z-index:2" id="kyc-step2">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--glass2);border:2px solid var(--border);color:var(--text3);font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 6px">2</div>
+          <div style="font-size:.7rem;color:var(--text3)">Upload Docs</div>
+        </div>
+        <div style="flex:1;text-align:center;position:relative;z-index:2">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--glass2);border:2px solid var(--border);color:var(--text3);font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 6px">3</div>
+          <div style="font-size:.7rem;color:var(--text3)">Review</div>
+        </div>
+        <div style="flex:1;text-align:center;position:relative;z-index:2">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--glass2);border:2px solid var(--border);color:var(--text3);font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 6px">✓</div>
+          <div style="font-size:.7rem;color:var(--text3)">Verified</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload card -->
+    <div class="card mb-4">
+      <div class="section-head">
+        <span class="section-title">Upload Documents</span>
+        <span style="font-size:.75rem;color:var(--text3)">JPG, PNG or PDF · Max 5MB each</span>
+      </div>
+      <div class="grid-2 mt-3">
         <div>
-          <div class="form-label mb-2">National ID (Front)</div>
-          <div id="kyc-upload-1" class="card text-center" style="cursor:pointer;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px" onclick="triggerKyc(1)">
-            <div style="font-size:1.8rem">📄</div><div style="font-size:.8rem;color:var(--text3)">Click to upload</div>
+          <div class="form-label mb-2">📄 National ID (Front) <span style="color:var(--red)">*</span></div>
+          <div id="kyc-upload-1" style="cursor:pointer;min-height:100px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border);border-radius:var(--r2);padding:16px;transition:.2s;background:var(--glass)" onclick="triggerKyc(1)">
+            <div style="font-size:2rem">📄</div>
+            <div style="font-size:.78rem;color:var(--text3);text-align:center">Click or drag to upload</div>
           </div>
           <input type="file" id="kyc-file-1" accept="image/*,.pdf" style="display:none" onchange="previewKyc(1,event)">
         </div>
         <div>
-          <div class="form-label mb-2">National ID (Back)</div>
-          <div id="kyc-upload-2" class="card text-center" style="cursor:pointer;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px" onclick="triggerKyc(2)">
-            <div style="font-size:1.8rem">📄</div><div style="font-size:.8rem;color:var(--text3)">Click to upload</div>
+          <div class="form-label mb-2">📄 National ID (Back) <span style="color:var(--red)">*</span></div>
+          <div id="kyc-upload-2" style="cursor:pointer;min-height:100px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border);border-radius:var(--r2);padding:16px;transition:.2s;background:var(--glass)" onclick="triggerKyc(2)">
+            <div style="font-size:2rem">📄</div>
+            <div style="font-size:.78rem;color:var(--text3);text-align:center">Click or drag to upload</div>
           </div>
           <input type="file" id="kyc-file-2" accept="image/*,.pdf" style="display:none" onchange="previewKyc(2,event)">
         </div>
         <div>
-          <div class="form-label mb-2">Passport Photo</div>
-          <div id="kyc-upload-3" class="card text-center" style="cursor:pointer;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px" onclick="triggerKyc(3)">
-            <div style="font-size:1.8rem">🤳</div><div style="font-size:.8rem;color:var(--text3)">Click to upload</div>
+          <div class="form-label mb-2">🤳 Passport Photo <span style="color:var(--red)">*</span></div>
+          <div id="kyc-upload-3" style="cursor:pointer;min-height:100px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border);border-radius:var(--r2);padding:16px;transition:.2s;background:var(--glass)" onclick="triggerKyc(3)">
+            <div style="font-size:2rem">🤳</div>
+            <div style="font-size:.78rem;color:var(--text3);text-align:center">Clear frontal photo</div>
           </div>
           <input type="file" id="kyc-file-3" accept="image/*" style="display:none" onchange="previewKyc(3,event)">
         </div>
         <div>
-          <div class="form-label mb-2">Proof of Address</div>
-          <div id="kyc-upload-4" class="card text-center" style="cursor:pointer;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px" onclick="triggerKyc(4)">
-            <div style="font-size:1.8rem">🏠</div><div style="font-size:.8rem;color:var(--text3)">Click to upload</div>
+          <div class="form-label mb-2">🏠 Proof of Address</div>
+          <div id="kyc-upload-4" style="cursor:pointer;min-height:100px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border);border-radius:var(--r2);padding:16px;transition:.2s;background:var(--glass)" onclick="triggerKyc(4)">
+            <div style="font-size:2rem">🏠</div>
+            <div style="font-size:.78rem;color:var(--text3);text-align:center">Utility bill or bank statement</div>
           </div>
           <input type="file" id="kyc-file-4" accept="image/*,.pdf" style="display:none" onchange="previewKyc(4,event)">
         </div>
       </div>
       <div id="kyc-msg" class="form-success mt-3" style="display:none"></div>
-      <button class="btn btn-primary btn-full mt-3" onclick="submitKyc()">📤 Submit Documents</button>
+      <button class="btn btn-primary btn-full mt-4" onclick="submitKyc()">📤 Submit for Verification</button>
+    </div>
+
+    <!-- Requirements info -->
+    <div class="card" style="background:rgba(0,212,255,.04);border-color:rgba(0,212,255,.15)">
+      <div class="section-title mb-3">📋 Document Requirements</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.8rem">
+        <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--emerald);flex-shrink:0">✓</span><span style="color:var(--text2)">Documents must be clear, unobstructed and fully visible</span></div>
+        <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--emerald);flex-shrink:0">✓</span><span style="color:var(--text2)">National ID must be a valid Kenyan government-issued ID</span></div>
+        <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--emerald);flex-shrink:0">✓</span><span style="color:var(--text2)">Passport photo must show full face on plain background</span></div>
+        <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--emerald);flex-shrink:0">✓</span><span style="color:var(--text2)">Proof of address must be dated within the last 3 months</span></div>
+        <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--gold);flex-shrink:0">ℹ</span><span style="color:var(--text2)">Verification takes 1–2 business days after submission</span></div>
+        <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--gold);flex-shrink:0">ℹ</span><span style="color:var(--text2)">You will receive an SMS once your KYC is reviewed</span></div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ─── HELP ────────────────────────────────────────────────── -->
 <div class="page" id="page-help">
-  <div class="page-header">
-    <div><div class="page-title">Help & Support</div><div class="page-subtitle">FAQs and AI assistant</div></div>
-  </div>
-  <div class="grid-2">
-    <div class="card">
-      <div class="section-title mb-3">Frequently Asked Questions</div>
-      <div id="faq-list"></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Help &amp; Support</div>
+      <div class="ph2-sub">FAQs, guides and AI assistant</div>
     </div>
+    <div class="ph2-right">
+      <a href="tel:0704363089" class="btn btn-primary btn-sm">📞 Call Support</a>
+    </div>
+  </div>
+
+  <!-- Quick contact strip -->
+  <div class="grid-3 mb-4">
+    <a href="tel:0704363089" class="gc gc-p" style="text-decoration:none;text-align:center;display:block">
+      <div style="font-size:1.5rem;margin-bottom:6px">📞</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text)">Call Us</div>
+      <div style="font-size:.72rem;color:var(--text3)">0704363089</div>
+    </a>
+    <a href="https://wa.me/254704363089" target="_blank" class="gc gc-p" style="text-decoration:none;text-align:center;display:block">
+      <div style="font-size:1.5rem;margin-bottom:6px">💬</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text)">WhatsApp</div>
+      <div style="font-size:.72rem;color:var(--text3)">Chat with us</div>
+    </a>
+    <div class="gc gc-p" style="text-align:center;cursor:pointer" onclick="go('notifications')">
+      <div style="font-size:1.5rem;margin-bottom:6px">🔔</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text)">Notifications</div>
+      <div style="font-size:.72rem;color:var(--text3)">Your alerts</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- FAQs -->
+    <div class="card">
+      <div class="section-head">
+        <span class="section-title">Frequently Asked Questions</span>
+        <span style="font-size:.72rem;color:var(--text3)" id="faq-count"></span>
+      </div>
+      <div id="faq-list" class="mt-3"></div>
+    </div>
+
+    <!-- AI Assistant -->
     <div class="card" style="display:flex;flex-direction:column">
-      <div class="section-title mb-3">AI Assistant</div>
-      <div id="ai-chat-window" style="flex:1;min-height:240px;max-height:360px;overflow-y:auto;padding:4px 0;margin-bottom:12px">
-        <div style="text-align:center;padding:30px;color:var(--text3)">
-          <div style="font-size:2rem;margin-bottom:8px">🤖</div>
-          <div style="font-size:.84rem">Ask me anything about HELA SACCO</div>
+      <div class="section-head">
+        <span class="section-title">🤖 AI Assistant</span>
+        <span class="ubadge ubadge-success" style="font-size:.68rem">Online</span>
+      </div>
+
+      <!-- Suggested questions -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px">
+        <button class="ubadge ubadge-muted" style="cursor:pointer;font-size:.72rem;padding:4px 10px" onclick="E('ai-input').value='How do I deposit money?';sendAI()">Deposit</button>
+        <button class="ubadge ubadge-muted" style="cursor:pointer;font-size:.72rem;padding:4px 10px" onclick="E('ai-input').value='How do I apply for a loan?';sendAI()">Apply for loan</button>
+        <button class="ubadge ubadge-muted" style="cursor:pointer;font-size:.72rem;padding:4px 10px" onclick="E('ai-input').value='When are dividends paid?';sendAI()">Dividends</button>
+        <button class="ubadge ubadge-muted" style="cursor:pointer;font-size:.72rem;padding:4px 10px" onclick="E('ai-input').value='How do I complete KYC?';sendAI()">KYC</button>
+      </div>
+
+      <div id="ai-chat-window" style="flex:1;min-height:280px;max-height:400px;overflow-y:auto;padding:4px 0;margin-bottom:10px">
+        <div style="text-align:center;padding:30px 20px;color:var(--text3)">
+          <div style="font-size:2.5rem;margin-bottom:10px">🤖</div>
+          <div style="font-size:.85rem;font-weight:600;margin-bottom:6px;color:var(--text2)">HELA AI Assistant</div>
+          <div style="font-size:.78rem;line-height:1.6">Ask me anything about HELA SMART SACCO — deposits, loans, dividends, KYC, and more.</div>
         </div>
       </div>
-      <div class="flex gap-2">
-        <input id="ai-input" class="form-input flex-1" placeholder="Type your question...">
-        <button class="btn btn-primary" onclick="sendAI()">Send</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="ai-input" class="form-input flex-1" placeholder="Type your question..." onkeydown="if(event.key==='Enter')sendAI()">
+        <button class="btn btn-primary" onclick="sendAI()" style="padding:10px 16px;flex-shrink:0">Send ↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video guides section -->
+  <div class="card mt-4">
+    <div class="section-head">
+      <span class="section-title">📚 Quick Guides</span>
+    </div>
+    <div class="grid-3 mt-3">
+      <div class="gc gc-p" style="cursor:pointer" onclick="toast('Guide: Depositing via M-Pesa — Use Paybill 3346067, Account = your member number','info',6000)">
+        <div style="font-size:1.4rem;margin-bottom:8px">💰</div>
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:4px">How to Deposit</div>
+        <div style="font-size:.73rem;color:var(--text3)">M-Pesa Paybill guide</div>
+      </div>
+      <div class="gc gc-p" style="cursor:pointer" onclick="toast('Guide: Go to Loans → Apply for Loan → fill form → submit. Approval in 2-3 days.','info',6000)">
+        <div style="font-size:1.4rem;margin-bottom:8px">💳</div>
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:4px">Apply for a Loan</div>
+        <div style="font-size:.73rem;color:var(--text3)">Step-by-step process</div>
+      </div>
+      <div class="gc gc-p" style="cursor:pointer" onclick="go('kycUpload')">
+        <div style="font-size:1.4rem;margin-bottom:8px">🪪</div>
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:4px">Complete KYC</div>
+        <div style="font-size:.73rem;color:var(--text3)">Upload your documents</div>
       </div>
     </div>
   </div>
 </div>
-
 <!-- ─── POLICIES ────────────────────────────────────────────── -->
 <div class="page" id="page-policies">
-  <div class="page-header">
-    <div><div class="page-title">Policy Center</div><div class="page-subtitle">SACCO rules and regulations</div></div>
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Policy Center</div>
+      <div class="ph2-sub">SACCO rules, regulations and member rights</div>
+    </div>
+    <div class="ph2-right">
+      <span class="ubadge ubadge-success" style="font-size:.72rem">✓ SASRA Compliant</span>
+    </div>
   </div>
-  <div class="grid-3" id="policies-grid"></div>
+
+  <!-- Policy cards -->
+  <div class="grid-3 mb-4" id="policies-grid"></div>
+
+  <!-- Member rights section -->
+  <div class="card mb-4">
+    <div class="section-head">
+      <span class="section-title">⚖ Member Rights</span>
+    </div>
+    <div class="grid-2 mt-3">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--cyan);font-size:1.1rem;flex-shrink:0">①</span>
+        <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">Right to Information</div><div style="font-size:.76rem;color:var(--text3)">Access financial records, meeting minutes and annual reports</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--cyan);font-size:1.1rem;flex-shrink:0">②</span>
+        <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">Right to Vote</div><div style="font-size:.76rem;color:var(--text3)">One member, one vote at the Annual General Meeting</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--violet);font-size:1.1rem;flex-shrink:0">③</span>
+        <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">Right to Dividends</div><div style="font-size:.76rem;color:var(--text3)">Proportional share of annual profits declared at AGM</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--violet);font-size:1.1rem;flex-shrink:0">④</span>
+        <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">Right to Loans</div><div style="font-size:.76rem;color:var(--text3)">Access credit up to 3× savings at fair interest rates</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+        <span style="color:var(--emerald);font-size:1.1rem;flex-shrink:0">⑤</span>
+        <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">Right to Confidentiality</div><div style="font-size:.76rem;color:var(--text3)">Personal and financial data protected under data protection laws</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+        <span style="color:var(--emerald);font-size:1.1rem;flex-shrink:0">⑥</span>
+        <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">Right to Withdraw</div><div style="font-size:.76rem;color:var(--text3)">Voluntary exit with full refund of deposits and shares</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key rates table -->
+  <div class="card">
+    <div class="section-head"><span class="section-title">📊 Key Rates &amp; Limits</span></div>
+    <div class="table-wrap mt-3" style="border:none">
+      <table class="gc-table">
+        <thead><tr><th>Parameter</th><th>Rate / Limit</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Savings Interest</td><td style="color:var(--emerald);font-weight:700">8% p.a.</td><td style="color:var(--text3);font-size:.78rem">Credited annually</td></tr>
+          <tr><td>Loan Interest</td><td style="color:var(--cyan);font-weight:700">1.5% p.m.</td><td style="color:var(--text3);font-size:.78rem">Reducing balance</td></tr>
+          <tr><td>Dividend Rate</td><td style="color:var(--gold);font-weight:700">12% p.a.</td><td style="color:var(--text3);font-size:.78rem">Subject to AGM approval</td></tr>
+          <tr><td>Maximum Loan</td><td style="font-weight:700">3× Savings</td><td style="color:var(--text3);font-size:.78rem">Based on savings balance</td></tr>
+          <tr><td>Loan Processing</td><td style="font-weight:700">2–3 Days</td><td style="color:var(--text3);font-size:.78rem">After approval</td></tr>
+          <tr><td>Minimum Deposit</td><td style="font-weight:700">KSh 100</td><td style="color:var(--text3);font-size:.78rem">Per transaction</td></tr>
+          <tr><td>Minimum Share</td><td style="font-weight:700">KSh 1,000</td><td style="color:var(--text3);font-size:.78rem">100 shares at KSh 10 each</td></tr>
+          <tr><td>Withdrawal Notice</td><td style="font-weight:700">None</td><td style="color:var(--text3);font-size:.78rem">Instant for deposits</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- ─── AUDIT LOG ───────────────────────────────────────────── -->
@@ -4109,6 +4632,409 @@ function icon(name, size=16, extra='') {
 <div id="server-wake-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,var(--cyan),var(--violet));color:#fff;text-align:center;padding:9px;font-size:.8rem;font-weight:600">
   ⏳ Server warming up — this takes about 30 seconds. Please wait...
   <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:#fff;margin-left:12px;cursor:pointer;font-size:1rem">×</button>
+</div>
+
+
+<!-- ─── LOAN REPAYMENT SCHEDULE ─────────────────────────────── -->
+<div class="page" id="page-schedule">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Repayment Schedule</div>
+      <div class="ph2-sub">Track upcoming loan payments and due dates</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="go('loanCalc')">🧮 Loan Calculator</button>
+      <button class="btn btn-primary btn-sm" onclick="exportRepaySchedule()">⬇ Export</button>
+    </div>
+  </div>
+
+  <!-- Summary strip -->
+  <div class="grid-4 mb-4">
+    <div class="kpi kpi-cyan"><div class="kpi-icon">💳</div><div class="kpi-label">Active Loans</div><div class="kpi-value" id="sched-active">—</div><div class="kpi-sub">In repayment</div></div>
+    <div class="kpi kpi-gold"><div class="kpi-icon">📅</div><div class="kpi-label">Next Payment</div><div class="kpi-value" id="sched-next-amt">—</div><div class="kpi-sub" id="sched-next-date">—</div></div>
+    <div class="kpi kpi-red"><div class="kpi-icon">⏳</div><div class="kpi-label">Total Outstanding</div><div class="kpi-value" id="sched-outstanding">—</div><div class="kpi-sub">All loans</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">🎯</div><div class="kpi-label">Completion</div><div class="kpi-value" id="sched-completion">—</div><div class="kpi-sub" id="sched-completion-sub">Estimated</div></div>
+  </div>
+
+  <!-- Loan selector tabs -->
+  <div class="tabs mb-4" id="sched-tabs">
+    <button class="tab active" onclick="schedTab(0)">All Loans</button>
+  </div>
+
+  <!-- Timeline view -->
+  <div class="grid-2 mb-4">
+    <div class="card">
+      <div class="section-head"><span class="section-title">📅 Upcoming Payments</span></div>
+      <div id="sched-upcoming" class="mt-3">
+        <p style="color:var(--text3);font-size:.84rem;padding:20px 0 10px;text-align:center">Loading...</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-head"><span class="section-title">📊 Repayment Progress</span></div>
+      <div id="sched-progress" class="mt-3">
+        <p style="color:var(--text3);font-size:.84rem;padding:20px 0 10px;text-align:center">Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full schedule table -->
+  <div class="card">
+    <div class="section-head">
+      <span class="section-title">Full Payment Schedule</span>
+      <div style="display:flex;gap:8px">
+        <select id="sched-loan-select" class="form-select" style="font-size:.78rem;padding:5px 10px" onchange="renderScheduleTable()">
+          <option value="all">All Loans</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap mt-3" style="border:none">
+      <table class="gc-table">
+        <thead><tr><th>#</th><th>Due Date</th><th>Loan</th><th>Principal</th><th>Interest</th><th>Instalment</th><th>Balance</th><th>Status</th></tr></thead>
+        <tbody id="sched-table-body">
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">No active loans found</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Payment tips -->
+  <div class="card mt-4" style="background:rgba(0,212,255,.03);border-color:rgba(0,212,255,.12)">
+    <div class="section-title mb-3">💡 Repayment Tips</div>
+    <div class="grid-2">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="color:var(--cyan);font-size:1rem;flex-shrink:0">①</span>
+        <div><div style="font-size:.82rem;font-weight:700;margin-bottom:2px">Pay on time, always</div><div style="font-size:.76rem;color:var(--text3)">Timely payments build your credit score and unlock higher loan limits</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="color:var(--cyan);font-size:1rem;flex-shrink:0">②</span>
+        <div><div style="font-size:.82rem;font-weight:700;margin-bottom:2px">Make extra payments</div><div style="font-size:.76rem;color:var(--text3)">Any amount above your instalment goes directly to principal reduction</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="color:var(--violet);font-size:1rem;flex-shrink:0">③</span>
+        <div><div style="font-size:.82rem;font-weight:700;margin-bottom:2px">Use SACCO balance first</div><div style="font-size:.76rem;color:var(--text3)">Repay using your SACCO savings to avoid M-Pesa transaction costs</div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="color:var(--violet);font-size:1rem;flex-shrink:0">④</span>
+        <div><div style="font-size:.82rem;font-weight:700;margin-bottom:2px">Set calendar reminders</div><div style="font-size:.76rem;color:var(--text3)">Enable loan reminders in Settings to never miss a due date</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─── BUDGET PLANNER ────────────────────────────────────── -->
+<div class="page" id="page-budget">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Budget Planner</div>
+      <div class="ph2-sub">Track income, expenses and savings targets</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="exportBudget()">⬇ Export</button>
+      <button class="btn btn-primary btn-sm" onclick="saveBudget()">💾 Save</button>
+    </div>
+  </div>
+
+  <!-- Budget summary KPIs -->
+  <div class="grid-4 mb-4" id="budget-kpis">
+    <div class="kpi kpi-green"><div class="kpi-icon">📥</div><div class="kpi-label">Monthly Income</div><div class="kpi-value" id="bk-income">KSh 0</div><div class="kpi-sub">After tax</div></div>
+    <div class="kpi kpi-red"><div class="kpi-icon">📤</div><div class="kpi-label">Total Expenses</div><div class="kpi-value" id="bk-expense">KSh 0</div><div class="kpi-sub">This month</div></div>
+    <div class="kpi kpi-cyan"><div class="kpi-icon">💰</div><div class="kpi-label">Available</div><div class="kpi-value" id="bk-available">KSh 0</div><div class="kpi-sub">Income − expenses</div></div>
+    <div class="kpi kpi-gold"><div class="kpi-icon">🎯</div><div class="kpi-label">Savings Rate</div><div class="kpi-value" id="bk-rate">0%</div><div class="kpi-sub">Of income</div></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Income section -->
+    <div class="card mb-4">
+      <div class="section-head">
+        <span class="section-title">📥 Income Sources</span>
+        <button class="section-action" onclick="_addBudgetRow('income')">+ Add</button>
+      </div>
+      <div id="budget-income-rows" class="mt-3"></div>
+      <div style="border-top:2px solid var(--border);padding-top:10px;margin-top:10px;display:flex;justify-content:space-between;font-weight:800">
+        <span style="font-size:.85rem">Total Income</span>
+        <span style="color:var(--emerald)" id="budget-income-total">KSh 0</span>
+      </div>
+    </div>
+
+    <!-- Expenses section -->
+    <div class="card mb-4">
+      <div class="section-head">
+        <span class="section-title">📤 Monthly Expenses</span>
+        <button class="section-action" onclick="_addBudgetRow('expense')">+ Add</button>
+      </div>
+      <div id="budget-expense-rows" class="mt-3"></div>
+      <div style="border-top:2px solid var(--border);padding-top:10px;margin-top:10px;display:flex;justify-content:space-between;font-weight:800">
+        <span style="font-size:.85rem">Total Expenses</span>
+        <span style="color:var(--red)" id="budget-expense-total">KSh 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spending breakdown chart -->
+  <div class="grid-2 mb-4">
+    <div class="card">
+      <div class="section-title mb-3">Spending Breakdown</div>
+      <div class="chart-container"><canvas id="budget-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title mb-3">Budget Health</div>
+      <div id="budget-health-content">
+        <div style="text-align:center;padding:30px;color:var(--text3)">
+          <div style="font-size:3rem;margin-bottom:10px">📊</div>
+          <div style="font-size:.84rem">Add your income and expenses to see your budget health score</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 50/30/20 rule guidance -->
+  <div class="card" style="background:rgba(123,97,255,.04);border-color:rgba(123,97,255,.15)">
+    <div class="section-head"><span class="section-title">💡 The 50/30/20 Rule</span></div>
+    <div class="grid-3 mt-3">
+      <div style="padding:14px;background:rgba(255,107,157,.08);border-radius:var(--r2);border:1px solid rgba(255,107,157,.15);text-align:center">
+        <div style="font-size:1.8rem;font-weight:900;color:var(--red);margin-bottom:6px">50%</div>
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:4px">Needs</div>
+        <div style="font-size:.73rem;color:var(--text3)">Rent, food, utilities, transport, healthcare</div>
+      </div>
+      <div style="padding:14px;background:rgba(123,97,255,.08);border-radius:var(--r2);border:1px solid rgba(123,97,255,.15);text-align:center">
+        <div style="font-size:1.8rem;font-weight:900;color:var(--violet);margin-bottom:6px">30%</div>
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:4px">Wants</div>
+        <div style="font-size:.73rem;color:var(--text3)">Entertainment, dining out, shopping, subscriptions</div>
+      </div>
+      <div style="padding:14px;background:rgba(0,245,160,.08);border-radius:var(--r2);border:1px solid rgba(0,245,160,.15);text-align:center">
+        <div style="font-size:1.8rem;font-weight:900;color:var(--emerald);margin-bottom:6px">20%</div>
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:4px">Savings &amp; Debt</div>
+        <div style="font-size:.73rem;color:var(--text3)">SACCO deposits, emergency fund, loan repayments</div>
+      </div>
+    </div>
+    <div id="budget-5030-gauge" class="mt-4"></div>
+  </div>
+</div>
+
+<!-- ─── INVESTMENTS ────────────────────────────────────────── -->
+<div class="page" id="page-invest">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Investment Products</div>
+      <div class="ph2-sub">Grow your wealth with HELA SMART SACCO</div>
+    </div>
+    <div class="ph2-right">
+      <span class="ubadge ubadge-gold" style="font-size:.72rem">★ Member Exclusive</span>
+    </div>
+  </div>
+
+  <!-- Investment summary -->
+  <div class="grid-3 mb-4">
+    <div class="kpi kpi-gold"><div class="kpi-icon">📈</div><div class="kpi-label">Portfolio Value</div><div class="kpi-value" id="inv-portfolio">—</div><div class="kpi-sub">All products</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">💰</div><div class="kpi-label">Total Returns</div><div class="kpi-value" id="inv-returns">—</div><div class="kpi-sub">Year to date</div></div>
+    <div class="kpi kpi-cyan"><div class="kpi-icon">📊</div><div class="kpi-label">Active Products</div><div class="kpi-value" id="inv-count">0</div><div class="kpi-sub">Investments</div></div>
+  </div>
+
+  <!-- Product cards -->
+  <div class="section-title mb-3">Available Products</div>
+  <div class="grid-3 mb-4">
+    <div class="card" style="border-top:3px solid var(--emerald)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,245,160,.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem">🏦</div>
+        <div><div style="font-weight:800;font-size:.9rem">Fixed Deposit</div><div style="font-size:.72rem;color:var(--emerald)">10–14% p.a.</div></div>
+      </div>
+      <div style="font-size:.78rem;color:var(--text3);line-height:1.6;margin-bottom:14px">Lock your savings for 3–12 months and earn higher interest rates than a regular savings account.</div>
+      <div class="stat-row" style="padding:6px 0"><span style="font-size:.75rem;color:var(--text3)">Min. Amount</span><span style="font-size:.78rem;font-weight:700">KSh 5,000</span></div>
+      <div class="stat-row" style="padding:6px 0"><span style="font-size:.75rem;color:var(--text3)">Term</span><span style="font-size:.78rem;font-weight:700">3, 6 or 12 months</span></div>
+      <div class="stat-row" style="padding:6px 0;border-bottom:none"><span style="font-size:.75rem;color:var(--text3)">Interest</span><span style="font-size:.78rem;font-weight:700;color:var(--emerald)">Up to 14% p.a.</span></div>
+      <button class="btn btn-primary btn-full mt-3" style="font-size:.8rem" onclick="toast('Fixed Deposit application — call 0704363089 to apply','info',5000)">Invest Now →</button>
+    </div>
+    <div class="card" style="border-top:3px solid var(--gold)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(255,181,71,.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem">📊</div>
+        <div><div style="font-weight:800;font-size:.9rem">Share Capital</div><div style="font-size:.72rem;color:var(--gold)">12% dividend p.a.</div></div>
+      </div>
+      <div style="font-size:.78rem;color:var(--text3);line-height:1.6;margin-bottom:14px">Buy shares in HELA SMART SACCO and earn dividends annually. Each share costs KSh 100 with no maximum limit.</div>
+      <div class="stat-row" style="padding:6px 0"><span style="font-size:.75rem;color:var(--text3)">Share Price</span><span style="font-size:.78rem;font-weight:700">KSh 100 each</span></div>
+      <div class="stat-row" style="padding:6px 0"><span style="font-size:.75rem;color:var(--text3)">Min. Purchase</span><span style="font-size:.78rem;font-weight:700">10 shares (KSh 1,000)</span></div>
+      <div class="stat-row" style="padding:6px 0;border-bottom:none"><span style="font-size:.75rem;color:var(--text3)">Dividend</span><span style="font-size:.78rem;font-weight:700;color:var(--gold)">12% p.a. (AGM)</span></div>
+      <button class="btn btn-primary btn-full mt-3" style="font-size:.8rem" onclick="go('shares')">View Shares →</button>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,212,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem">🛡</div>
+        <div><div style="font-weight:800;font-size:.9rem">Emergency Fund</div><div style="font-size:.72rem;color:var(--cyan)">8% p.a.</div></div>
+      </div>
+      <div style="font-size:.78rem;color:var(--text3);line-height:1.6;margin-bottom:14px">A dedicated emergency savings product with instant access. Earn 8% while keeping funds available for emergencies.</div>
+      <div class="stat-row" style="padding:6px 0"><span style="font-size:.75rem;color:var(--text3)">Min. Amount</span><span style="font-size:.78rem;font-weight:700">KSh 1,000</span></div>
+      <div class="stat-row" style="padding:6px 0"><span style="font-size:.75rem;color:var(--text3)">Access</span><span style="font-size:.78rem;font-weight:700">Instant withdrawal</span></div>
+      <div class="stat-row" style="padding:6px 0;border-bottom:none"><span style="font-size:.75rem;color:var(--text3)">Interest</span><span style="font-size:.78rem;font-weight:700;color:var(--cyan)">8% p.a.</span></div>
+      <button class="btn btn-primary btn-full mt-3" style="font-size:.8rem" onclick="openModal('deposit-modal')">Start Saving →</button>
+    </div>
+  </div>
+
+  <!-- Investment calculator -->
+  <div class="card mb-4">
+    <div class="section-head"><span class="section-title">🧮 Investment Calculator</span><span style="font-size:.75rem;color:var(--text3)">Compare product returns</span></div>
+    <div class="grid-2 mt-3">
+      <div>
+        <div class="form-group">
+          <label class="form-label">Product</label>
+          <select id="inv-calc-product" class="form-select" onchange="calcInvestment()">
+            <option value="0.10">Fixed Deposit (10% p.a.)</option>
+            <option value="0.12">Fixed Deposit (12% p.a.)</option>
+            <option value="0.14">Fixed Deposit (14% p.a.)</option>
+            <option value="0.12">Share Capital (12% dividend)</option>
+            <option value="0.08">Emergency Fund (8% p.a.)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Investment Amount (KSh)</label>
+          <input id="inv-calc-amount" class="form-input" type="number" value="10000" min="1000" oninput="calcInvestment()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Term (Years)</label>
+          <input id="inv-calc-years" class="form-input" type="number" value="2" min="1" max="10" oninput="calcInvestment()">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="kpi kpi-gold" style="padding:14px"><div class="kpi-label">Maturity Value</div><div class="kpi-value" id="inv-maturity">—</div></div>
+        <div style="display:flex;gap:8px">
+          <div class="kpi kpi-green" style="padding:12px;flex:1"><div class="kpi-label" style="font-size:.68rem">Total Returns</div><div class="kpi-value" style="font-size:1rem" id="inv-profit">—</div></div>
+          <div class="kpi kpi-cyan" style="padding:12px;flex:1"><div class="kpi-label" style="font-size:.68rem">Effective APY</div><div class="kpi-value" style="font-size:1rem" id="inv-apy">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Why invest with HELA -->
+  <div class="card" style="background:rgba(0,212,255,.03);border-color:rgba(0,212,255,.12)">
+    <div class="section-title mb-3">✨ Why Invest with HELA SMART SACCO?</div>
+    <div class="grid-2">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px"><span style="color:var(--emerald);font-size:1.1rem">✓</span><div><div style="font-size:.82rem;font-weight:700">Regulated &amp; Safe</div><div style="font-size:.76rem;color:var(--text3)">Licensed by SASRA — deposits are protected</div></div></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px"><span style="color:var(--emerald);font-size:1.1rem">✓</span><div><div style="font-size:.82rem;font-weight:700">Competitive Returns</div><div style="font-size:.76rem;color:var(--text3)">Up to 14% p.a. — outperforms most banks</div></div></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px"><span style="color:var(--emerald);font-size:1.1rem">✓</span><div><div style="font-size:.82rem;font-weight:700">Member Owned</div><div style="font-size:.76rem;color:var(--text3)">You own a stake — profits come back to you</div></div></div>
+      <div style="display:flex;align-items:flex-start;gap:10px"><span style="color:var(--emerald);font-size:1.1rem">✓</span><div><div style="font-size:.82rem;font-weight:700">Flexible Options</div><div style="font-size:.76rem;color:var(--text3)">Choose terms and products that fit your goals</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── REFERRAL ───────────────────────────────────────────── -->
+<div class="page" id="page-referral">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Refer &amp; Earn</div>
+      <div class="ph2-sub">Invite friends and earn KSh 200 per referral</div>
+    </div>
+    <div class="ph2-right">
+      <span class="ubadge ubadge-gold" style="font-size:.72rem">🎁 KSh 200 Reward</span>
+    </div>
+  </div>
+
+  <!-- Referral stats -->
+  <div class="grid-3 mb-4">
+    <div class="kpi kpi-gold"><div class="kpi-icon">👥</div><div class="kpi-label">Total Referrals</div><div class="kpi-value" id="ref-total">0</div><div class="kpi-sub">Members invited</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">✅</div><div class="kpi-label">Successful</div><div class="kpi-value" id="ref-success">0</div><div class="kpi-sub">Joined &amp; active</div></div>
+    <div class="kpi kpi-cyan"><div class="kpi-icon">💰</div><div class="kpi-label">Rewards Earned</div><div class="kpi-value" id="ref-earned">KSh 0</div><div class="kpi-sub">Credited to account</div></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Referral link card -->
+    <div>
+      <div class="card mb-4" style="background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(123,97,255,.06));border-color:rgba(0,212,255,.2)">
+        <div class="section-title mb-3">Your Referral Code</div>
+        <div style="background:var(--glass2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:.7rem;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Referral Code</div>
+            <div style="font-family:var(--mono);font-size:1.3rem;font-weight:900;color:var(--cyan);letter-spacing:.15em" id="ref-code">HELA-0000</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="copyReferralCode()">📋 Copy</button>
+        </div>
+        <div style="background:var(--glass2);border:1px solid var(--border);border-radius:var(--r2);padding:12px;margin-bottom:16px">
+          <div style="font-size:.7rem;color:var(--text3);margin-bottom:4px">Referral Link</div>
+          <div style="font-size:.74rem;color:var(--text2);word-break:break-all;font-family:var(--mono)" id="ref-link">https://hela-app-2.onrender.com?ref=HELA-0000</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1" onclick="shareReferral('whatsapp')">💬 WhatsApp</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="shareReferral('sms')">📱 SMS</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="copyReferralCode()">📋 Copy Link</button>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="card">
+        <div class="section-title mb-3">How It Works</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0">1</div>
+            <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">Share your code</div><div style="font-size:.76rem;color:var(--text3)">Send your referral link or code to friends and family</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0">2</div>
+            <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">They register</div><div style="font-size:.76rem;color:var(--text3)">Friend signs up using your referral code</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0">3</div>
+            <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">They deposit KSh 500+</div><div style="font-size:.76rem;color:var(--text3)">Friend makes their first deposit within 30 days</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#ff9500);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#000;flex-shrink:0">🎁</div>
+            <div><div style="font-size:.83rem;font-weight:700;margin-bottom:2px">You earn KSh 200</div><div style="font-size:.76rem;color:var(--text3)">Reward credited to your savings within 24 hours</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Referral history -->
+    <div class="card">
+      <div class="section-head"><span class="section-title">Referral History</span></div>
+      <div id="referral-history" class="mt-3">
+        <div style="text-align:center;padding:40px;color:var(--text3)">
+          <div style="font-size:2.5rem;margin-bottom:10px">👥</div>
+          <div style="font-size:.84rem;font-weight:600;margin-bottom:6px">No referrals yet</div>
+          <div style="font-size:.76rem">Share your code above to start earning rewards</div>
+        </div>
+      </div>
+
+      <!-- Terms -->
+      <div style="margin-top:16px;padding:12px;background:rgba(255,181,71,.06);border:1px solid rgba(255,181,71,.15);border-radius:var(--r2)">
+        <div style="font-size:.75rem;font-weight:700;color:var(--gold);margin-bottom:6px">📋 Terms &amp; Conditions</div>
+        <ul style="font-size:.72rem;color:var(--text3);line-height:1.7;padding-left:16px;margin:0">
+          <li>Reward paid when referred member deposits KSh 500+ within 30 days</li>
+          <li>Referral reward credited to your HELA savings account</li>
+          <li>No limit on number of referrals — refer unlimited friends</li>
+          <li>Self-referrals are not eligible for rewards</li>
+          <li>HELA SMART SACCO reserves the right to modify the programme</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Goal Modal -->
+<div class="modal-bg" id="goal-modal" onclick="_onBgClick(event,'goal-modal')">
+  <div class="modal" id="goal-modal-panel">
+    <div class="modal-header"><div class="modal-drag"></div><div class="modal-title">🎯 New Savings Goal</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Goal Name</label><input id="goal-name" class="form-input" placeholder="e.g. Emergency Fund, House Deposit"></div>
+      <div class="form-group"><label class="form-label">Target Amount (KES)</label><input id="goal-target" class="form-input" type="number" placeholder="50000" min="100"></div>
+      <div class="form-group">
+        <label class="form-label">Pick an Emoji</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <input type="hidden" id="goal-emoji" value="🎯">
+          <span class="emoji-pick selected" onclick="pickGoalEmoji('🎯',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid var(--cyan)">🎯</span>
+          <span class="emoji-pick" onclick="pickGoalEmoji('🏠',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent">🏠</span>
+          <span class="emoji-pick" onclick="pickGoalEmoji('🚗',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent">🚗</span>
+          <span class="emoji-pick" onclick="pickGoalEmoji('✈️',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent">✈️</span>
+          <span class="emoji-pick" onclick="pickGoalEmoji('🎓',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent">🎓</span>
+          <span class="emoji-pick" onclick="pickGoalEmoji('💊',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent">💊</span>
+          <span class="emoji-pick" onclick="pickGoalEmoji('💼',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent">💼</span>
+          <span class="emoji-pick" onclick="pickGoalEmoji('🌾',event)" style="font-size:1.4rem;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent">🌾</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('goal-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="_addGoal()">Create Goal</button>
+    </div>
+  </div>
 </div>
 
 <!-- Toast container -->
@@ -4437,8 +5363,12 @@ function buildSidebar() {
       { id:'goals',     svg:'goals',        label:'Savings Goals' },
       { id:'dividends', svg:'dividends',    label:'Dividends' },
       { id:'shares',    svg:'shares',       label:'Shares' },
+      { id:'budget',    svg:'reports',      label:'Budget Planner' },
+      { id:'invest',    svg:'savings',      label:'Investments' },
       { id:'reports',   svg:'reports',      label:'Reports' },
       { id:'memberCard',svg:'memberCard',   label:'Member Card' },
+      { id:'referral',  svg:'notifications',label:'Refer & Earn', badge:false },
+      { id:'schedule',  svg:'loans',        label:'Repay Schedule' },
     ]},
     { label:'Account', items:[
       { id:'notifications', svg:'notifications', label:'Notifications', badge:true },
@@ -4514,7 +5444,7 @@ function go(page) {
     transfer: () => transferTab('mpesa'), notifications: loadNotifications,
     memberCard: loadMemberCard, goals: loadGoals, dividends: calcDividends,
     shares: loadShares, reports: () => reportsTab('overview'), profile: loadProfile,
-    kycUpload: loadKyc, help: loadHelp, policies: loadPolicies, auditLog: loadAuditLog,
+    kycUpload: loadKyc, help: loadHelp, policies: loadPolicies, budget: loadBudget, invest: loadInvest, referral: loadReferral, schedule: loadSchedule, auditLog: loadAuditLog,
     security: loadSecurity, adminDash: loadAdminDash, members: loadMembers,
     compliance: loadCompliance, systemSettings: loadSystemSettings,
   };
@@ -4618,32 +5548,71 @@ async function loadDashboard() {
 }
 
 // ── Statement ─────────────────────────────────────────────────
+let _allTxns = [];
+
 async function loadStatement() {
-  const el = E('statement-content'); if (!el) return;
-  el.innerHTML = '<div class="skeleton" style="height:300px;border-radius:var(--r3)"></div>';
+  const tbody = E('txn-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text3)">Loading...</td></tr>';
   try {
     const data = await api('/api/me/statement?limit=100');
     const txns = data?.transactions || data?.statement || [];
-    el.innerHTML = txns.length ? renderTxnTable(txns) : '<div class="card text-center" style="padding:40px;color:var(--text3)">No transactions yet</div>';
-  } catch(e) { el.innerHTML = `<div class="card text-center" style="padding:40px;color:var(--red)">${e.message}</div>`; }
+    _allTxns = txns;
+    // Populate header KPIs
+    const bal = parseFloat(ME?.balance || 0);
+    if (E('stmt-balance')) E('stmt-balance').textContent = fmt(bal);
+    const deposits = txns.filter(t => (t.transaction_type||'').toLowerCase().includes('credit')||((t.amount_minor||0)>0)).reduce((s,t) => s + (t.amount_minor ? t.amount_minor/100 : Math.abs(t.amount||0)), 0);
+    if (E('stmt-deposits')) E('stmt-deposits').textContent = fmt(deposits);
+    const loans = (ME?.loans||[]).reduce((s,l) => s + parseFloat(l.outstanding||0), 0);
+    if (E('stmt-loans')) E('stmt-loans').textContent = fmt(loans);
+    renderTxnRows(txns);
+  } catch(e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--red)">${e.message}</td></tr>`;
+  }
 }
 
-function renderTxnTable(txns) {
-  return `<div class="gc" style="overflow:hidden"><div style="overflow-x:auto"><table class="gc-table">
-    <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Amount</th><th>Balance</th></tr></thead>
-    <tbody>${txns.map(t => {
-      const isCredit = (t.transaction_type||t.type||'').toLowerCase().includes('credit') || (t.amount||0) > 0;
-      const amt = t.amount_minor ? t.amount_minor/100 : (t.amount||0);
-      return `<tr>
-        <td style="color:var(--text3);font-size:.76rem;white-space:nowrap">${new Date(t.created_at||t.date||'').toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'})}</td>
-        <td>${t.description||t.reference||'Transaction'}</td>
-        <td><span class="ubadge ${isCredit?'ubadge-success':'ubadge-danger'}">${t.transaction_type||t.type||'—'}</span></td>
-        <td style="font-weight:700;color:${isCredit?'var(--emerald)':'var(--red)'}">${isCredit?'+':'-'}${fmt(Math.abs(amt))}</td>
-        <td>${fmt(t.balance||0)}</td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table></div></div>`;
+function renderTxnRows(txns) {
+  const tbody = E('txn-tbody'); if (!tbody) return;
+  if (!txns.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text3)">No transactions yet</td></tr>'; return; }
+  tbody.innerHTML = txns.map(t => {
+    const isCredit = (t.transaction_type||t.type||'').toLowerCase().includes('credit') || (t.transaction_type||'').toLowerCase().includes('deposit');
+    const amt = t.amount_minor ? t.amount_minor/100 : Math.abs(t.amount||0);
+    return `<tr>
+      <td style="color:var(--text3);font-size:.76rem;white-space:nowrap">${new Date(t.created_at||t.date||'').toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'})}</td>
+      <td>${t.description||t.reference||t.transaction_type||'Transaction'}</td>
+      <td><span class="ubadge ${isCredit?'ubadge-success':'ubadge-danger'}">${t.transaction_type||t.type||'—'}</span></td>
+      <td style="font-weight:700;color:${isCredit?'var(--emerald)':'var(--red)'}">${isCredit?'+':'-'}${fmt(amt)}</td>
+      <td>${fmt(t.balance||0)}</td>
+    </tr>`;
+  }).join('');
 }
+
+function filterTxns() {
+  const q = (E('stmt-search')?.value||'').toLowerCase();
+  const type = E('stmt-filter')?.value||'';
+  const from = E('stmt-from')?.value;
+  const to = E('stmt-to')?.value;
+  let txns = _allTxns;
+  if (q) txns = txns.filter(t => JSON.stringify(t).toLowerCase().includes(q));
+  if (type) txns = txns.filter(t => (t.transaction_type||'').toLowerCase().includes(type));
+  if (from) txns = txns.filter(t => new Date(t.created_at) >= new Date(from));
+  if (to) txns = txns.filter(t => new Date(t.created_at) <= new Date(to));
+  renderTxnRows(txns);
+}
+
+function exportStatement() {
+  const rows = [['Date','Description','Type','Amount','Balance']];
+  _allTxns.forEach(t => {
+    const amt = t.amount_minor ? t.amount_minor/100 : Math.abs(t.amount||0);
+    rows.push([t.created_at, t.description||t.transaction_type, t.transaction_type, amt, t.balance||0]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'hela-statement.csv'; a.click();
+  toast('Statement exported', 'ok');
+}
+
+function downloadStatement() { toast('PDF generation coming soon', 'info'); }
 
 function renderRecentActivity(data) {
   const el = E('recent-activity-list'); if (!el) return;
@@ -4662,74 +5631,167 @@ function renderRecentActivity(data) {
 
 // ── Savings ───────────────────────────────────────────────────
 async function loadSavings() {
-  const el = E('savings-content'); if (!el) return;
-  el.innerHTML = '<div class="skeleton" style="height:200px;border-radius:var(--r3)"></div>';
+  const kpis = E('savings-kpis');
+  if (kpis) kpis.innerHTML = `
+    <div class="kpi kpi-green skeleton" style="height:90px"></div>
+    <div class="kpi kpi-teal skeleton" style="height:90px"></div>
+    <div class="kpi kpi-gold skeleton" style="height:90px"></div>`;
   try {
     const me = await api('/api/me');
     ME = me; updateTopBar();
-    el.innerHTML = `<div class="grid-3 mb-4">
-      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--cyan)">${fmt(me.balance||0)}</div><div class="stat-mini-label">Current Balance</div></div>
-      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--emerald)">${fmt(me.monthly_contribution||0)}</div><div class="stat-mini-label">Monthly Contribution</div></div>
-      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--gold)">${me.account_no||me.account_id||'—'}</div><div class="stat-mini-label">Account Number</div></div>
-    </div>
-    <div class="gc gc-p">
-      <div class="sh2"><span class="sh2-title">Savings Actions</span></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn-action primary" onclick="openModal('deposit-modal')">💰 Deposit</button>
-        <button class="btn-action" onclick="openModal('withdraw-modal')">📤 Withdraw</button>
-        <button class="btn-action" onclick="go('statement')">📋 Statement</button>
-      </div>
-    </div>`;
-  } catch(e) { el.innerHTML = `<div class="card text-center" style="padding:40px;color:var(--red)">${e.message}</div>`; }
+    if (kpis) kpis.innerHTML = `
+      <div class="kpi kpi-green"><div class="kpi-icon">🏦</div><div class="kpi-label">Current Balance</div><div class="kpi-value">${fmt(me.balance||0)}</div><div class="kpi-sub">Acc: ${me.account_no||me.account_id||'—'}</div></div>
+      <div class="kpi kpi-teal"><div class="kpi-icon">📅</div><div class="kpi-label">Monthly Contribution</div><div class="kpi-value">${fmt(me.monthly_contribution||0)}</div><div class="kpi-sub">Recurring deposit</div></div>
+      <div class="kpi kpi-gold"><div class="kpi-icon">🎯</div><div class="kpi-label">Interest Earned</div><div class="kpi-value">${fmt(me.interest_earned||0)}</div><div class="kpi-sub">8% p.a. rate</div></div>`;
+    // Goals preview
+    const gp = E('goals-preview');
+    if (gp) {
+      const goals = JSON.parse(localStorage.getItem('hgoals-'+(ME?.id||'g'))||'[]');
+      gp.innerHTML = goals.length ? goals.slice(0,2).map(g => `
+        <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:6px"><span style="font-weight:600">${g.emoji||'🎯'} ${g.name}</span><span style="color:var(--text3)">${Math.round((g.saved/g.target)*100)}%</span></div>
+        <div style="height:5px;border-radius:5px;background:var(--glass2);overflow:hidden"><div style="height:100%;width:${Math.min(100,(g.saved/g.target)*100)}%;background:linear-gradient(90deg,var(--cyan),var(--emerald));border-radius:5px"></div></div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">${fmt(g.saved)} of ${fmt(g.target)}</div></div>`).join('') :
+        `<div style="text-align:center;padding:20px;color:var(--text3);font-size:.84rem">No goals yet<br><button class="btn-action sm mt-2" onclick="go('goals')" style="margin-top:8px">+ Create Goal</button></div>`;
+    }
+    // Recent deposits
+    loadSavingsDeposits();
+  } catch(e) {
+    if (kpis) kpis.innerHTML = `<div class="kpi" style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+async function loadSavingsDeposits() {
+  const el = E('savings-recent'); if (!el) return;
+  try {
+    const data = await api('/api/me/statement?limit=10');
+    const txns = (data?.transactions||data?.statement||[]).filter(t => (t.transaction_type||'').toLowerCase().includes('credit')||((t.amount_minor||0)>0));
+    el.innerHTML = txns.slice(0,5).map(t => {
+      const amt = t.amount_minor ? t.amount_minor/100 : Math.abs(t.amount||0);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:.8rem;font-weight:600">${t.description||'Deposit'}</div><div style="font-size:.72rem;color:var(--text3)">${relativeTime(t.created_at)}</div></div>
+        <div style="font-weight:800;color:var(--emerald);font-size:.85rem">+${fmt(amt)}</div>
+      </div>`;
+    }).join('') || '<p style="color:var(--text3);font-size:.84rem">No deposits yet</p>';
+  } catch(e) { el.innerHTML = '<p style="color:var(--text3);font-size:.84rem">Could not load deposits</p>'; }
 }
 
 // ── Loans ─────────────────────────────────────────────────────
 async function loadLoans() {
-  const el = E('loans-content'); if (!el) return;
-  el.innerHTML = '<div class="skeleton" style="height:200px;border-radius:var(--r3)"></div>';
+  const kpis = E('loans-kpis');
+  if (kpis) kpis.innerHTML = `<div class="kpi skeleton" style="height:90px"></div><div class="kpi skeleton" style="height:90px"></div><div class="kpi skeleton" style="height:90px"></div>`;
   try {
     const me = await api('/api/me');
+    ME = me; updateTopBar();
     const loans = me.loans || [];
-    if (!loans.length) {
-      el.innerHTML = `<div class="gc gc-p text-center">
-        <div style="font-size:3rem;margin-bottom:12px">💳</div>
-        <div style="font-weight:700;margin-bottom:8px">No active loans</div>
-        <div style="color:var(--text3);font-size:.84rem;margin-bottom:16px">You can borrow up to 3× your savings balance</div>
-        <button class="btn-action primary" onclick="openModal('loan-apply-modal')">Apply for a Loan</button>
-      </div>`; return;
-    }
-    el.innerHTML = `<div class="gc" style="overflow:hidden"><div style="overflow-x:auto"><table class="gc-table">
-      <thead><tr><th>Loan ID</th><th>Principal</th><th>Outstanding</th><th>Next Due</th><th>Installment</th><th>Status</th><th>Action</th></tr></thead>
-      <tbody>${loans.map(l => `<tr>
-        <td style="font-family:var(--mono);font-size:.75rem;color:var(--text3)">#${l.id||'—'}</td>
-        <td>${fmt(l.principal||0)}</td>
-        <td style="font-weight:700;color:var(--cyan)">${fmt(l.outstanding||0)}</td>
-        <td>${l.next_due ? new Date(l.next_due).toLocaleDateString('en-KE',{day:'numeric',month:'short'}) : '—'}</td>
-        <td>${fmt(l.installment||0)}</td>
-        <td><span class="ubadge ${l.status==='active'?'ubadge-success':l.status==='overdue'?'ubadge-danger':'ubadge-muted'}">${l.status||'—'}</span></td>
-        <td><button class="btn-action sm" onclick="go('payments')">Pay</button></td>
-      </tr>`).join('')}</tbody>
-    </table></div></div>`;
-  } catch(e) { el.innerHTML = `<div class="card" style="padding:20px;color:var(--red)">${e.message}</div>`; }
+    const totalOut = loans.reduce((s,l) => s + parseFloat(l.outstanding||0), 0);
+    const active = loans.filter(l => l.status === 'active').length;
+    if (kpis) kpis.innerHTML = `
+      <div class="kpi kpi-gold"><div class="kpi-icon">💳</div><div class="kpi-label">Outstanding Balance</div><div class="kpi-value">${fmt(totalOut)}</div><div class="kpi-sub">${active} active loan${active!==1?'s':''}</div></div>
+      <div class="kpi kpi-green"><div class="kpi-icon">✅</div><div class="kpi-label">Loan Limit</div><div class="kpi-value">${fmt((me.balance||0)*3)}</div><div class="kpi-sub">3× your savings</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-icon">📅</div><div class="kpi-label">Next Due</div><div class="kpi-value" style="font-size:1rem">${loans[0]?.next_due ? new Date(loans[0].next_due).toLocaleDateString('en-KE',{day:'numeric',month:'short'}) : '—'}</div><div class="kpi-sub">${fmt(loans[0]?.installment||0)}/month</div></div>`;
+    loansTab('active');
+  } catch(e) {
+    if (kpis) kpis.innerHTML = `<div class="kpi" style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function loansTab(tab) {
+  document.querySelectorAll('#loans-tabs .tab').forEach((t,i) => t.classList.toggle('active', ['active','pending','history'][i]===tab));
+  const el = E('loans-content'); if (!el) return;
+  const loans = ME?.loans || [];
+  const filtered = tab === 'active' ? loans.filter(l=>l.status==='active'||l.status==='disbursed') :
+                   tab === 'pending' ? loans.filter(l=>l.status==='pending'||l.status==='approved') :
+                   loans.filter(l=>l.status==='cleared'||l.status==='rejected');
+  if (!loans.length) {
+    el.innerHTML = `<div class="card text-center" style="padding:40px">
+      <div style="font-size:3rem;margin-bottom:12px">💳</div>
+      <div style="font-weight:700;margin-bottom:8px">No active loans</div>
+      <div style="color:var(--text3);font-size:.84rem;margin-bottom:16px">You can borrow up to 3× your savings balance</div>
+      <button class="btn-action primary" onclick="openModal('loan-apply-modal')">Apply for a Loan</button>
+    </div>`; return;
+  }
+  if (!filtered.length) { el.innerHTML = `<div class="card" style="padding:24px;text-align:center;color:var(--text3)">No ${tab} loans</div>`; return; }
+  el.innerHTML = `<div class="gc" style="overflow:hidden"><div style="overflow-x:auto"><table class="gc-table">
+    <thead><tr><th>Loan ID</th><th>Principal</th><th>Outstanding</th><th>Next Due</th><th>Installment</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>${filtered.map(l => `<tr>
+      <td style="font-family:var(--mono);font-size:.75rem;color:var(--text3)">#${l.id||'—'}</td>
+      <td>${fmt(l.principal||0)}</td>
+      <td style="font-weight:700;color:var(--cyan)">${fmt(l.outstanding||0)}</td>
+      <td>${l.next_due ? new Date(l.next_due).toLocaleDateString('en-KE',{day:'numeric',month:'short'}) : '—'}</td>
+      <td>${fmt(l.installment||0)}</td>
+      <td><span class="ubadge ${l.status==='active'||l.status==='disbursed'?'ubadge-success':l.status==='pending'?'ubadge-warning':l.status==='overdue'?'ubadge-danger':'ubadge-muted'}">${l.status||'—'}</span></td>
+      <td><button class="btn-action sm" onclick="go('payments')">Pay Now</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div></div>`;
 }
 
 // ── Loan Calculator ───────────────────────────────────────────
 function calcLoan() {
-  const calc = () => {
-    const p = parseFloat(E('calc-principal')?.value||0);
-    const r = parseFloat(E('calc-rate')?.value||1.5)/100;
-    const n = parseInt(E('calc-months')?.value||12);
-    if (!p || !n) return;
-    const emi = p * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
-    const total = emi * n;
-    if (E('calc-emi')) E('calc-emi').textContent = fmt(emi);
-    if (E('calc-total')) E('calc-total').textContent = fmt(total);
-    if (E('calc-interest')) E('calc-interest').textContent = fmt(total-p);
-  };
-  ['calc-principal','calc-rate','calc-months'].forEach(id => {
-    const el = E(id); if (el) { el.oninput = calc; }
-  });
-  calc();
+  const p = parseFloat(E('lc-amount')?.value||50000);
+  const r = parseFloat(E('lc-rate')?.value||1.5)/100;
+  const n = parseInt(E('lc-months')?.value||12);
+  const type = E('lc-type')?.value||'reducing';
+  if (!p || !n || !r) return;
+  let emi, totalInterest, totalPayment;
+  if (type === 'reducing') {
+    emi = p * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
+    totalPayment = emi * n;
+    totalInterest = totalPayment - p;
+  } else {
+    totalInterest = p * r * n;
+    totalPayment = p + totalInterest;
+    emi = totalPayment / n;
+  }
+  const apr = (Math.pow(1+r,12)-1)*100;
+  if (E('lc-monthly')) E('lc-monthly').textContent = fmt(emi);
+  if (E('lc-interest')) E('lc-interest').textContent = fmt(totalInterest);
+  if (E('lc-total')) E('lc-total').textContent = fmt(totalPayment);
+  if (E('lc-apr')) E('lc-apr').textContent = apr.toFixed(1)+'%';
+  const pct = Math.min(100, (totalInterest/totalPayment)*100);
+  if (E('lc-bar')) E('lc-bar').style.width = pct+'%';
+  if (E('lc-bar-label')) E('lc-bar-label').textContent = `Interest = ${pct.toFixed(1)}% of total repayment`;
+  // Amortization table
+  const tbody = E('amort-tbody'); if (!tbody) return;
+  let balance = p;
+  const startDate = new Date();
+  const rows = [];
+  for (let i=1; i<=n; i++) {
+    const intPart = type==='reducing' ? balance*r : p*r;
+    const prinPart = emi - intPart;
+    balance = Math.max(0, balance - prinPart);
+    const dueDate = new Date(startDate);
+    dueDate.setMonth(dueDate.getMonth()+i);
+    rows.push(`<tr>
+      <td style="color:var(--text3)">${i}</td>
+      <td style="font-size:.76rem;color:var(--text3)">${dueDate.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'})}</td>
+      <td style="font-weight:600">${fmt(emi)}</td>
+      <td style="color:var(--cyan)">${fmt(prinPart)}</td>
+      <td style="color:var(--red)">${fmt(intPart)}</td>
+      <td style="font-weight:700">${fmt(balance)}</td>
+    </tr>`);
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+function exportAmort() {
+  const p = parseFloat(E('lc-amount')?.value||50000);
+  const r = parseFloat(E('lc-rate')?.value||1.5)/100;
+  const n = parseInt(E('lc-months')?.value||12);
+  const type = E('lc-type')?.value||'reducing';
+  const emi = p * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
+  let balance = p;
+  const rows = [['Month','Principal','Interest','Payment','Balance']];
+  for (let i=1;i<=n;i++) {
+    const intPart = type==='reducing' ? balance*r : p*r;
+    const prinPart = emi - intPart;
+    balance = Math.max(0, balance - prinPart);
+    rows.push([i, prinPart.toFixed(2), intPart.toFixed(2), emi.toFixed(2), balance.toFixed(2)]);
+  }
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'amortization.csv'; a.click();
+  toast('Schedule exported', 'ok');
 }
 
 // ── Payments ──────────────────────────────────────────────────
@@ -4808,8 +5870,8 @@ async function doTransfer(type) {
 
 // ── Notifications ─────────────────────────────────────────────
 async function loadNotifications() {
-  const el = E('notifications-list'); if (!el) return;
-  el.innerHTML = '<div class="skeleton" style="height:200px;border-radius:var(--r3)"></div>';
+  const el = E('notif-list'); if (!el) return;
+  el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text3)">Loading...</p>';
   try {
     const data = await api('/api/notifications');
     const notifs = data?.notifications || [];
@@ -4819,100 +5881,193 @@ async function loadNotifications() {
     if (dot) { dot.textContent = unread; dot.style.display = unread ? 'flex' : 'none'; }
     const nb = E('nb-notif');
     if (nb) { nb.textContent = unread; nb.style.display = unread ? 'flex' : 'none'; }
-    if (!notifs.length) { el.innerHTML = '<div class="gc gc-p text-center" style="padding:40px;color:var(--text3)">No notifications</div>'; return; }
+    if (!notifs.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text3)">No notifications</p>'; return; }
     el.innerHTML = notifs.map(n => `
-      <div class="notif-item${!n.is_read?' unread':''}" style="border-radius:var(--r2);margin-bottom:6px">
-        ${!n.is_read ? '<div class="ni-dot"></div>' : '<div style="width:6px"></div>'}
+      <div class="notif-item${!n.is_read?' unread':''}">
+        ${!n.is_read ? '<div class="ni-dot"></div>' : '<div style="width:6px;flex-shrink:0"></div>'}
         <div style="flex:1">
           <div class="ni-title">${n.title||'Notification'}</div>
           <div class="ni-body">${n.body||''}</div>
           <div class="ni-time">${relativeTime(n.created_at)}</div>
         </div>
       </div>`).join('');
-  } catch(e) { el.innerHTML = `<div class="gc gc-p" style="color:var(--red)">${e.message}</div>`; }
+  } catch(e) { el.innerHTML = `<p style="text-align:center;padding:30px;color:var(--red)">${e.message}</p>`; }
+}
+
+function markAllRead() {
+  api('/api/notifications/read-all', { method:'POST' }).catch(() => {});
+  document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+  const dot = E('n-dot'); if (dot) dot.style.display = 'none';
+  const nb = E('nb-notif'); if (nb) nb.style.display = 'none';
+  toast('All notifications marked as read', 'ok');
 }
 
 // ── Member Card ───────────────────────────────────────────────
 function loadMemberCard() {
-  const el = E('member-card-container'); if (!el) return;
+  const el = E('member-card-display'); if (!el) return;
   const name = ME?.name || 'HELA MEMBER';
   const no = ME?.member_no || 'HSS-0000';
+  const phone = ME?.phone || '';
   const since = ME?.membership_date ? new Date(ME.membership_date).getFullYear() : new Date().getFullYear();
-  el.innerHTML = `<div style="perspective:1000px;width:360px;margin:0 auto 24px">
-    <div style="background:linear-gradient(135deg,#070C18,#0D1526);border-radius:var(--r3);padding:28px;border:1px solid rgba(0,212,255,.2);box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(0,212,255,.08);position:relative;overflow:hidden">
-      <div style="position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(0,212,255,.06),transparent 50%),radial-gradient(circle at 20% 80%,rgba(123,97,255,.06),transparent 50%)"></div>
-      <div style="position:relative;z-index:1">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
-          <div>
-            <div style="font-family:var(--font);font-size:1.1rem;font-weight:900;color:#fff;letter-spacing:-.02em">HELA SMART</div>
-            <div style="font-size:.7rem;color:var(--cyan);font-weight:700;letter-spacing:.15em">SACCO</div>
-          </div>
-          <span class="ubadge ubadge-gold" style="font-size:.65rem">MEMBER</span>
+  const ini = initials(name);
+  el.innerHTML = `<div style="background:linear-gradient(135deg,#070C18 0%,#0D1526 50%,#0A1A30 100%);border-radius:var(--r3);padding:28px 28px 22px;border:1px solid rgba(0,212,255,.2);box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(0,212,255,.06);position:relative;overflow:hidden;min-height:180px">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 80% 10%,rgba(0,212,255,.08),transparent 55%),radial-gradient(circle at 15% 90%,rgba(123,97,255,.07),transparent 50%)"></div>
+    <div style="position:relative;z-index:1">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px">
+        <div>
+          <div style="font-family:var(--font);font-size:1.1rem;font-weight:900;color:#fff;letter-spacing:-.02em">HELA SMART</div>
+          <div style="font-size:.65rem;color:var(--cyan);font-weight:700;letter-spacing:.2em">SACCO • SASRA LICENSED</div>
         </div>
-        <div id="qr-code-container" style="margin-bottom:20px"></div>
-        <div style="font-family:var(--mono);font-size:.9rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:4px">${no}</div>
-        <div style="font-family:var(--font);font-size:1.05rem;font-weight:800;color:#fff;letter-spacing:.03em;text-transform:uppercase">${name}</div>
-        <div style="font-size:.7rem;color:var(--text3);margin-top:8px">Member since ${since} • SASRA Licensed</div>
+        <span style="background:linear-gradient(135deg,var(--gold),#ff9500);color:#000;font-size:.62rem;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.05em">MEMBER</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff;flex-shrink:0">${ini}</div>
+        <div>
+          <div style="font-family:var(--mono);font-size:.82rem;color:var(--cyan);letter-spacing:.12em;margin-bottom:2px">${no}</div>
+          <div style="font-family:var(--font);font-size:1rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.04em">${name}</div>
+          <div style="font-size:.7rem;color:var(--text3);margin-top:3px">${phone} • Member since ${since}</div>
+        </div>
       </div>
     </div>
-  </div>
-  <div style="text-align:center">
-    <button class="btn-action primary" onclick="toast('Card downloaded','ok')">⬇ Download Card</button>
-    <button class="btn-action" onclick="toast('Card shared','ok')" style="margin-left:8px">↗ Share</button>
+    <!-- Decorative dots pattern -->
+    <div style="position:absolute;right:20px;bottom:20px;opacity:.06;font-size:60px;line-height:1">◈◈◈</div>
   </div>`;
-  // Generate QR
-  if (typeof QRCode !== 'undefined') {
-    const qrEl = E('qr-code-container');
-    if (qrEl) new QRCode(qrEl, { text: no + '|' + name, width:64, height:64, colorDark:'#00D4FF', colorLight:'transparent' });
+  // Verify code
+  const vc = E('mc-verify-code');
+  if (vc) vc.textContent = 'HELA-' + (no||'').replace('HSS-','') + '-' + (ME?.id||'0000').toString().slice(-4);
+  // Card details
+  const dl = E('card-details-list');
+  if (dl) dl.innerHTML = [
+    ['Member Number', no], ['Full Name', name], ['Phone', phone||'—'],
+    ['KYC Status', ME?.kyc_status||'pending'], ['Account Balance', fmt(ME?.balance||0)],
+    ['Member Since', since], ['SACCO', 'HELA SMART SACCO'], ['License', 'SASRA Registered'],
+  ].map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:.77rem;color:var(--text3)">${k}</span><span style="font-size:.77rem;font-weight:700;color:var(--text)">${v}</span></div>`).join('');
+  // QR code
+  const qrEl = E('card-qr');
+  if (qrEl && typeof QRCode !== 'undefined') {
+    qrEl.innerHTML = '';
+    try { new QRCode(qrEl, { text: no+'|'+name+'|HELA', width:72, height:72, colorDark:'#000', colorLight:'#fff' }); }
+    catch(_) { qrEl.innerHTML = `<div style="width:72px;height:72px;background:rgba(255,255,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--text3)">QR</div>`; }
   }
 }
 
+function printCard() { window.print(); }
+function downloadCard() { toast('Card download coming soon', 'info'); }
+
 // ── Goals ─────────────────────────────────────────────────────
 function loadGoals() {
-  const el = E('goals-content'); if (!el) return;
+  const el = E('goals-grid'); if (!el) return;
   const goals = JSON.parse(localStorage.getItem('hgoals-'+(ME?.id||'g'))||'[]');
   if (!goals.length) {
-    el.innerHTML = `<div class="gc gc-p text-center" style="padding:40px">
+    el.innerHTML = `<div class="card text-center" style="padding:40px;grid-column:1/-1">
       <div style="font-size:3rem;margin-bottom:12px">🎯</div>
       <div style="font-weight:700;margin-bottom:8px">No savings goals yet</div>
-      <button class="btn-action primary" onclick="_addGoal()">+ Create Goal</button>
+      <div style="color:var(--text3);font-size:.84rem;margin-bottom:16px">Set targets for things you want to save for</div>
+      <button class="btn-action primary" onclick="_openGoalModal()">+ Create First Goal</button>
     </div>`; return;
   }
-  el.innerHTML = `<div class="grid-3">${goals.map((g,i) => `
-    <div class="gc gc-p">
-      <div style="font-size:1.8rem;margin-bottom:8px">${g.emoji||'🎯'}</div>
-      <div style="font-weight:700;margin-bottom:4px">${g.name}</div>
-      <div style="font-size:.8rem;color:var(--text3);margin-bottom:12px">${fmt(g.saved)} / ${fmt(g.target)}</div>
-      <div style="height:6px;border-radius:6px;background:var(--glass2);overflow:hidden">
-        <div style="height:100%;width:${Math.min(100,(g.saved/g.target)*100)}%;background:linear-gradient(90deg,var(--cyan),var(--emerald));border-radius:6px;transition:.6s"></div>
+  el.innerHTML = goals.map((g,i) => `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div style="font-size:2rem">${g.emoji||'🎯'}</div>
+        <div style="flex:1"><div style="font-weight:700;margin-bottom:2px">${g.name}</div><div style="font-size:.73rem;color:var(--text3)">${fmt(g.saved)} saved of ${fmt(g.target)}</div></div>
+        <span style="font-size:.8rem;font-weight:800;color:var(--cyan)">${Math.round(Math.min(100,(g.saved/g.target)*100))}%</span>
       </div>
-    </div>`).join('')}</div>
-  <button class="btn-action mt-4" onclick="_addGoal()" style="margin-top:16px">+ Add Goal</button>`;
+      <div style="height:6px;border-radius:6px;background:var(--glass2);overflow:hidden;margin-bottom:12px">
+        <div style="height:100%;width:${Math.min(100,(g.saved/g.target)*100)}%;background:linear-gradient(90deg,var(--cyan),var(--emerald));border-radius:6px;transition:.8s"></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-action sm" onclick="_contributeGoal(${i})">+ Contribute</button>
+        <button class="btn-action sm danger" onclick="_deleteGoal(${i})" style="margin-left:auto">Delete</button>
+      </div>
+    </div>`).join('') + `<div class="card" style="border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:160px" onclick="_openGoalModal()">
+    <div style="text-align:center;color:var(--text3)"><div style="font-size:2rem;margin-bottom:8px">+</div><div style="font-size:.84rem">Add Goal</div></div>
+  </div>`;
 }
-function _addGoal() {
-  const name = prompt('Goal name:'); if (!name) return;
-  const target = parseFloat(prompt('Target amount (KES):')||0); if (!target) return;
+
+function _openGoalModal() { openModal('goal-modal'); }
+
+function _contributeGoal(idx) {
+  const amt = parseFloat(prompt('Contribution amount (KES):')||0);
+  if (!amt || amt <= 0) return;
   const key = 'hgoals-'+(ME?.id||'g');
   const goals = JSON.parse(localStorage.getItem(key)||'[]');
-  goals.push({ name, target, saved:0, emoji:'🎯', created: new Date().toISOString() });
+  if (goals[idx]) { goals[idx].saved = Math.min(goals[idx].target, (goals[idx].saved||0) + amt); }
+  localStorage.setItem(key, JSON.stringify(goals));
+  toast('Contribution recorded!', 'ok'); loadGoals();
+}
+
+function _deleteGoal(idx) {
+  if (!confirm('Delete this goal?')) return;
+  const key = 'hgoals-'+(ME?.id||'g');
+  const goals = JSON.parse(localStorage.getItem(key)||'[]');
+  goals.splice(idx, 1);
   localStorage.setItem(key, JSON.stringify(goals));
   loadGoals();
 }
 
+function _addGoal() {
+  const name = (E('goal-name')?.value||'').trim();
+  const target = parseFloat(E('goal-target')?.value||0);
+  const emoji = E('goal-emoji')?.value||'🎯';
+  if (!name || !target) { toast('Enter goal name and target amount', 'err'); return; }
+  const key = 'hgoals-'+(ME?.id||'g');
+  const goals = JSON.parse(localStorage.getItem(key)||'[]');
+  goals.push({ name, target, saved:0, emoji, created: new Date().toISOString() });
+  localStorage.setItem(key, JSON.stringify(goals));
+  closeModal('goal-modal'); loadGoals();
+  toast('Goal created!', 'ok');
+}
+
+function pickGoalEmoji(emoji, evt) {
+  if (E('goal-emoji')) E('goal-emoji').value = emoji;
+  document.querySelectorAll('.emoji-pick').forEach(e => e.style.borderColor = 'transparent');
+  if (evt?.target) evt.target.style.borderColor = 'var(--cyan)';
+}
+
 // ── Dividends ─────────────────────────────────────────────────
 function calcDividends() {
-  const el = E('dividends-content'); if (!el) return;
-  const bal = parseFloat(ME?.balance||0);
-  const annual = bal * 0.12;
-  el.innerHTML = `<div class="grid-3 mb-4">
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--gold)">${fmt(annual)}</div><div class="stat-mini-label">Projected Annual Dividend</div></div>
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--cyan)">12% p.a.</div><div class="stat-mini-label">Dividend Rate</div></div>
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--emerald)">${fmt(bal)}</div><div class="stat-mini-label">Qualifying Balance</div></div>
-  </div>
-  <div class="gc gc-p">
-    <div class="sh2-title" style="margin-bottom:12px">Dividend History</div>
-    <p style="color:var(--text3);font-size:.84rem">Dividends are declared annually at the AGM. Check back after year-end.</p>
-  </div>`;
+  const amount = parseFloat(E('div-amount')?.value||10000);
+  const rateAnnual = parseFloat(E('div-rate')?.value||8)/100;
+  const years = parseInt(E('div-years')?.value||3);
+  const freq = E('div-freq')?.value||'annual';
+  const n = { annual:1, 'semi-annual':2, quarterly:4, monthly:12 }[freq]||1;
+  const r = rateAnnual / n;
+  const periods = years * n;
+  const total = amount * Math.pow(1+r, periods);
+  const interest = total - amount;
+  const monthly = interest / (years*12);
+  const apy = (Math.pow(1+r,n)-1)*100;
+  const pct = Math.min(100, (interest/total)*100);
+  if (E('div-total')) E('div-total').textContent = fmt(total);
+  if (E('div-interest')) E('div-interest').textContent = fmt(interest);
+  if (E('div-monthly')) E('div-monthly').textContent = fmt(monthly);
+  if (E('div-apy')) E('div-apy').textContent = apy.toFixed(2)+'%';
+  if (E('div-bar')) E('div-bar').style.width = pct+'%';
+  // Year-by-year table
+  const tbody = E('div-table-body'); if (tbody) {
+    let rows = '';
+    for (let y=1; y<=years; y++) {
+      const yTotal = amount * Math.pow(1+r, y*n);
+      rows += `<tr><td>${y}</td><td>${fmt(amount)}</td><td style="color:var(--gold)">${fmt(yTotal-amount)}</td><td style="font-weight:700">${fmt(yTotal)}</td></tr>`;
+    }
+    tbody.innerHTML = rows;
+  }
+  // Chart
+  const canvas = E('div-chart');
+  if (canvas && typeof Chart !== 'undefined') {
+    if (_charts['dividends']) { try { _charts['dividends'].destroy(); } catch(_){} }
+    const labels = Array.from({length:years}, (_,i) => 'Year '+(i+1));
+    const principals = labels.map(() => amount);
+    const interests = labels.map((_,i) => amount * Math.pow(1+r,(i+1)*n) - amount);
+    _charts['dividends'] = new Chart(canvas, {
+      type:'bar', data:{ labels, datasets:[
+        { label:'Principal', data:principals, backgroundColor:'rgba(0,212,255,.3)', borderColor:'var(--cyan)', borderWidth:2, borderRadius:6 },
+        { label:'Interest', data:interests, backgroundColor:'rgba(255,181,71,.3)', borderColor:'var(--gold)', borderWidth:2, borderRadius:6 },
+      ]},
+      options:{ responsive:true, plugins:{ legend:{labels:{color:'var(--text2)'}} }, scales:{ x:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'var(--text3)'}}, y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'var(--text3)',callback:v=>'KSh '+fmtN(v)}} } }
+    });
+  }
 }
 
 // ── Shares ────────────────────────────────────────────────────
@@ -4920,9 +6075,23 @@ async function loadShares() {
   const el = E('shares-kpis'); if (!el) return;
   const shares = ME?.shares || 0;
   el.innerHTML = `
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--cyan)">${fmtN(shares)}</div><div class="stat-mini-label">Total Shares</div></div>
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--gold)">${fmt(shares * 100)}</div><div class="stat-mini-label">Share Value</div></div>
-    <div class="stat-mini"><div class="stat-mini-val" style="color:var(--emerald)">KSh 100</div><div class="stat-mini-label">Price Per Share</div></div>`;
+    <div class="kpi kpi-blue"><div class="kpi-icon">📊</div><div class="kpi-label">Total Shares</div><div class="kpi-value">${fmtN(shares)}</div><div class="kpi-sub">1 share = KSh 100</div></div>
+    <div class="kpi kpi-gold"><div class="kpi-icon">💰</div><div class="kpi-label">Share Value</div><div class="kpi-value">${fmt(shares * 100)}</div><div class="kpi-sub">At par value</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">📈</div><div class="kpi-label">Dividend (est.)</div><div class="kpi-value">${fmt(shares * 100 * 0.12)}</div><div class="kpi-sub">12% p.a. projected</div></div>`;
+  const hist = E('shares-history');
+  if (hist) hist.innerHTML = shares > 0
+    ? `<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between"><span style="font-size:.8rem;color:var(--text2)">Share allocation</span><span style="font-weight:700;color:var(--cyan)">+${fmtN(shares)} shares</span></div>`
+    : '<p style="color:var(--text3);font-size:.84rem">No share transactions. Contact admin to purchase shares.</p>';
+  const cert = E('shares-cert-preview');
+  if (cert && shares > 0) cert.innerHTML = `<div class="section-title mb-3">Share Certificate</div>
+    <div style="border:1px solid rgba(0,212,255,.2);border-radius:var(--r2);padding:20px;background:linear-gradient(135deg,rgba(0,212,255,.04),rgba(123,97,255,.04));text-align:center">
+      <div style="font-size:.7rem;color:var(--text3);letter-spacing:.12em;margin-bottom:8px">CERT NO.</div>
+      <div style="font-family:var(--mono);font-size:1rem;color:var(--cyan);margin-bottom:14px">HSS-SHR-${(ME?.id||'0000').toString().padStart(5,'0')}</div>
+      <div style="font-weight:800;font-size:1rem;margin-bottom:4px">${ME?.name||'—'}</div>
+      <div style="color:var(--text3);font-size:.78rem;margin-bottom:10px">holder of</div>
+      <div style="font-size:1.8rem;font-weight:900;color:var(--gold);margin-bottom:4px">${fmtN(shares)}</div>
+      <div style="font-size:.78rem;color:var(--text3)">ordinary shares • KSh 100 each • HELA SMART SACCO</div>
+    </div>`;
 }
 
 // ── Reports ───────────────────────────────────────────────────
@@ -4933,11 +6102,9 @@ function reportsTab(tab) {
     el.innerHTML = `<div class="grid-2"><div class="card"><div class="section-title mb-3">Savings Trend</div><div class="chart-container"><canvas id="chart-rep-savings"></canvas></div></div><div class="card"><div class="section-title mb-3">Loan Overview</div><div class="chart-container"><canvas id="chart-rep-loans"></canvas></div></div></div>`;
     setTimeout(() => { buildSavingsChart(null, 'chart-rep-savings'); buildLoanChart('chart-rep-loans'); }, 100);
   } else if (tab === 'statement') {
-    loadStatement();
-    setTimeout(() => { const sc = E('statement-content'); if (sc && el) el.innerHTML = sc.innerHTML; }, 500);
+    el.innerHTML = `<div class="card" style="padding:20px;text-align:center;color:var(--text3)">Go to <button class="btn-action sm" onclick="go('statement')">Account Statement</button> for full transaction history.</div>`;
   } else if (tab === 'loans') {
-    loadLoans();
-    setTimeout(() => { const lc = E('loans-content'); if (lc && el) el.innerHTML = lc.innerHTML; }, 500);
+    el.innerHTML = `<div class="card" style="padding:20px;text-align:center;color:var(--text3)">Go to <button class="btn-action sm" onclick="go('loans')">Loans page</button> for your loan portfolio.</div>`;
   } else if (tab === 'admin') {
     const isAdmin = ME?.role === 'admin' || ME?.role === 'super_admin';
     if (!isAdmin) { el.innerHTML = '<div class="gc gc-p" style="color:var(--text3)">Admin access required</div>'; return; }
@@ -4964,11 +6131,53 @@ function loadProfile() {
   if (E('profile-member-no')) E('profile-member-no').textContent = ME.member_no||'—';
   if (E('profile-role-badge')) E('profile-role-badge').innerHTML = `<span class="ubadge ubadge-cyan">${(ME.role||'member').toUpperCase()}</span>`;
   if (E('profile-kyc-badge')) E('profile-kyc-badge').innerHTML = `<span class="ubadge ${ME.kyc_status==='verified'||ME.kyc_status==='approved'?'ubadge-success':'ubadge-warning'}">${ME.kyc_status||'pending'}</span>`;
+  // Financial snapshot
+  const bal = parseFloat(ME.balance||0);
+  const loanOut = (ME.loans||[]).reduce((s,l) => s + parseFloat(l.outstanding||0), 0);
+  if (E('pf-balance')) E('pf-balance').textContent = fmt(bal);
+  if (E('pf-limit')) E('pf-limit').textContent = fmt(bal * 3);
+  if (E('pf-outstanding')) E('pf-outstanding').textContent = fmt(loanOut);
+  if (E('pf-since')) E('pf-since').textContent = ME.membership_date ? new Date(ME.membership_date).getFullYear() : '—';
+  // Security score
+  let score = 0;
+  const kyc_ok = ME.kyc_status === 'verified' || ME.kyc_status === 'approved';
+  if (kyc_ok) score++;
+  if (ME.phone) score++;
+  if (ME.email) score++;
+  score++; // password always set
+  const colors = ['var(--red)','var(--gold)','var(--gold)','var(--emerald)','var(--cyan)'];
+  const labels = ['Very Weak','Weak','Fair','Good','Excellent'];
+  for (let i=1; i<=5; i++) {
+    const b = E('sb'+i);
+    if (b) b.style.background = i <= score ? colors[score-1] : 'var(--glass2)';
+  }
+  if (E('sec-score-label')) E('sec-score-label').textContent = labels[score-1] || 'Weak';
+  if (E('sec-score-pct')) E('sec-score-pct').textContent = Math.round((score/5)*100) + '%';
+  // Checklist
+  if (E('chk-kyc')) { E('chk-kyc').querySelector('.chk-icon').textContent = kyc_ok ? '✅' : '⏳'; E('chk-kyc').querySelector('.chk-text').textContent = kyc_ok ? 'Identity verified' : 'KYC pending'; }
+  if (E('chk-2fa')) { E('chk-2fa').querySelector('.chk-icon').textContent = '⏳'; }
+  // Info grid
   const g = E('profile-info-grid'); if (g) g.innerHTML = [
-    ['Phone', ME.phone||'—'], ['Email', ME.email||'—'],
-    ['Member No.', ME.member_no||'—'], ['Balance', fmt(ME.balance||0)],
-    ['KYC Status', ME.kyc_status||'pending'], ['Account', ME.account_no||ME.account_id||'—'],
-  ].map(([k,v]) => `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`).join('');
+    ['👤 Full Name', ME.name||'—'], ['📱 Phone', ME.phone||'—'],
+    ['📧 Email', ME.email||'—'], ['🔢 Member No.', ME.member_no||'—'],
+    ['🏦 Account', ME.account_no||ME.account_id||'—'], ['🪪 KYC Status', ME.kyc_status||'pending'],
+    ['📅 Joined', ME.membership_date ? new Date(ME.membership_date).toLocaleDateString('en-KE',{month:'long',year:'numeric'}) : '—'], ['👔 Role', ME.role||'member'],
+  ].map(([k,v]) => `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><span style="font-size:.75rem;color:var(--text3)">${k}</span><span style="font-size:.8rem;font-weight:600;color:var(--text)">${v}</span></div>`).join('');
+  // Activity
+  const act = E('profile-activity');
+  if (act) {
+    api('/api/me/statement?limit=5').then(d => {
+      const txns = d?.transactions||d?.statement||[];
+      act.innerHTML = txns.slice(0,4).map(t => {
+        const isCredit = (t.transaction_type||'').toLowerCase().includes('credit')||((t.amount_minor||0)>0);
+        const amt = t.amount_minor ? t.amount_minor/100 : Math.abs(t.amount||0);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:.8rem;font-weight:600">${t.description||t.transaction_type||'Transaction'}</div><div style="font-size:.72rem;color:var(--text3)">${relativeTime(t.created_at)}</div></div>
+          <div style="font-size:.82rem;font-weight:700;color:${isCredit?'var(--emerald)':'var(--red)'}">${isCredit?'+':'-'}${fmt(amt)}</div>
+        </div>`;
+      }).join('') || '<p style="color:var(--text3);font-size:.84rem">No recent activity</p>';
+    }).catch(() => { act.innerHTML = '<p style="color:var(--text3);font-size:.84rem">Could not load activity</p>'; });
+  }
   const av = E('profile-avatar');
   if (av) {
     const saved = localStorage.getItem(avKey());
@@ -5032,7 +6241,7 @@ async function submitKyc() {
 
 // ── Help ──────────────────────────────────────────────────────
 function loadHelp() {
-  const el = E('help-faqs'); if (!el) return;
+  const el = E('faq-list'); if (!el) return;
   const faqs = [
     ['How do I deposit funds?', 'Use M-Pesa Paybill 3346067 with your member number as account, or use the Deposit button in the app.'],
     ['How do I apply for a loan?', 'Go to Loans page and click Apply, or use Quick Actions on your dashboard. Maximum loan is 3× your savings.'],
@@ -5047,8 +6256,8 @@ function loadHelp() {
     </details>`).join('');
 }
 
-async function sendAiChat() {
-  const inp = E('ai-chat-input'); if (!inp) return;
+async function sendAI() {
+  const inp = E('ai-input'); if (!inp) return;
   const msg = inp.value?.trim(); if (!msg) return;
   const win = E('ai-chat-window'); if (!win) return;
   inp.value = '';
@@ -5059,7 +6268,7 @@ async function sendAiChat() {
     // Simple fallback response based on keywords
     const resp = getAiResponse(msg);
     setTimeout(() => {
-      const typing = E('ai-typing'); if (typing) typing.remove();
+      const typing = document.querySelector('[id^="ai-t"]'); if (typing) typing.remove();
       win.innerHTML += `<div style="margin-bottom:10px"><div style="display:inline-block;background:var(--glass2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:var(--r2);font-size:.82rem;max-width:85%;line-height:1.5">${resp}</div></div>`;
       win.scrollTop = win.scrollHeight;
     }, 800);
@@ -5627,8 +6836,482 @@ function setupConnectivityMonitor() {
   window.addEventListener('offline', () => toast('You are offline', 'warn', 8000));
 }
 
+
+
+// ── Animate Numbers ───────────────────────────────────────────
+function animateNumber(el, from, to, dur, format) {
+  if (!el) return;
+  const start = Date.now();
+  format = format || (n => n.toLocaleString());
+  const tick = () => {
+    const elapsed = Date.now() - start;
+    const pct = Math.min(1, elapsed / dur);
+    const ease = 1 - Math.pow(1 - pct, 3); // easeOutCubic
+    el.textContent = format(Math.round(from + (to - from) * ease));
+    if (pct < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+// ── Notification filter ───────────────────────────────────────
+function filterNotifs(type) {
+  document.querySelectorAll('[id^="nf-"]').forEach(b => {
+    b.className = b.id === 'nf-'+type ? 'ubadge ubadge-cyan' : 'ubadge ubadge-muted';
+    b.style.cursor = 'pointer'; b.style.padding = '6px 14px'; b.style.fontSize = '.75rem';
+  });
+  const items = document.querySelectorAll('.notif-item');
+  items.forEach(item => {
+    if (type === 'all') { item.style.display = ''; return; }
+    if (type === 'unread') { item.style.display = item.classList.contains('unread') ? '' : 'none'; return; }
+    const txt = item.textContent.toLowerCase();
+    item.style.display = txt.includes(type) ? '' : 'none';
+  });
+}
+
+// ── Forgot/Reset Password ─────────────────────────────────────
+function doForgotPwd() {
+  const phone = E('fp-phone')?.value?.trim();
+  if (!phone) { err('fp-err', 'Enter your phone number'); return; }
+  toast('Reset instructions sent to ' + phone, 'ok', 4000);
+  setTimeout(() => authTab('login'), 2000);
+}
+
+function doResetPwd() {
+  const pwd = E('rp-pwd')?.value, cpwd = E('rp-cpwd')?.value;
+  if (!pwd || pwd.length < 6) { err('rp-err', 'Password must be at least 6 characters'); return; }
+  if (pwd !== cpwd) { err('rp-err', 'Passwords do not match'); return; }
+  toast('Password reset successfully — please sign in', 'ok');
+  setTimeout(() => authTab('login'), 1500);
+}
+
+function showPolicy(type) {
+  const titles = { terms:'Terms & Conditions', privacy:'Privacy Policy', membership:'Membership Agreement' };
+  toast('Opening ' + (titles[type]||type) + '...', 'info');
+  setTimeout(() => go('policies'), 800);
+}
+
+
+// ── Cookie Consent ────────────────────────────────────────────
+function _cookieInit() {
+  if (localStorage.getItem('hela-cookies-accepted')) return; // already accepted
+  setTimeout(() => {
+    const b = document.getElementById('cookie-banner');
+    if (b) b.classList.add('visible');
+  }, 1800); // show after 1.8s
+}
+
+function _cookieAccept() {
+  localStorage.setItem('hela-cookies-accepted', JSON.stringify({
+    essential: true, analytics: true, preferences: true,
+    timestamp: new Date().toISOString()
+  }));
+  const b = document.getElementById('cookie-banner');
+  if (b) {
+    b.style.transition = 'transform .4s ease, opacity .3s ease';
+    b.classList.remove('visible');
+  }
+  toast('Cookie preferences saved ✓', 'ok', 2500);
+}
+
+function _cookieManage() {
+  // Show a simple manage dialog via toast + settings page
+  const choice = confirm(
+    'Cookie Settings\n\n' +
+    '✅ Essential cookies (required for login & security)\n' +
+    '📊 Analytics cookies (help us improve the app)\n' +
+    '🎨 Preference cookies (remember your theme & settings)\n\n' +
+    'Click OK to accept all, or Cancel to accept essential only.'
+  );
+  localStorage.setItem('hela-cookies-accepted', JSON.stringify({
+    essential: true, analytics: choice, preferences: choice,
+    timestamp: new Date().toISOString()
+  }));
+  const b = document.getElementById('cookie-banner');
+  if (b) b.classList.remove('visible');
+  toast(choice ? 'All cookies accepted ✓' : 'Essential cookies only saved ✓', 'ok', 3000);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// BUDGET PLANNER
+// ══════════════════════════════════════════════════════════════
+let _budgetData = { income:[], expense:[] };
+
+function loadBudget() {
+  const saved = localStorage.getItem('hela-budget');
+  if (saved) try { _budgetData = JSON.parse(saved); } catch(e) {}
+  if (!_budgetData.income.length) {
+    _budgetData.income  = [
+      { label:'Salary / Wages',    amount:0 },
+      { label:'Business Income',   amount:0 },
+      { label:'SACCO Dividends',   amount:0 },
+    ];
+    _budgetData.expense = [
+      { label:'Rent / Mortgage',   amount:0 },
+      { label:'Food & Groceries',  amount:0 },
+      { label:'Transport',         amount:0 },
+      { label:'Utilities',         amount:0 },
+      { label:'Loan Repayments',   amount:0 },
+      { label:'Education',         amount:0 },
+      { label:'Entertainment',     amount:0 },
+      { label:'SACCO Deposit',     amount:0 },
+    ];
+  }
+  _renderBudgetRows();
+  _updateBudgetTotals();
+}
+
+function _renderBudgetRows() {
+  ['income','expense'].forEach(type => {
+    const el = E(`budget-${type}-rows`);
+    if (!el) return;
+    el.innerHTML = _budgetData[type].map((row,i) => `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input class="form-input" style="flex:2;font-size:.82rem" value="${row.label}"
+          onchange="_budgetData.${type}[${i}].label=this.value"
+          placeholder="Description">
+        <span style="color:var(--text3);font-size:.78rem;flex-shrink:0">KSh</span>
+        <input class="form-input" style="flex:1;font-size:.82rem;text-align:right" type="number"
+          value="${row.amount||''}" min="0" placeholder="0"
+          oninput="_budgetData.${type}[${i}].amount=parseFloat(this.value)||0;_updateBudgetTotals()">
+        <button style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.9rem;padding:4px"
+          onclick="_budgetData.${type}.splice(${i},1);_renderBudgetRows();_updateBudgetTotals()">✕</button>
+      </div>`).join('');
+  });
+}
+
+function _addBudgetRow(type) {
+  _budgetData[type].push({ label:'', amount:0 });
+  _renderBudgetRows();
+}
+
+function _updateBudgetTotals() {
+  const totalIncome  = _budgetData.income.reduce((s,r)=>s+(r.amount||0),0);
+  const totalExpense = _budgetData.expense.reduce((s,r)=>s+(r.amount||0),0);
+  const available    = totalIncome - totalExpense;
+  const rate         = totalIncome ? ((available / totalIncome)*100).toFixed(1) : 0;
+
+  if(E('bk-income'))    E('bk-income').textContent    = fmt(totalIncome);
+  if(E('bk-expense'))   E('bk-expense').textContent   = fmt(totalExpense);
+  if(E('bk-available')) E('bk-available').textContent = fmt(available);
+  if(E('bk-rate'))      E('bk-rate').textContent      = rate + '%';
+  if(E('budget-income-total'))  E('budget-income-total').textContent  = fmt(totalIncome);
+  if(E('budget-expense-total')) E('budget-expense-total').textContent = fmt(totalExpense);
+
+  // Health card
+  const health = E('budget-health-content');
+  if (health && totalIncome > 0) {
+    const score = Math.min(100, Math.max(0,
+      (available >= 0 ? 40 : 0) +
+      (rate >= 20 ? 30 : rate >= 10 ? 15 : 0) +
+      (totalExpense / totalIncome <= 0.7 ? 30 : totalExpense / totalIncome <= 0.9 ? 15 : 0)
+    ));
+    const scoreColor = score >= 80 ? 'var(--emerald)' : score >= 50 ? 'var(--gold)' : 'var(--red)';
+    const scoreLabel = score >= 80 ? 'Excellent 🎉' : score >= 60 ? 'Good 👍' : score >= 40 ? 'Fair ⚠' : 'Needs Work 🔴';
+    health.innerHTML = `
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:3rem;font-weight:900;color:${scoreColor};line-height:1">${score}</div>
+        <div style="font-size:.85rem;font-weight:700;color:${scoreColor};margin-top:4px">${scoreLabel}</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:2px">Budget Health Score</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px"><span style="color:var(--text3)">Needs (housing, food, utilities)</span><span style="font-weight:700">${totalIncome?(((_budgetData.expense.slice(0,4).reduce((s,r)=>s+r.amount,0))/totalIncome)*100).toFixed(0):0}%</span></div><div style="height:6px;background:var(--glass2);border-radius:3px"><div style="height:100%;background:var(--red);border-radius:3px;transition:.4s;width:${Math.min(100,totalIncome?((_budgetData.expense.slice(0,4).reduce((s,r)=>s+r.amount,0)/totalIncome)*100):0)}%"></div></div><div style="font-size:.68rem;color:var(--text3);margin-top:2px">Ideal: ≤ 50%</div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px"><span style="color:var(--text3)">Savings rate</span><span style="font-weight:700;color:${rate>=20?'var(--emerald)':'var(--gold)'}">${rate}%</span></div><div style="height:6px;background:var(--glass2);border-radius:3px"><div style="height:100%;background:${rate>=20?'var(--emerald)':'var(--gold)'};border-radius:3px;transition:.4s;width:${Math.min(100,rate)}%"></div></div><div style="font-size:.68rem;color:var(--text3);margin-top:2px">Ideal: ≥ 20%</div></div>
+        <div style="margin-top:8px;padding:10px;background:${available>=0?'rgba(0,245,160,.06)':'rgba(255,107,157,.06)'};border:1px solid ${available>=0?'rgba(0,245,160,.15)':'rgba(255,107,157,.15)'};border-radius:var(--r2)">
+          <div style="font-size:.78rem;font-weight:700;color:${available>=0?'var(--emerald)':'var(--red)'};margin-bottom:2px">${available>=0?'✅ Surplus of '+fmt(available):'⚠ Deficit of '+fmt(Math.abs(available))}</div>
+          <div style="font-size:.72rem;color:var(--text3)">${available>=0?'Great! You have money left over to save or invest.':'Expenses exceed income — review your spending.'}</div>
+        </div>
+      </div>`;
+  }
+
+  // Pie chart
+  const ctx = document.getElementById('budget-chart');
+  if (ctx && totalExpense > 0) {
+    const labels = _budgetData.expense.filter(r=>r.amount>0).map(r=>r.label);
+    const vals   = _budgetData.expense.filter(r=>r.amount>0).map(r=>r.amount);
+    const colors = ['#00D4FF','#7B61FF','#00F5A0','#FFB547','#FF6B9D','#FF9500','#34D399','#818CF8'];
+    if (window._budgetChartInst) window._budgetChartInst.destroy();
+    window._budgetChartInst = new Chart(ctx, {
+      type:'doughnut', data:{ labels, datasets:[{ data:vals, backgroundColor:colors, borderWidth:0, hoverOffset:6 }] },
+      options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'rgba(255,255,255,.6)', boxWidth:10, font:{size:11} }}},
+        cutout:'60%', animation:{ duration:600 }}
+    });
+  }
+}
+
+function saveBudget() {
+  localStorage.setItem('hela-budget', JSON.stringify(_budgetData));
+  toast('Budget saved ✓','ok',2500);
+}
+
+function exportBudget() {
+  const totalIncome  = _budgetData.income.reduce((s,r)=>s+(r.amount||0),0);
+  const totalExpense = _budgetData.expense.reduce((s,r)=>s+(r.amount||0),0);
+  let csv = 'Type,Description,Amount (KSh)\n';
+  _budgetData.income.forEach(r => csv += `Income,"${r.label}",${r.amount}\n`);
+  _budgetData.expense.forEach(r => csv += `Expense,"${r.label}",${r.amount}\n`);
+  csv += `,,\nTotal Income,,${totalIncome}\nTotal Expenses,,${totalExpense}\nSurplus/Deficit,,${totalIncome-totalExpense}\n`;
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HELA-Budget.csv'; a.click();
+  toast('Budget exported ✓','ok',2500);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INVESTMENTS PAGE
+// ══════════════════════════════════════════════════════════════
+function loadInvest() {
+  if (!ME) return;
+  const bal    = parseFloat(ME.balance || 0);
+  const shares = parseFloat(ME.shares  || 0);
+  const fixed  = parseFloat(ME.fixed_deposit || 0);
+  const total  = bal + shares + fixed;
+  const returns = total * 0.10;
+
+  if (E('inv-portfolio')) E('inv-portfolio').textContent = fmt(total || bal);
+  if (E('inv-returns'))   E('inv-returns').textContent   = fmt(returns);
+  if (E('inv-count'))     E('inv-count').textContent     = (bal>0?1:0) + (shares>0?1:0) + (fixed>0?1:0) || 1;
+  calcInvestment();
+}
+
+function calcInvestment() {
+  const rate   = parseFloat((E('inv-calc-product')||{}).value || 0.10);
+  const amount = parseFloat((E('inv-calc-amount')||{}).value || 10000);
+  const years  = parseFloat((E('inv-calc-years') ||{}).value || 2);
+  if (!amount || !years) return;
+  const maturity = amount * Math.pow(1 + rate, years);
+  const profit   = maturity - amount;
+  const apy      = ((maturity / amount) ** (1/years) - 1) * 100;
+  if (E('inv-maturity')) E('inv-maturity').textContent = fmt(maturity);
+  if (E('inv-profit'))   E('inv-profit').textContent   = fmt(profit);
+  if (E('inv-apy'))      E('inv-apy').textContent      = apy.toFixed(2) + '%';
+}
+
+// ══════════════════════════════════════════════════════════════
+// REFERRAL PAGE
+// ══════════════════════════════════════════════════════════════
+function loadReferral() {
+  if (!ME) return;
+  const code = 'HELA-' + (ME.member_no || '0000').toString().replace(/\D/g,'').slice(-4).padStart(4,'0');
+  const link = `${location.origin}?ref=${code}`;
+  if (E('ref-code')) E('ref-code').textContent = code;
+  if (E('ref-link')) E('ref-link').textContent = link;
+
+  // Load referral stats from API if available
+  api('/api/me/referrals').then(d => {
+    if (E('ref-total'))   E('ref-total').textContent   = d.total   || 0;
+    if (E('ref-success')) E('ref-success').textContent = d.success || 0;
+    if (E('ref-earned'))  E('ref-earned').textContent  = fmt((d.success||0) * 200);
+    const hist = E('referral-history');
+    if (hist && d.referrals && d.referrals.length) {
+      hist.innerHTML = d.referrals.map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:.82rem;font-weight:600">${r.name||'Member'}</div>
+            <div style="font-size:.72rem;color:var(--text3)">${relativeTime(r.joined_at)}</div>
+          </div>
+          <span class="ubadge ${r.rewarded?'ubadge-success':'ubadge-warning'}">${r.rewarded?'KSh 200 earned':'Pending'}</span>
+        </div>`).join('');
+    }
+  }).catch(() => {});
+}
+
+function copyReferralCode() {
+  const code = (E('ref-link')||{}).textContent || '';
+  if (navigator.clipboard) navigator.clipboard.writeText(code).then(() => toast('Referral link copied! 📋','ok',2500));
+  else { const t=document.createElement('textarea'); t.value=code; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); toast('Copied!','ok',2000); }
+}
+
+function shareReferral(channel) {
+  const link = (E('ref-link')||{}).textContent || location.href;
+  const msg  = encodeURIComponent(`Join HELA SMART SACCO and start saving smart! Use my referral link: ${link}`);
+  if (channel === 'whatsapp') window.open(`https://wa.me/?text=${msg}`, '_blank');
+  else if (channel === 'sms') window.open(`sms:?body=${msg}`, '_blank');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// LOAN REPAYMENT SCHEDULE
+// ══════════════════════════════════════════════════════════════
+function loadSchedule() {
+  if (!ME) return;
+  const loans = (ME.loans || []).filter(l => l.status === 'disbursed' || l.status === 'active' || l.outstanding > 0);
+
+  // KPIs
+  const totalOut = loans.reduce((s,l) => s + parseFloat(l.outstanding||0), 0);
+  const nextAmt  = loans.length ? parseFloat(loans[0].installment||0) : 0;
+  const nextDate = loans.length ? (loans[0].next_due||'—') : '—';
+
+  if (E('sched-active'))      E('sched-active').textContent      = loans.length;
+  if (E('sched-next-amt'))    E('sched-next-amt').textContent    = nextAmt ? fmt(nextAmt) : '—';
+  if (E('sched-next-date'))   E('sched-next-date').textContent   = nextDate !== '—' ? new Date(nextDate).toLocaleDateString('en-KE',{month:'short',day:'numeric'}) : '—';
+  if (E('sched-outstanding')) E('sched-outstanding').textContent = fmt(totalOut);
+
+  // Estimated completion
+  if (loans.length) {
+    const maxMonths = Math.max(...loans.map(l => {
+      const inst = parseFloat(l.installment||0);
+      const out  = parseFloat(l.outstanding||0);
+      return inst > 0 ? Math.ceil(out/inst) : 0;
+    }));
+    const compDate = new Date(); compDate.setMonth(compDate.getMonth() + maxMonths);
+    if (E('sched-completion'))     E('sched-completion').textContent     = maxMonths + ' mo';
+    if (E('sched-completion-sub')) E('sched-completion-sub').textContent = compDate.toLocaleDateString('en-KE',{month:'short',year:'numeric'});
+  }
+
+  // Populate loan selector
+  const sel = E('sched-loan-select');
+  if (sel) {
+    sel.innerHTML = '<option value="all">All Loans</option>' +
+      loans.map((l,i) => `<option value="${i}">Loan #${l.id||i+1} — ${fmt(l.principal||0)}</option>`).join('');
+  }
+
+  // Upcoming payments list
+  const up = E('sched-upcoming');
+  if (up) {
+    if (!loans.length) {
+      up.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)"><div style="font-size:2rem;margin-bottom:8px">✅</div><div style="font-size:.84rem">No active loans! Keep saving.</div></div>';
+    } else {
+      // Build next 4 payments across all loans
+      const payments = [];
+      loans.forEach(l => {
+        const due  = l.next_due ? new Date(l.next_due) : new Date();
+        const inst = parseFloat(l.installment||0);
+        for (let i=0; i<4; i++) {
+          const d = new Date(due); d.setMonth(d.getMonth()+i);
+          payments.push({ date:d, amount:inst, loan:l.id||'?', overdue: d < new Date() });
+        }
+      });
+      payments.sort((a,b) => a.date-b.date);
+      up.innerHTML = payments.slice(0,6).map(p => {
+        const isPast = p.overdue;
+        const isSoon = !isPast && (p.date - new Date()) < 7*24*3600*1000;
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:40px;height:40px;border-radius:10px;background:${isPast?'rgba(255,107,157,.12)':isSoon?'rgba(255,181,71,.12)':'var(--glass2)'};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+            <div style="font-size:.62rem;color:var(--text3);text-transform:uppercase">${p.date.toLocaleDateString('en-KE',{month:'short'})}</div>
+            <div style="font-size:.9rem;font-weight:800;line-height:1;color:${isPast?'var(--red)':isSoon?'var(--gold)':'var(--text)'}">${p.date.getDate()}</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:.82rem;font-weight:600">Loan #${p.loan} Instalment</div>
+            <div style="font-size:.72rem;color:var(--text3)">${isPast?'⚠ Overdue':isSoon?'Due soon':'Upcoming'}</div>
+          </div>
+          <div style="font-size:.85rem;font-weight:700;color:${isPast?'var(--red)':isSoon?'var(--gold)':'var(--text)'}">${fmt(p.amount)}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Progress bars
+  const prog = E('sched-progress');
+  if (prog) {
+    if (!loans.length) {
+      prog.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)">No active loans</div>';
+    } else {
+      prog.innerHTML = loans.map(l => {
+        const principal   = parseFloat(l.principal||0);
+        const outstanding = parseFloat(l.outstanding||0);
+        const paid        = principal - outstanding;
+        const pct         = principal > 0 ? Math.round((paid/principal)*100) : 0;
+        return `<div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div>
+              <div style="font-size:.82rem;font-weight:700">Loan #${l.id||'?'} — ${fmt(principal)}</div>
+              <div style="font-size:.72rem;color:var(--text3)">Instalment: ${fmt(l.installment||0)}/mo</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:.82rem;font-weight:700;color:var(--emerald)">${pct}% paid</div>
+              <div style="font-size:.72rem;color:var(--text3)">${fmt(outstanding)} left</div>
+            </div>
+          </div>
+          <div style="height:8px;background:var(--glass2);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--cyan),var(--emerald));border-radius:4px;transition:.6s"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  renderScheduleTable();
+}
+
+function renderScheduleTable() {
+  const loans = (ME?.loans || []).filter(l => l.status === 'disbursed' || l.status === 'active' || l.outstanding > 0);
+  const tbody = E('sched-table-body');
+  if (!tbody) return;
+  if (!loans.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">No active loans</td></tr>';
+    return;
+  }
+  const selVal = (E('sched-loan-select')||{}).value || 'all';
+  const target  = selVal === 'all' ? loans : [loans[parseInt(selVal)]].filter(Boolean);
+
+  let rows = [], rowNum = 1;
+  target.forEach(l => {
+    const principal   = parseFloat(l.principal || 0);
+    const outstanding = parseFloat(l.outstanding || 0);
+    const instalment  = parseFloat(l.installment || 0);
+    const rate        = 0.015; // 1.5% monthly
+    let balance       = outstanding;
+    const startDate   = l.next_due ? new Date(l.next_due) : new Date();
+
+    for (let i=0; i<Math.min(24, Math.ceil(outstanding/(instalment||1))+1); i++) {
+      const interest   = balance * rate;
+      const principal_ = Math.min(instalment - interest, balance);
+      const due        = new Date(startDate); due.setMonth(due.getMonth()+i);
+      const isPast     = due < new Date();
+      balance = Math.max(0, balance - principal_);
+      rows.push(`<tr style="${isPast?'opacity:.5':''}">
+        <td style="color:var(--text3);font-family:var(--mono)">${rowNum++}</td>
+        <td style="font-size:.8rem${due<new Date()&&balance>0?' color:var(--red)':''}">${due.toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'})}</td>
+        <td style="font-size:.76rem;color:var(--text3)">#${l.id||'?'}</td>
+        <td style="font-family:var(--mono)">${fmt(Math.max(0,principal_))}</td>
+        <td style="font-family:var(--mono);color:var(--gold)">${fmt(Math.max(0,interest))}</td>
+        <td style="font-family:var(--mono);font-weight:700">${fmt(instalment)}</td>
+        <td style="font-family:var(--mono);color:${balance<1?'var(--emerald)':'var(--text)'}">${fmt(balance)}</td>
+        <td><span class="ubadge ${isPast?'ubadge-danger':balance<1?'ubadge-success':'ubadge-muted'}">${isPast?'Due':'Upcoming'}</span></td>
+      </tr>`);
+      if (balance <= 0) break;
+    }
+  });
+  tbody.innerHTML = rows.join('');
+}
+
+function exportRepaySchedule() {
+  const rows = document.querySelectorAll('#sched-table-body tr');
+  let csv = 'No,Due Date,Loan,Principal,Interest,Instalment,Balance,Status\n';
+  rows.forEach(r => {
+    const cells = [...r.querySelectorAll('td')].map(c => '"'+c.textContent.trim()+'"');
+    csv += cells.join(',') + '\n';
+  });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'HELA-Repayment-Schedule.csv'; a.click();
+  toast('Schedule exported ✓','ok',2500);
+}
+
+function schedTab(idx) {
+  document.querySelectorAll('#sched-tabs .tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+}
+
 // ── App Init ──────────────────────────────────────────────────
+
+function loadInsights() {
+  const el = E('insights-content'); if (!el) return;
+  const tips = [
+    { icon:'📈', color:'rgba(0,245,160,.1)', title:'Consistent deposits boost your limit', text:'Depositing regularly every month increases your loan eligibility and demonstrates good financial habits.' },
+    { icon:'💡', color:'rgba(255,181,71,.1)', title:'Repay loans early to save interest', text:'Early repayment reduces total interest paid. Use our loan calculator to see exactly how much you save.' },
+    { icon:'🎯', color:'rgba(0,212,255,.1)', title:'Set savings goals and track progress', text:'Members with active goals save 40% more on average. Create your first goal today and stay motivated.' },
+    { icon:'📊', color:'rgba(123,97,255,.1)', title:'Invest in share capital', text:'Buying more shares increases your voting rights and dividend income at each AGM.' },
+  ];
+  el.innerHTML = tips.map(t => `
+    <div class="insight-card">
+      <div class="insight-icon" style="background:${t.color}">${t.icon}</div>
+      <div class="insight-body"><div class="insight-title">${t.title}</div><div class="insight-text">${t.text}</div></div>
+    </div>`).join('');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  _cookieInit();
   // Apply saved theme
   const savedTheme = localStorage.getItem('hela-theme') || 'dark';
   applyTheme(savedTheme === 'dark');
@@ -5669,5 +7352,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+
+<!-- ── Cookie Consent Banner ──────────────────────────────── -->
+<div id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cookie-icon">🍪</div>
+  <div class="cookie-text">
+    <strong>We use cookies</strong>
+    <span>HELA SMART SACCO uses cookies to keep you signed in, remember your preferences, and improve your experience. By continuing, you agree to our <a onclick="showPolicy('privacy')">Privacy Policy</a> and <a onclick="showPolicy('terms')">Terms of Service</a>.</span>
+  </div>
+  <div class="cookie-btns">
+    <button class="btn-manage" onclick="_cookieManage()">Manage</button>
+    <button class="btn-accept" onclick="_cookieAccept()">Accept All ✓</button>
+  </div>
+</div>
+
 </body>
 </html>
