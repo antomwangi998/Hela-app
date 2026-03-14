@@ -3436,7 +3436,7 @@ function icon(name, size=16, extra='') {
 <!-- ═══════════════════════════════════════════════
      MAIN APP
 ═══════════════════════════════════════════════ -->
-<div id="main-app">
+<div id="main-app" style="display:none">
 <!-- Sidebar -->
 <nav id="sidebar">
   <div class="sb-header">
@@ -6734,17 +6734,23 @@ async function api(path, opts = {}, _retry = false) {
 // ── Auth ──────────────────────────────────────────────────────
 function showAuth() {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const app = E('app-shell'); if (app) app.style.display = 'none';
+  const app  = E('main-app');    if (app)  app.style.display  = 'none';
+  const ft   = E('app-footer'); if (ft)   ft.style.display   = 'none';
+  const fab  = E('fab-container'); if (fab) fab.style.display = 'none';
   const auth = E('auth-screen'); if (auth) auth.style.display = 'flex';
   authTab('login');
 }
 
 function showApp() {
   const auth = E('auth-screen'); if (auth) auth.style.display = 'none';
-  const app = E('app-shell'); if (app) app.style.display = '';
+  const app  = E('main-app');    if (app)  app.style.display  = '';
   buildSidebar();
   updateTopBar();
   applyRoleVisibility();
+  // Show footer
+  const ft = E('app-footer'); if (ft) ft.style.display = 'block';
+  // Show FAB
+  const fab = E('fab-container'); if (fab) fab.style.display = 'block';
   go('home');
 }
 
@@ -6814,8 +6820,8 @@ async function doReg() {
     localStorage.setItem('hm', JSON.stringify(ME));
     if (ME.id) localStorage.setItem('hela-uid', ME.id);
     succ('rs', '✅ Account created! Member No: ' + ME.member_no + ' — Welcome to HELA!');
-    loadMe().catch(() => {});
-    setTimeout(() => showApp(), 1200);
+    try { await loadMe(); } catch(_) { /* use optimistic ME on failure */ }
+    showApp();
   } catch(e) {
     err('re4', e.message);
     if ((e.message||'').includes('starting up') || (e.message||'').includes('Network')) {
