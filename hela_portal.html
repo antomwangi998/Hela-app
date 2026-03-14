@@ -6742,15 +6742,18 @@ function showAuth() {
 }
 
 function showApp() {
+  // 1. Hide auth, show app
   const auth = E('auth-screen'); if (auth) auth.style.display = 'none';
-  const app  = E('main-app');    if (app)  app.style.display  = '';
-  buildSidebar();
-  updateTopBar();
-  applyRoleVisibility();
-  // Show footer
-  const ft = E('app-footer'); if (ft) ft.style.display = 'block';
-  // Show FAB
+  const app  = E('main-app');
+  if (app) { app.style.cssText = app.style.cssText.replace(/display[^;]*;?/g,''); app.style.display = 'block'; }
+  // 2. Build UI (wrapped so one failure doesn't kill everything)
+  try { buildSidebar(); }      catch(e) { console.error('buildSidebar:', e); }
+  try { updateTopBar(); }      catch(e) { console.error('updateTopBar:', e); }
+  try { applyRoleVisibility(); }catch(e) { console.error('applyRoleVis:', e); }
+  // 3. Show footer + FAB
+  const ft  = E('app-footer');    if (ft)  ft.style.display  = 'block';
   const fab = E('fab-container'); if (fab) fab.style.display = 'block';
+  // 4. Navigate to dashboard
   go('home');
 }
 
@@ -6820,7 +6823,11 @@ async function doReg() {
     localStorage.setItem('hm', JSON.stringify(ME));
     if (ME.id) localStorage.setItem('hela-uid', ME.id);
     succ('rs', '✅ Account created! Member No: ' + ME.member_no + ' — Welcome to HELA!');
-    try { await loadMe(); } catch(_) { /* use optimistic ME on failure */ }
+    // Small delay for DB sync on Render free tier, then show regardless
+    try {
+      await new Promise(r => setTimeout(r, 800));
+      await loadMe();
+    } catch(_) { /* use optimistic ME - that's fine for new accounts */ }
     showApp();
   } catch(e) {
     err('re4', e.message);
