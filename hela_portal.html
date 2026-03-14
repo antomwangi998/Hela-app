@@ -3228,6 +3228,7 @@ function icon(name, size=16, extra='') {
           <input id="r-kinphone" class="form-input" placeholder="07XXXXXXXX">
         </div>
         <div id="re3" class="form-error mb-2" style="display:none"></div>
+        <div id="re3" class="form-error mb-2" style="display:none"></div>
         <div class="flex gap-2">
           <button class="btn btn-ghost" onclick="regBack(3)">← Back</button>
           <button class="btn btn-primary flex-1" onclick="regNext(3)">Continue →</button>
@@ -5269,7 +5270,7 @@ async function doLogin() {
   const phone = (E('lp')||{}).value?.trim(), pass = (E('lw')||{}).value;
   if (!phone) { err('le', 'Enter your phone number or email'); return; }
   if (!pass) { err('le', 'Enter your password'); return; }
-  const btn = E('lb'); if (!btn) return;
+  const btn = E('lbtn'); if (!btn) return;
   btn.disabled = true; btn.textContent = 'Signing in…';
   try {
     const r = await api('/api/auth/login', { method:'POST', body:JSON.stringify({ phone, password:pass }) });
@@ -6776,16 +6777,21 @@ function regNext() {
     _regData = { ..._regData, first, last, phone, id_no: id, dob: E('r-dob')?.value||'', gender: E('r-gender')?.value||'' };
     setRegStep(2);
   } else if (_regStep === 2) {
-    const email = E('r-email')?.value?.trim(), pwd = E('r-pwd')?.value, cpwd = E('r-cpwd')?.value;
-    if (!email || !pwd) { err('re2', 'Fill in all required fields'); return; }
-    if (pwd.length < 6) { err('re2', 'Password must be at least 6 characters'); return; }
-    if (pwd !== cpwd) { err('re2', 'Passwords do not match'); return; }
+    const email = E('r-email')?.value?.trim();
+    if (!email) { err('re2', 'Enter your email address'); return; }
     err('re2', '');
-    _regData = { ..._regData, email, password: pwd, occupation: E('r-occ')?.value||'', address: E('r-addr')?.value||'' };
+    _regData = { ..._regData, email,
+      dob: E('r-dob')?.value||'', gender: E('r-gender')?.value||'',
+      occupation: E('r-occ')?.value||'', address: E('r-addr')?.value||'' };
     setRegStep(3);
   } else if (_regStep === 3) {
-    const kin = E('r-kin')?.value?.trim(), kin_phone = E('r-kin-phone')?.value?.trim();
-    _regData = { ..._regData, kin: kin||'', kin_phone: kin_phone||'' };
+    const pwd = E('r-pass')?.value, cpwd = E('r-pass2')?.value;
+    const kin = E('r-kin')?.value?.trim(), kin_phone = E('r-kinphone')?.value?.trim();
+    if (!pwd) { err('re3', 'Enter a password'); return; }
+    if (pwd.length < 6) { err('re3', 'Password must be at least 6 characters'); return; }
+    if (pwd !== cpwd) { err('re3', 'Passwords do not match'); return; }
+    err('re3', '');
+    _regData = { ..._regData, password: pwd, kin: kin||'', kin_phone: kin_phone||'' };
     setRegStep(4);
   }
 }
