@@ -3071,6 +3071,7 @@ button:focus-visible, a:focus-visible {
 #cookie-banner.visible{
   transform:translateX(-50%) translateY(0);
   opacity:1;
+  pointer-events:all;
 }
 .cookie-icon{font-size:1.6rem;flex-shrink:0}
 .cookie-text{flex:1;min-width:200px}
@@ -8786,25 +8787,221 @@ async function doResetPwd() {
 }
 
 function showPolicy(type) {
-  const titles = { terms:'Terms & Conditions', privacy:'Privacy Policy', membership:'Membership Agreement' };
-  toast('Opening ' + (titles[type]||type) + '...', 'info');
-  setTimeout(() => go('policies'), 800);
+  const policies = {
+    privacy: {
+      title: 'Privacy Policy',
+      icon: '🔒',
+      lastUpdated: 'March 2025',
+      content: `
+        <h2>1. Information We Collect</h2>
+        <p>HELA SMART SACCO collects personal information when you register as a member or use our services. This includes your full name, national ID number, phone number, email address, physical address, and financial transaction data.</p>
+
+        <h2>2. How We Use Your Information</h2>
+        <p>We use your information to:</p>
+        <ul>
+          <li>Process your membership registration and maintain your account</li>
+          <li>Disburse loans and receive deposits via M-Pesa</li>
+          <li>Communicate important account updates via SMS and email</li>
+          <li>Comply with SASRA regulatory reporting requirements</li>
+          <li>Prevent fraud and ensure security of your account</li>
+          <li>Calculate and credit dividends at year-end</li>
+        </ul>
+
+        <h2>3. Data Sharing</h2>
+        <p>We do not sell your personal data. We may share information with: SASRA (our regulator), Safaricom (for M-Pesa transactions), Africa's Talking (for SMS delivery), and law enforcement where legally required.</p>
+
+        <h2>4. Data Security</h2>
+        <p>Your data is stored on secure servers with encryption at rest and in transit. Access is restricted to authorised SACCO staff. Passwords are hashed and never stored in plain text.</p>
+
+        <h2>5. Your Rights</h2>
+        <p>Under the Kenya Data Protection Act 2019, you have the right to access, correct, or delete your personal data. Contact us at 0704363089 to exercise these rights.</p>
+
+        <h2>6. Cookies</h2>
+        <p>We use essential cookies to keep you logged in and remember your preferences. We do not use advertising or tracking cookies.</p>
+
+        <h2>7. Retention</h2>
+        <p>We retain your data for 7 years after account closure as required by Kenyan financial regulations.</p>
+
+        <h2>8. Contact</h2>
+        <p>For privacy concerns: privacy@helasacco.co.ke or call 0704363089.</p>
+      `
+    },
+    terms: {
+      title: 'Terms & Conditions',
+      icon: '📋',
+      lastUpdated: 'March 2025',
+      content: `
+        <h2>1. Membership</h2>
+        <p>Membership in HELA SMART SACCO is open to any Kenyan citizen aged 18 years and above. All members must complete KYC verification within 30 days of registration. The SACCO reserves the right to suspend accounts that remain unverified.</p>
+
+        <h2>2. Savings</h2>
+        <p>Members earn 8% interest per annum on savings balances, credited annually in December. The minimum deposit is KSh 100. Withdrawals are subject to maintaining a minimum balance of KSh 0 (no minimum required, but balance must be sufficient for any active loans).</p>
+
+        <h2>3. Loans</h2>
+        <p>Members may borrow up to 3× their savings balance. The interest rate is 1.5% per month on a reducing balance. Loan repayment must begin within 30 days of disbursement. Late payments attract a KSh 500 fee. Defaulting on a loan may result in offset against savings and reporting to credit bureaus.</p>
+
+        <h2>4. Dividends</h2>
+        <p>Dividends on share capital are declared at the Annual General Meeting and credited to member accounts. The dividend rate for FY2024 is 12% per annum, subject to AGM approval.</p>
+
+        <h2>5. Member Responsibilities</h2>
+        <p>Members must: keep their contact information updated, not share account credentials, report any suspicious activity immediately, attend AGM or submit a proxy vote, and comply with all SACCO by-laws.</p>
+
+        <h2>6. Termination</h2>
+        <p>Members may voluntarily withdraw with 30 days written notice. The SACCO may terminate membership for fraud, loan default, or breach of by-laws. On termination, deposits are refunded after deducting any outstanding loans.</p>
+
+        <h2>7. Dispute Resolution</h2>
+        <p>Disputes are first handled internally by the SACCO management. Unresolved disputes may be escalated to SASRA. Legal proceedings shall be filed in the courts of Kenya.</p>
+
+        <h2>8. Amendments</h2>
+        <p>These terms may be amended at the AGM with a 2/3 majority vote. Members will be notified of changes via SMS and the member portal.</p>
+      `
+    },
+    loan: {
+      title: 'Loan Policy',
+      icon: '💳',
+      lastUpdated: 'March 2025',
+      content: `
+        <h2>1. Eligibility</h2>
+        <p>To qualify for a loan, a member must: have an active savings account, have completed KYC verification, have a positive savings balance, and not have more than 2 active loans simultaneously.</p>
+
+        <h2>2. Loan Limits</h2>
+        <p>Normal loans: up to 3× savings balance. Emergency loans: up to 1× savings balance (approved within 24 hours). Development loans: up to 5× savings balance for business purposes.</p>
+
+        <h2>3. Interest Rates</h2>
+        <ul>
+          <li>Normal loan: 1.5% per month reducing balance</li>
+          <li>Emergency loan: 2.0% per month reducing balance</li>
+          <li>Development loan: 1.2% per month reducing balance</li>
+        </ul>
+
+        <h2>4. Repayment</h2>
+        <p>Repayment is monthly via M-Pesa Paybill 3346067 using your member number as account. Members may make extra payments at any time without penalty. Full early settlement is encouraged.</p>
+
+        <h2>5. Default</h2>
+        <p>A loan is considered in default after 60 days of non-payment. The SACCO may: offset savings against the outstanding balance, impose a KSh 500/month late fee, suspend future loan access, and report to credit reference bureaus.</p>
+      `
+    },
+    savings: {
+      title: 'Savings Policy',
+      icon: '💰',
+      lastUpdated: 'March 2025',
+      content: `
+        <h2>1. Account Types</h2>
+        <p>HELA SMART SACCO offers: Regular Savings (8% p.a.), Fixed Deposits (10–14% p.a., 3–12 months), and Emergency Fund Account (8% p.a., instant access).</p>
+
+        <h2>2. Interest</h2>
+        <p>Interest is calculated on the daily balance and credited annually in December. For fixed deposits, interest is credited at maturity. The SACCO Board reviews interest rates quarterly.</p>
+
+        <h2>3. Deposits</h2>
+        <p>Deposits can be made via: M-Pesa STK Push (instant, from the portal), M-Pesa Paybill 3346067 (account = your member number), or in person at a SACCO branch.</p>
+
+        <h2>4. Withdrawals</h2>
+        <p>Withdrawals from regular savings are processed within 1 business day via M-Pesa. Fixed deposits may not be withdrawn before maturity without a 2% penalty. Minimum withdrawal is KSh 100.</p>
+      `
+    }
+  };
+
+  const policy = policies[type] || policies.privacy;
+
+  // Open in a new browser tab
+  const win = window.open('', '_blank');
+  if (!win) {
+    // Popup blocked — fallback: open inline modal
+    _showPolicyModal(policy);
+    return;
+  }
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${policy.title} — HELA SMART SACCO</title>
+  <style>
+    :root { --cyan:#00D4FF; --bg:#070C18; --surface:#0D1526; --border:rgba(0,212,255,.15); --text:rgba(255,255,255,.92); --text2:rgba(255,255,255,.65); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    header { background:rgba(0,212,255,.06); border-bottom:1px solid var(--border); padding:20px 40px; display:flex; align-items:center; gap:16px; }
+    .logo { width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#00D4FF,#7B61FF);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;color:#000; }
+    .brand { font-weight:800; font-size:.9rem; color:var(--text2); }
+    main { max-width:760px; margin:0 auto; padding:48px 24px 80px; }
+    .policy-icon { font-size:3rem; margin-bottom:16px; }
+    h1 { font-size:2rem; font-weight:900; margin-bottom:8px; }
+    .meta { font-size:.82rem; color:var(--text2); margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+    h2 { font-size:1rem; font-weight:800; margin:28px 0 10px; color:#00D4FF; }
+    p { font-size:.9rem; line-height:1.8; color:var(--text2); margin-bottom:12px; }
+    ul { padding-left:20px; margin-bottom:12px; }
+    li { font-size:.9rem; line-height:1.8; color:var(--text2); margin-bottom:4px; }
+    .back-btn { display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);color:#00D4FF;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:.85rem;margin-bottom:32px;cursor:pointer; }
+    .back-btn:hover { background:rgba(0,212,255,.2); }
+    footer { text-align:center;padding:24px;border-top:1px solid var(--border);font-size:.75rem;color:var(--text2);margin-top:40px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">H</div>
+    <div>
+      <div style="font-weight:900;font-size:1rem">HELA SMART SACCO</div>
+      <div class="brand">SASRA Licensed · Reg No. CS/SACCO/HELA/2024</div>
+    </div>
+  </header>
+  <main>
+    <button class="back-btn" onclick="window.close()">← Close Tab</button>
+    <div class="policy-icon">${policy.icon}</div>
+    <h1>${policy.title}</h1>
+    <div class="meta">Last updated: ${policy.lastUpdated} · HELA SMART SACCO</div>
+    ${policy.content}
+  </main>
+  <footer>© 2025 HELA SMART SACCO · 0704363089 · SASRA Licensed</footer>
+</body>
+</html>`);
+  win.document.close();
+}
+
+function _showPolicyModal(policy) {
+  let overlay = E('policy-modal-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'policy-modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9500;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px';
+    overlay.onclick = function(e){ if(e.target===this) this.remove(); };
+    document.body.appendChild(overlay);
+  }
+  const safeContent = policy.content
+    .replace(/<h2>/g, '<div style="font-weight:800;color:#00D4FF;margin:20px 0 8px">')
+    .replace(/<[/]h2>/g, '</div>')
+    .replace(/<ul>/g, '<ul style="padding-left:20px">');
+  overlay.innerHTML = '<div style="background:#0D1526;border:1px solid rgba(0,212,255,.2);border-radius:16px;max-width:680px;width:100%;padding:32px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+    + '<div style="font-size:1.3rem;font-weight:900">' + policy.icon + ' ' + policy.title + '</div>'
+    + '<button onclick="document.getElementById(\'policy-modal-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:1.5rem;cursor:pointer">&#x2715;</button>'
+    + '</div>'
+    + '<div style="font-size:.85rem;line-height:1.8;color:rgba(255,255,255,.7)">' + safeContent + '</div>'
+    + '</div>';
+  overlay.style.display = 'flex';
 }
 
 
 // ── Cookie Consent ────────────────────────────────────────────
 function _cookieInit() {
-  if (localStorage.getItem('hela-cookies-accepted')) return; // already accepted
+  // Show again if user hasn't accepted for this version
+  const COOKIE_VER = 'v2';
+  const accepted = localStorage.getItem('hela-cookies-accepted');
+  if (accepted) {
+    try { if (JSON.parse(accepted).ver === COOKIE_VER) return; } catch(_) { return; }
+  }
+  // Remove stale acceptance so it shows again
+  localStorage.removeItem('hela-cookies-accepted');
   setTimeout(() => {
     const b = document.getElementById('cookie-banner');
-    if (b) b.classList.add('visible');
-  }, 1800); // show after 1.8s
+    if (b) { b.classList.add('visible'); b.style.pointerEvents = 'all'; }
+  }, 1800);
 }
 
 function _cookieAccept() {
   localStorage.setItem('hela-cookies-accepted', JSON.stringify({
     essential: true, analytics: true, preferences: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(), ver: 'v2'
   }));
   const b = document.getElementById('cookie-banner');
   if (b) {
