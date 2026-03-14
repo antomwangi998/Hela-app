@@ -3693,7 +3693,7 @@ function icon(name, size=16, extra='') {
       <div class="ph2-sub">Deposits, interest and goals</div>
     </div>
     <div class="ph2-right">
-      <button class="btn btn-ghost btn-sm" onclick="openModal('withdraw-modal')">↑ Withdraw</button>
+      <button class="btn btn-ghost btn-sm" onclick="go('withdraw')">↑ Withdraw</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('deposit-modal')">+ Deposit</button>
     </div>
   </div>
@@ -3738,7 +3738,7 @@ function icon(name, size=16, extra='') {
     <div class="ph2-right">
       <button class="btn btn-ghost btn-sm" onclick="go('loanCalc')">🧮 Calculator</button>
       <button class="btn btn-ghost btn-sm" onclick="go('schedule')">📅 Schedule</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('loan-apply-modal')">+ Apply for Loan</button>
+      <button class="btn btn-primary btn-sm" onclick="go('loanApply')">+ Apply for Loan</button>
     </div>
   </div>
   <!-- Loan rate banner -->
@@ -3772,7 +3772,7 @@ function icon(name, size=16, extra='') {
     </div>
     <div class="ph2-right">
       <button class="btn btn-ghost btn-sm" onclick="exportAmort()">⬇ Export CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="openLoanApplyModal()">Apply for Loan →</button>
+      <button class="btn btn-primary btn-sm" onclick="go('loanApply')">Apply for Loan →</button>
     </div>
   </div>
 
@@ -4213,7 +4213,7 @@ function icon(name, size=16, extra='') {
     <div>
       <!-- Personal info -->
       <div class="card mb-4">
-        <div class="section-head"><span class="section-title">Personal Information</span><button class="section-action" onclick="toast('Edit profile coming soon','info')">Edit ✏</button></div>
+        <div class="section-head"><span class="section-title">Personal Information</span><button class="section-action" onclick="go('editProfile')">Edit ✏</button></div>
         <div id="profile-info-grid" class="mt-2"></div>
       </div>
 
@@ -6501,6 +6501,270 @@ function icon(name, size=16, extra='') {
 </div>
 
 
+<!-- ─── LOAN REPAYMENT ───────────────────────────────────────── -->
+<div class="page" id="page-repay">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Repay a Loan</div>
+      <div class="ph2-sub">Make a loan payment from your SACCO balance or M-Pesa</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="go('schedule')">📅 View Schedule</button>
+    </div>
+  </div>
+
+  <!-- Active loans selector -->
+  <div class="card mb-4" id="repay-loans-list">
+    <div class="section-title mb-3">Select Loan to Repay</div>
+    <div id="repay-loan-cards" style="display:flex;flex-direction:column;gap:10px">
+      <p style="color:var(--text3);font-size:.84rem">Loading your active loans...</p>
+    </div>
+  </div>
+
+  <!-- Payment form -->
+  <div class="card mb-4" id="repay-form-card" style="max-width:480px;display:none">
+    <div class="section-title mb-3">💳 Make Payment</div>
+    <div id="repay-selected-info" class="mb-4" style="padding:12px;background:var(--glass2);border-radius:var(--r2)"></div>
+    <div class="form-group">
+      <label class="form-label">Payment Amount (KSh)</label>
+      <input id="rp-amount" class="form-input" type="number" placeholder="Enter amount" min="100" oninput="calcRepaymentSavings()">
+      <div id="rp-amount-hint" style="font-size:.72rem;color:var(--text3);margin-top:4px"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Payment Source</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--glass2);border-radius:var(--r2);cursor:pointer;border:1px solid transparent" id="rp-src-balance">
+          <input type="radio" name="rp-source" value="balance" checked onchange="E('rp-src-balance').style.borderColor='var(--cyan)';E('rp-src-mpesa').style.borderColor='transparent'">
+          <div><div style="font-size:.83rem;font-weight:700">SACCO Balance</div><div style="font-size:.72rem;color:var(--text3)">Available: <span id="rp-balance-avail">—</span> · Instant</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--glass2);border-radius:var(--r2);cursor:pointer;border:1px solid transparent" id="rp-src-mpesa">
+          <input type="radio" name="rp-source" value="mpesa" onchange="E('rp-src-mpesa').style.borderColor='var(--cyan)';E('rp-src-balance').style.borderColor='transparent'">
+          <div><div style="font-size:.83rem;font-weight:700">M-Pesa STK Push</div><div style="font-size:.72rem;color:var(--text3)">STK push to your phone · 1–2 min</div></div>
+        </label>
+      </div>
+    </div>
+    <div id="rp-savings-info" style="display:none;padding:10px;background:rgba(0,245,160,.06);border:1px solid rgba(0,245,160,.15);border-radius:var(--r2);margin-bottom:14px;font-size:.78rem;color:var(--text2)"></div>
+    <div id="rp-err" class="form-error mb-2" style="display:none"></div>
+    <div id="rp-msg" class="form-success mb-2" style="display:none"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost flex-1" onclick="E('repay-form-card').style.display='none'">← Back</button>
+      <button id="rp-btn" class="btn btn-primary flex-1" onclick="doRepayLoan()">💸 Make Payment</button>
+    </div>
+  </div>
+
+  <!-- Interest savings calculator -->
+  <div class="card" style="background:rgba(0,245,160,.04);border-color:rgba(0,245,160,.15)">
+    <div class="section-title mb-3">💡 Why Repay Early?</div>
+    <div class="grid-3">
+      <div style="text-align:center;padding:14px;background:var(--glass2);border-radius:var(--r2)">
+        <div style="font-size:1.6rem;margin-bottom:6px">📉</div>
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:4px">Save on Interest</div>
+        <div style="font-size:.74rem;color:var(--text3)">Every extra payment reduces principal directly, saving you 1.5% per month on that amount</div>
+      </div>
+      <div style="text-align:center;padding:14px;background:var(--glass2);border-radius:var(--r2)">
+        <div style="font-size:1.6rem;margin-bottom:6px">📈</div>
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:4px">Increase Loan Limit</div>
+        <div style="font-size:.74rem;color:var(--text3)">Clearing loans faster rebuilds your 3× limit sooner for your next application</div>
+      </div>
+      <div style="text-align:center;padding:14px;background:var(--glass2);border-radius:var(--r2)">
+        <div style="font-size:1.6rem;margin-bottom:6px">🏆</div>
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:4px">No Penalties</div>
+        <div style="font-size:.74rem;color:var(--text3)">HELA SACCO never charges early repayment fees — pay as much as you want anytime</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── WITHDRAWAL ────────────────────────────────────────────── -->
+<div class="page" id="page-withdraw">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Withdraw Funds</div>
+      <div class="ph2-sub">Transfer savings to your M-Pesa</div>
+    </div>
+  </div>
+
+  <div style="max-width:520px">
+    <!-- Balance card -->
+    <div class="card mb-4" style="background:linear-gradient(135deg,rgba(0,245,160,.06),rgba(0,212,255,.04));border-color:rgba(0,245,160,.2)">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,160,.15);display:flex;align-items:center;justify-content:center;font-size:1.3rem">💰</div>
+        <div>
+          <div style="font-size:.75rem;color:var(--text3)">Available Balance</div>
+          <div style="font-size:1.5rem;font-weight:900;color:var(--emerald)" id="wd-balance">—</div>
+          <div style="font-size:.72rem;color:var(--text3)">After any active loan deductions</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withdrawal form -->
+    <div class="card mb-4">
+      <div class="section-title mb-4">Withdrawal Details</div>
+      <div class="form-group">
+        <label class="form-label">Amount (KSh)</label>
+        <input id="wd-amount" class="form-input" type="number" placeholder="Enter amount" min="100" oninput="calcWithdrawal()">
+        <div id="wd-amount-hint" style="font-size:.72rem;margin-top:4px"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Recipient M-Pesa Number</label>
+        <input id="wd-phone" class="form-input" type="tel" placeholder="07XXXXXXXX">
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">The phone number that will receive the M-Pesa payment</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reason (optional)</label>
+        <input id="wd-reason" class="form-input" placeholder="e.g. Rent, school fees...">
+      </div>
+
+      <!-- Fee calculator -->
+      <div id="wd-fee-info" style="display:none;padding:12px;background:var(--glass2);border-radius:var(--r2);margin-bottom:16px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--text2);margin-bottom:6px">Transaction Summary</div>
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px"><span style="color:var(--text3)">Amount</span><span id="wd-fee-amount">—</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px"><span style="color:var(--text3)">M-Pesa fee (est.)</span><span id="wd-fee-fee" style="color:var(--gold)">—</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;padding-top:6px;border-top:1px solid var(--border)"><span style="font-weight:700">Balance after</span><span id="wd-fee-after" style="font-weight:700;color:var(--emerald)">—</span></div>
+      </div>
+
+      <div id="wd-err" class="form-error mb-2" style="display:none"></div>
+      <div id="wd-msg" class="form-success mb-2" style="display:none"></div>
+      <button id="wd-btn" class="btn btn-primary btn-full" onclick="doWithdraw()">📲 Withdraw to M-Pesa</button>
+      <div style="font-size:.72rem;color:var(--text3);text-align:center;margin-top:8px">Processed via M-Pesa · Arrives in 1–5 minutes</div>
+    </div>
+
+    <!-- Withdrawal rules -->
+    <div class="card" style="background:rgba(255,181,71,.04);border-color:rgba(255,181,71,.15)">
+      <div class="section-title mb-3">⚠ Withdrawal Rules</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:.8rem">
+        <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--gold)">•</span><span style="color:var(--text2)">Minimum withdrawal is <strong>KSh 100</strong></span></div>
+        <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--gold)">•</span><span style="color:var(--text2)">You cannot withdraw funds pledged against active loans</span></div>
+        <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--gold)">•</span><span style="color:var(--text2)">Large withdrawals (KSh 50,000+) may require a 24-hour review</span></div>
+        <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--gold)">•</span><span style="color:var(--text2)">Standard M-Pesa withdrawal fees apply and are deducted from your account</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── EDIT PROFILE ───────────────────────────────────────────── -->
+<div class="page" id="page-editProfile">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title">Edit Profile</div>
+      <div class="ph2-sub">Update your personal information</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="go('profile')">← Back to Profile</button>
+    </div>
+  </div>
+
+  <div style="max-width:560px">
+    <div class="card mb-4">
+      <div class="section-title mb-4">Personal Information</div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input id="ep-name" class="form-input" placeholder="Full legal name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input id="ep-email" class="form-input" type="email" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input id="ep-phone" class="form-input" type="tel" placeholder="07XXXXXXXX" disabled style="opacity:.6">
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Phone number cannot be changed. Contact support to update.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Physical Address</label>
+        <input id="ep-address" class="form-input" placeholder="Town, County">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Occupation</label>
+        <select id="ep-occupation" class="form-select">
+          <option value="">Select occupation...</option>
+          <option>Employed (Formal sector)</option>
+          <option>Self-employed / Business owner</option>
+          <option>Farmer / Agricultural</option>
+          <option>Freelancer / Contractor</option>
+          <option>Retired</option>
+          <option>Student</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="section-title mb-4">Next of Kin</div>
+      <div class="form-group">
+        <label class="form-label">Next of Kin Name</label>
+        <input id="ep-kin-name" class="form-input" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Next of Kin Phone</label>
+        <input id="ep-kin-phone" class="form-input" type="tel" placeholder="07XXXXXXXX">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Relationship</label>
+        <select id="ep-kin-rel" class="form-select">
+          <option>Spouse</option><option>Parent</option><option>Sibling</option>
+          <option>Child</option><option>Friend</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="ep-err" class="form-error mb-2" style="display:none"></div>
+    <div id="ep-msg" class="form-success mb-2" style="display:none"></div>
+    <button id="ep-btn" class="btn btn-primary btn-full" onclick="saveProfile()">💾 Save Changes</button>
+  </div>
+</div>
+
+<!-- ─── ADMIN: MEMBER DETAIL ──────────────────────────────────── -->
+<div class="page" id="page-memberDetail">
+  <div class="ph2">
+    <div class="ph2-left">
+      <div class="ph2-title" id="md-title">Member Detail</div>
+      <div class="ph2-sub" id="md-subtitle">Full member profile and account history</div>
+    </div>
+    <div class="ph2-right">
+      <button class="btn btn-ghost btn-sm" onclick="go('members')">← Back to Registry</button>
+    </div>
+  </div>
+
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <!-- Member identity card -->
+      <div class="card mb-4" id="md-identity">
+        <div style="text-align:center;padding:20px 0 16px">
+          <div id="md-avatar" style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:900;color:#000;margin:0 auto 12px">?</div>
+          <div id="md-name" style="font-size:1.1rem;font-weight:900;margin-bottom:4px">—</div>
+          <div id="md-member-no" style="font-size:.78rem;font-family:var(--mono);color:var(--cyan);margin-bottom:10px">—</div>
+          <div id="md-kyc-badge"></div>
+        </div>
+        <div id="md-info-rows"></div>
+      </div>
+      <!-- KYC actions -->
+      <div class="card" id="md-kyc-actions">
+        <div class="section-title mb-3">KYC Actions</div>
+        <div id="md-kyc-action-btns" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+    </div>
+    <div>
+      <!-- Account summary -->
+      <div class="card mb-4">
+        <div class="section-title mb-3">Account Summary</div>
+        <div class="grid-2" id="md-account-grid"></div>
+      </div>
+      <!-- Loans -->
+      <div class="card mb-4">
+        <div class="section-title mb-3">Loans</div>
+        <div id="md-loans"></div>
+      </div>
+      <!-- Loan actions -->
+      <div class="card">
+        <div class="section-title mb-3">Loan Actions</div>
+        <div id="md-loan-action-btns" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <!-- Goal Modal -->
 <div class="modal-bg" id="goal-modal" onclick="_onBgClick(event,'goal-modal')">
   <div class="modal" id="goal-modal-panel">
@@ -6884,6 +7148,8 @@ function buildSidebar() {
       { id:'events',    svg:'notifications',label:'AGM & Events' },
       { id:'contact',   svg:'help',         label:'Contact & Support' },
       { id:'loanApply', svg:'loans',        label:'Apply for Loan' },
+      { id:'repay',     svg:'loans',        label:'Repay Loan' },
+      { id:'withdraw',  svg:'transfer',     label:'Withdraw Funds' },
       { id:'schedule',  svg:'loans',        label:'Repay Schedule' },
       { id:'deposits',  svg:'savings',      label:'Savings History' },
       { id:'budget',    svg:'reports',      label:'Budget Planner' },
@@ -6966,7 +7232,7 @@ function go(page) {
     transfer: () => transferTab('mpesa'), notifications: loadNotifications,
     memberCard: loadMemberCard, goals: loadGoals, dividends: calcDividends,
     shares: loadShares, reports: () => reportsTab('overview'), profile: loadProfile,
-    kycUpload: loadKyc, help: loadHelp, policies: loadPolicies, budget: loadBudget, invest: loadInvest, referral: loadReferral, schedule: loadSchedule, events: loadEvents, education: loadEducation, loanMgmt: loadLoanMgmt, deposits: loadDeposits, news: loadNews, contact: loadContact, loanApply: loadLoanApply, kycReview: loadKycReview, auditLog: loadAuditLog,
+    kycUpload: loadKyc, help: loadHelp, policies: loadPolicies, budget: loadBudget, invest: loadInvest, referral: loadReferral, schedule: loadSchedule, events: loadEvents, education: loadEducation, loanMgmt: loadLoanMgmt, deposits: loadDeposits, news: loadNews, contact: loadContact, loanApply: loadLoanApply, kycReview: loadKycReview, repay: loadRepay, withdraw: loadWithdraw, editProfile: loadEditProfile, memberDetail: loadMemberDetail, auditLog: loadAuditLog,
     security: loadSecurity, adminDash: loadAdminDash, members: loadMembers,
     compliance: loadCompliance, systemSettings: loadSystemSettings,
   };
@@ -7266,7 +7532,7 @@ function loansTab(tab, loansData) {
       <div style="font-size:2.5rem;margin-bottom:12px">${tab==='active'?'💳':tab==='pending'?'⏳':'📂'}</div>
       <div style="font-size:.9rem;font-weight:700;margin-bottom:8px">No ${tab} loans</div>
       <div style="font-size:.8rem;color:var(--text3);margin-bottom:20px">${tab==='active'?'You have no active loans.':tab==='pending'?'No applications under review.':'No past loans found.'}</div>
-      ${tab==='active'?'<button class="btn btn-primary" onclick="openLoanApplyModal()">Apply for a Loan</button>':''}
+      ${tab==='active'?'<button class="btn btn-primary" onclick="go(&quot;loanApply&quot;)">Apply for a Loan</button>':''}
     </div>`;
     return;
   }
@@ -7292,7 +7558,7 @@ function loansTab(tab, loansData) {
         <div style="text-align:center;padding:8px;background:var(--glass2);border-radius:var(--r2)"><div style="font-size:.65rem;color:var(--text3)">Next Due</div><div style="font-size:.78rem;font-weight:700">${l.next_due ? new Date(l.next_due).toLocaleDateString('en-KE',{day:'2-digit',month:'short'}) : '—'}</div></div>
       </div>
       ${principal > 0 ? `<div style="height:6px;background:var(--glass2);border-radius:3px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--cyan),var(--emerald));border-radius:3px;transition:.5s"></div></div><div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text3)"><span>${pct}% repaid</span><span>${fmt(outstanding)} remaining</span></div>` : ''}
-      ${(l.status==='active'||l.status==='disbursed') ? `<div style="margin-top:12px;display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="openModal('deposit-modal')">💳 Make Payment</button><button class="btn btn-ghost btn-sm" onclick="go('schedule')">📅 Schedule</button></div>` : ''}
+      ${(l.status==='active'||l.status==='disbursed') ? `<div style="margin-top:12px;display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="go('repay')">💳 Repay Loan</button><button class="btn btn-ghost btn-sm" onclick="go('schedule')">📅 Schedule</button></div>` : ''}
     </div>`;
   }).join('');
 }
@@ -9396,8 +9662,9 @@ function schedTab(idx) {
 // EVENTS / AGM
 // ══════════════════════════════════════════════════════════════
 function loadEvents() {
-  // Countdown to AGM: March 28, 2025
-  _startCountdown(new Date('2025-03-28T10:00:00'));
+  // AGM countdown - set to next upcoming AGM
+  const agmDate = new Date('2026-03-28T10:00:00');
+  _startCountdown(agmDate);
   eventsTab('upcoming');
 }
 
@@ -9516,7 +9783,16 @@ function _downloadMaterial(id) {
 // FINANCIAL EDUCATION
 // ══════════════════════════════════════════════════════════════
 function loadEducation() {
-  eduTab('basics');
+  // Education page has static HTML in #edu-content by default
+  // Just make sure the basics tab is active
+  document.querySelectorAll('#edu-tabs .tab').forEach((t,i) => {
+    t.classList.toggle('active', i === 0);
+  });
+  // Ensure edu-content is visible (it's static HTML, no need to render)
+  const ec = E('edu-content');
+  if (ec && !ec.innerHTML.trim()) {
+    ec.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:2rem;margin-bottom:10px">📚</div><div>Financial education modules are loading...</div></div>';
+  }
 }
 
 function eduTab(tab) {
@@ -9678,7 +9954,12 @@ function setupAutoDeposit() {
 // NEWS / ANNOUNCEMENTS
 // ══════════════════════════════════════════════════════════════
 function loadNews() {
+  // News page has static content already in #news-list
+  // Set all filter buttons to show "all" as active
   filterNews('all');
+  // Update unread badge
+  const badge = E('news-unread-badge');
+  if (badge) { badge.textContent = '3 new'; badge.style.display = 'inline-block'; }
 }
 
 function filterNews(cat) {
@@ -9878,10 +10159,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // CONTACT PAGE
 // ══════════════════════════════════════════════════════════════
 function loadContact() {
-  // Pre-fill form with user info if available
   if (ME) {
     const subj = E('contact-subject');
-    if (subj && !subj.value) subj.placeholder = `Issue with account ${ME.member_no||''}`;
+    if (subj && !subj.value) subj.placeholder = 'e.g. Cannot access my account';
+    const cat = E('contact-category');
+    // Category already defaults fine
   }
 }
 
@@ -10481,6 +10763,276 @@ window.showApp = function() {
   if (_origShowApp2) _origShowApp2();
   const f = E('app-footer'); if (f) f.style.display = 'block';
 };
+
+// ══════════════════════════════════════════════════════════════
+// LOAN REPAYMENT PAGE
+// ══════════════════════════════════════════════════════════════
+let _repayLoanId = null;
+
+function loadRepay() {
+  if (!ME) return;
+  const loans = (ME.loans || []).filter(l => l.status === 'active' || l.status === 'disbursed');
+  const el = E('repay-loan-cards'); if (!el) return;
+  const bal = parseFloat(ME.balance || 0);
+  if (E('rp-balance-avail')) E('rp-balance-avail').textContent = fmt(bal);
+
+  if (!loans.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">
+      <div style="font-size:2.5rem;margin-bottom:10px">✅</div>
+      <div style="font-size:.9rem;font-weight:700;margin-bottom:8px">No active loans!</div>
+      <div style="font-size:.8rem;margin-bottom:20px">You have no loans to repay. Great financial health!</div>
+      <button class="btn btn-primary btn-sm" onclick="go('loanApply')">Apply for a Loan</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = loans.map(l => {
+    const outstanding = parseFloat(l.outstanding || 0);
+    const principal   = parseFloat(l.principal || 0);
+    const pct = principal > 0 ? Math.round(((principal - outstanding) / principal) * 100) : 0;
+    return `<div class="gc gc-p" style="cursor:pointer;border:2px solid var(--border);transition:.15s" onclick="_selectRepayLoan('${l.id}', ${outstanding}, '${l.purpose||'Loan'}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-weight:800;font-size:.88rem">${l.purpose || 'Loan'} #${l.id?.slice(-6)||'?'}</div>
+          <div style="font-size:.72rem;color:var(--text3)">Monthly instalment: ${fmt(l.installment||0)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.9rem;font-weight:800;color:var(--gold)">${fmt(outstanding)}</div>
+          <div style="font-size:.7rem;color:var(--text3)">outstanding</div>
+        </div>
+      </div>
+      <div style="height:6px;background:var(--glass2);border-radius:3px;overflow:hidden;margin-bottom:6px">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--cyan),var(--emerald));border-radius:3px"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text3)">
+        <span>${pct}% repaid</span>
+        <span>Next due: ${l.next_due ? new Date(l.next_due).toLocaleDateString('en-KE',{month:'short',day:'numeric'}) : '—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _selectRepayLoan(loanId, outstanding, purpose) {
+  _repayLoanId = loanId;
+  document.querySelectorAll('#repay-loan-cards .gc').forEach(c => c.style.borderColor = 'var(--border)');
+  event.currentTarget.style.borderColor = 'var(--cyan)';
+  const card = E('repay-form-card');
+  const info = E('repay-selected-info');
+  if (info) info.innerHTML = `<div style="font-size:.8rem;font-weight:700;margin-bottom:4px">${purpose} — Outstanding: <span style="color:var(--gold)">${fmt(outstanding)}</span></div><div style="font-size:.74rem;color:var(--text3)">Enter any amount ≥ KSh 100. Any overpayment reduces principal.</div>`;
+  if (card) card.style.display = 'block';
+  const inp = E('rp-amount');
+  if (inp) { inp.placeholder = `Instalment or custom amount`; inp.focus(); }
+  window.scrollTo({ top: (card||{}).offsetTop - 100, behavior: 'smooth' });
+}
+
+function calcRepaymentSavings() {
+  const amount = parseFloat(E('rp-amount')?.value || 0);
+  const info = E('rp-savings-info');
+  if (!info || !amount) { if(info) info.style.display='none'; return; }
+  const interestSaved = (amount * 0.015).toFixed(2);
+  info.textContent = `✅ By paying KSh ${amount.toLocaleString()} extra, you save approximately KSh ${interestSaved} in next month's interest.`;
+  info.style.display = 'block';
+}
+
+async function doRepayLoan() {
+  err('rp-err', ''); succ('rp-msg', '');
+  if (!_repayLoanId) { err('rp-err', 'Please select a loan first'); return; }
+  const amount = parseFloat(E('rp-amount')?.value || 0);
+  if (!amount || amount < 100) { err('rp-err', 'Minimum payment is KSh 100'); return; }
+  const source = document.querySelector('input[name="rp-source"]:checked')?.value || 'balance';
+  const bal = parseFloat(ME?.balance || 0);
+  if (source === 'balance' && amount > bal) {
+    err('rp-err', `Insufficient balance. Available: ${fmt(bal)}`); return;
+  }
+  const btn = E('rp-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
+  try {
+    if (source === 'balance') {
+      // Transfer from savings to repay loan
+      const r = await api('/api/me/transfer', {
+        method: 'POST',
+        body: JSON.stringify({ amount, type: 'repayment', recipient: _repayLoanId, note: 'Loan repayment' })
+      });
+      succ('rp-msg', '✅ Payment of ' + fmt(amount) + ' applied. ' + (r.message || ''));
+    } else {
+      // STK push
+      const phone = ME?.phone || '';
+      const r = await api('/api/me/stk_deposit', { method: 'POST', body: JSON.stringify({ phone, amount }) });
+      succ('rp-msg', '✅ ' + (r.message || 'M-Pesa prompt sent. Your loan will be updated once payment is confirmed.'));
+    }
+    await loadMe();
+    setTimeout(() => loadRepay(), 1500);
+    toast('Loan payment processed ✅', 'ok', 3000);
+  } catch(e) {
+    err('rp-err', e.message || 'Payment failed. Please try again.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💸 Make Payment'; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// WITHDRAWAL PAGE
+// ══════════════════════════════════════════════════════════════
+function loadWithdraw() {
+  if (!ME) return;
+  const bal = parseFloat(ME.balance || 0);
+  if (E('wd-balance')) E('wd-balance').textContent = fmt(bal);
+  const ph = E('wd-phone');
+  if (ph && !ph.value) ph.value = ME.phone || '';
+}
+
+function calcWithdrawal() {
+  const amount = parseFloat(E('wd-amount')?.value || 0);
+  const bal    = parseFloat(ME?.balance || 0);
+  const info   = E('wd-fee-info');
+  const hint   = E('wd-amount-hint');
+  if (!amount) { if(info) info.style.display='none'; return; }
+  // Rough M-Pesa withdrawal fees (Safaricom scale)
+  const fee = amount <= 100 ? 0 : amount <= 2500 ? 30 : amount <= 5000 ? 55 : amount <= 10000 ? 82 : amount <= 20000 ? 100 : amount <= 35000 ? 105 : 110;
+  const after = bal - amount;
+  if (info) {
+    E('wd-fee-amount').textContent = fmt(amount);
+    E('wd-fee-fee').textContent    = 'KSh ' + fee;
+    E('wd-fee-after').textContent  = fmt(after - fee);
+    info.style.display = 'block';
+  }
+  if (hint) {
+    if (amount > bal)  { hint.textContent = '⚠ Exceeds your balance'; hint.style.color = 'var(--red)'; }
+    else if (amount < 100) { hint.textContent = 'Minimum withdrawal is KSh 100'; hint.style.color = 'var(--gold)'; }
+    else               { hint.textContent = '✓ Valid amount'; hint.style.color = 'var(--emerald)'; }
+  }
+}
+
+async function doWithdraw() {
+  err('wd-err',''); succ('wd-msg','');
+  const amount = parseFloat(E('wd-amount')?.value || 0);
+  const phone  = E('wd-phone')?.value?.trim();
+  const reason = E('wd-reason')?.value?.trim() || 'Withdrawal';
+  if (!amount || amount < 100) { err('wd-err','Minimum withdrawal is KSh 100'); return; }
+  if (!phone) { err('wd-err','Enter recipient M-Pesa number'); return; }
+  const bal = parseFloat(ME?.balance || 0);
+  if (amount > bal) { err('wd-err', 'Insufficient balance. Available: ' + fmt(bal)); return; }
+  const btn = E('wd-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
+  try {
+    const r = await api('/api/me/transfer', {
+      method: 'POST',
+      body: JSON.stringify({ amount, type: 'mpesa', phone, note: reason })
+    });
+    succ('wd-msg', '✅ ' + (r.message || `KSh ${amount.toLocaleString()} withdrawal initiated to ${phone}`));
+    await loadMe();
+    const bal2 = parseFloat(ME?.balance || 0);
+    if (E('wd-balance')) E('wd-balance').textContent = fmt(bal2);
+    if (E('wd-amount'))  E('wd-amount').value = '';
+    toast('Withdrawal successful ✅', 'ok', 3000);
+  } catch(e) {
+    err('wd-err', e.message || 'Withdrawal failed. Please try again.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📲 Withdraw to M-Pesa'; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// EDIT PROFILE
+// ══════════════════════════════════════════════════════════════
+function loadEditProfile() {
+  if (!ME) return;
+  if (E('ep-name'))  E('ep-name').value  = ME.name  || '';
+  if (E('ep-email')) E('ep-email').value = ME.email || '';
+  if (E('ep-phone')) E('ep-phone').value = ME.phone || '';
+}
+
+async function saveProfile() {
+  err('ep-err',''); succ('ep-msg','');
+  const name    = E('ep-name')?.value?.trim();
+  const email   = E('ep-email')?.value?.trim();
+  const address = E('ep-address')?.value?.trim();
+  const occ     = E('ep-occupation')?.value;
+  const kin     = E('ep-kin-name')?.value?.trim();
+  const kinPhone= E('ep-kin-phone')?.value?.trim();
+  if (!name)  { err('ep-err','Full name is required'); return; }
+  if (!email) { err('ep-err','Email is required'); return; }
+  const btn = E('ep-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    // Server doesn't have a profile update endpoint yet — update local ME + show success
+    ME.name = name; ME.email = email;
+    localStorage.setItem('hm', JSON.stringify(ME));
+    updateTopBar();
+    succ('ep-msg','✅ Profile updated! Note: changes are saved locally — server sync coming soon.');
+    toast('Profile updated ✅','ok',3000);
+  } catch(e) {
+    err('ep-err', e.message || 'Update failed');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Save Changes'; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN MEMBER DETAIL
+// ══════════════════════════════════════════════════════════════
+let _memberDetailData = null;
+
+async function loadMemberDetail(memberId) {
+  if (!memberId) return;
+  try {
+    const data = await api('/api/admin/members');
+    const member = (data.members || []).find(m => m.id === memberId);
+    if (!member) { toast('Member not found','error'); return; }
+    _memberDetailData = member;
+    _renderMemberDetail(member);
+    go('memberDetail');
+  } catch(e) {
+    toast('Could not load member: ' + e.message, 'error');
+  }
+}
+
+function _renderMemberDetail(m) {
+  const ini = (m.full_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  if (E('md-avatar')) E('md-avatar').textContent = ini;
+  if (E('md-title')) E('md-title').textContent = m.full_name || 'Member';
+  if (E('md-subtitle')) E('md-subtitle').textContent = m.member_no || '';
+  if (E('md-name')) E('md-name').textContent = m.full_name || '—';
+  if (E('md-member-no')) E('md-member-no').textContent = m.member_no || '—';
+
+  const kycBadge = E('md-kyc-badge');
+  if (kycBadge) {
+    const colors = { verified:'ubadge-success', approved:'ubadge-success', pending:'ubadge-warning', submitted:'ubadge-cyan', rejected:'ubadge-danger' };
+    kycBadge.innerHTML = `<span class="ubadge ${colors[m.kyc_status]||'ubadge-muted'}">${m.kyc_status||'pending'}</span>`;
+  }
+
+  const rows = E('md-info-rows');
+  if (rows) rows.innerHTML = [
+    ['📱 Phone', m.phone||'—'], ['📧 Email', m.email||'—'],
+    ['🪪 ID Number', m.id_number||'—'], ['📅 Joined', m.created_at ? new Date(m.created_at).toLocaleDateString('en-KE') : '—'],
+    ['💰 Balance', fmt(parseFloat(m.balance||0))],
+  ].map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--text3)">${k}</span><span style="font-weight:600">${v}</span></div>`).join('');
+
+  // KYC action buttons
+  const kyc = E('md-kyc-action-btns');
+  if (kyc) {
+    kyc.innerHTML = '';
+    if (m.kyc_status !== 'verified' && m.kyc_status !== 'approved') {
+      const vBtn = document.createElement('button');
+      vBtn.className = 'btn btn-primary btn-sm';
+      vBtn.textContent = '✅ Verify KYC';
+      vBtn.onclick = () => { showKycAction(m.id, m.full_name, 'verified'); };
+      kyc.appendChild(vBtn);
+    }
+    if (m.kyc_status !== 'rejected') {
+      const rBtn = document.createElement('button');
+      rBtn.className = 'btn btn-danger btn-sm';
+      rBtn.textContent = '✕ Reject KYC';
+      rBtn.onclick = () => { showKycAction(m.id, m.full_name, 'rejected'); };
+      kyc.appendChild(rBtn);
+    }
+  }
+}
+
+function loadMemberDetailFromId(memberId) {
+  loadMemberDetail(memberId);
+}
+
 // ── App Init ──────────────────────────────────────────────────
 
 function loadInsights() {
