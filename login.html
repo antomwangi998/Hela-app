@@ -3236,7 +3236,7 @@ body { overflow-x: hidden; }
         <div id="re4" class="form-error mb-2" style="display:none"></div>
         <div id="rs" class="form-success mb-2" style="display:none"></div>
         <div class="flex gap-2">
-          <button class="btn btn-ghost" onclick="regBack(4)">← Back</button>
+          <button class="btn btn-ghost" onclick="regBack()">← Back</button>
           <button id="rbtn" class="btn btn-primary flex-1" onclick="doReg()">🎉 Create Account</button>
         </div>
       </div>
@@ -3334,7 +3334,7 @@ function err(id, msg) { const el = E(id); if (el) { el.textContent = msg; el.sty
 function succ(id, msg) { const el = E(id); if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; } }
 
 // ── Base URL (always empty — same origin on Render) ────────────
-const BASE_URL = '';
+const BASE_URL = 'https://hela-app-2.onrender.com';
 
 // ── API Client ────────────────────────────────────────────────
 async function api(path, opts = {}, _retry = false) {
@@ -3575,19 +3575,26 @@ function toggleTheme() {
 }
 
 // ── Password utilities ────────────────────────────────────────
-function togglePwd(inputId, btnId) {
+function togglePwd(inputId, btnEl) {
   const inp = E(inputId); if (!inp) return;
   const isText = inp.type === 'text';
   inp.type = isText ? 'password' : 'text';
-  const btn = E(btnId); if (btn) btn.textContent = isText ? '👁' : '🙈';
+  // btnEl can be an element reference or an ID string
+  const btn = typeof btnEl === 'string' ? E(btnEl) : (btnEl instanceof Element ? btnEl : null);
+  if (btn) btn.textContent = isText ? '👁' : '🙈';
 }
 
-function checkPassStrength(val) {
-  const el = E('pwd-strength'); if (!el) return;
+function checkPassStrength() {
+  const inp = E('r-pass'); if (!inp) return;
+  const val = inp.value || '';
+  const bar = E('pass-strength-bar'); const fill = E('pass-strength-fill'); const lbl = E('pass-strength-label');
   const strength = [/[a-z]/.test(val), /[A-Z]/.test(val), /[0-9]/.test(val), val.length >= 8].filter(Boolean).length;
   const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-  const colors = ['', 'var(--red)', 'var(--gold)', 'var(--emerald)', 'var(--cyan)'];
-  el.textContent = labels[strength]||''; el.style.color = colors[strength]||'';
+  const colors = ['', '#ef4444', '#f59e0b', '#22c55e', '#00d4ff'];
+  const widths = ['0%', '25%', '50%', '75%', '100%'];
+  if (bar) bar.style.display = val ? 'block' : 'none';
+  if (fill) { fill.style.width = widths[strength]; fill.style.background = colors[strength]||''; }
+  if (lbl) { lbl.style.display = val ? 'block' : 'none'; lbl.textContent = labels[strength]||''; lbl.style.color = colors[strength]||''; }
 }
 
 function showForgotPwd() { toast('Contact support at 0704363089 to reset your password', 'info', 5000); }

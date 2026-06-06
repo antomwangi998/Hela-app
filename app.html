@@ -6715,7 +6715,7 @@ function err(id, msg) { const el = E(id); if (el) { el.textContent = msg; el.sty
 function succ(id, msg) { const el = E(id); if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; } }
 
 // ── Base URL (always empty — same origin on Render) ────────────
-const BASE_URL = '';
+const BASE_URL = window.location.hostname.includes('onrender.com') ? '' : 'https://hela-app-2.onrender.com';
 
 // ── API Client ────────────────────────────────────────────────
 async function api(path, opts = {}, _retry = false) {
