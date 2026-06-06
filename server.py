@@ -562,10 +562,21 @@ def _mid(uid):
     return (r or {}).get("member_id") or uid
 
 def _get_html():
-    for name in ["hela_portal.html", "index.html"]:
+    for name in ["app.html", "hela_portal.html", "index.html"]:
         if os.path.exists(name):
             return open(name, encoding="utf-8").read()
-    return "<h2>HELA SACCO</h2><p>hela_portal.html not found</p>"
+    return "<h2>HELA SACCO</h2><p>app.html not found</p>"
+
+def _get_landing():
+    for name in ["index.html", "landing.html"]:
+        if os.path.exists(name):
+            return open(name, encoding="utf-8").read()
+    return _get_html()  # fallback to app
+
+def _get_login():
+    if os.path.exists("login.html"):
+        return open("login.html", encoding="utf-8").read()
+    return _get_html()  # fallback to app
 
 
 app = FastAPI(title="HELA SMART SACCO", docs_url=None, redoc_url=None)
@@ -1107,6 +1118,22 @@ _AT_USER     = os.environ.get("AT_USERNAME", "sandbox")
 _AT_SENDER   = os.environ.get("AT_SENDER_ID", "HELASACCO")  # must be approved
 _AT_SANDBOX  = _AT_USER == "sandbox"
 
+# ── Password reset tokens (in-memory) ────────────────────────────────────────
+_reset_tokens: dict = {}  # {token: {uid, email, expires}}
+
+# ── In-app notification helper ────────────────────────────────────────────────
+def _add_notif(member_id: str, title: str, body: str, ntype: str = "info"):
+    """Insert a notification row for a member."""
+    try:
+        dbx(
+            "INSERT INTO notifications (id, member_id, title, body, type, is_read, created_at) "
+            "VALUES (?, ?, ?, ?, ?, 0, ?)",
+            (_uuid.uuid4().hex, member_id, title, body, ntype,
+             datetime.datetime.now().isoformat()),
+        )
+    except Exception as e:
+        log.error(f"_add_notif: {e}")
+
 def _send_sms(phone: str, message: str) -> bool:
     """Send SMS via Africa's Talking. Returns True on success."""
     import urllib.request as _ur, urllib.parse as _up
@@ -1569,13 +1596,13 @@ async def admin_loans_list(status: str = "all", limit: int = 100, u: dict = Depe
 
 @app.post("/api/admin/loans/{loan_id}/approve")
 async def admin_approve_loan(loan_id: str, u: dict = Depends(_require_admin)):
-    db("UPDATE loans SET status='approved', approved_at=CURRENT_TIMESTAMP, approved_by=? WHERE id=?", (u["sub"], loan_id))
+    dbx("UPDATE loans SET status='approved', approved_at=CURRENT_TIMESTAMP, approved_by=? WHERE id=?", (u["sub"], loan_id))
     _log_audit(u["sub"], "loan_approved", f"Loan {loan_id} approved")
     return {"status": "ok", "message": "Loan approved"}
 
 @app.post("/api/admin/loans/{loan_id}/reject")
 async def admin_reject_loan(loan_id: str, u: dict = Depends(_require_admin)):
-    db("UPDATE loans SET status='rejected', approved_at=CURRENT_TIMESTAMP, approved_by=? WHERE id=?", (u["sub"], loan_id))
+    dbx("UPDATE loans SET status='rejected', approved_at=CURRENT_TIMESTAMP, approved_by=? WHERE id=?", (u["sub"], loan_id))
     _log_audit(u["sub"], "loan_rejected", f"Loan {loan_id} rejected")
     return {"status": "ok", "message": "Loan rejected"}
 
@@ -1624,28 +1651,10 @@ async def admin_audit_logs(limit: int = 50, u: dict = Depends(_require_admin)):
 async def read_all_notifs(u: dict = Depends(_auth_user)):
     mid = _mid(u["sub"])
     try:
-        db("UPDATE notifications SET is_read=1 WHERE member_id=?", (mid,))
+        dbx("UPDATE notifications SET is_read=1 WHERE member_id=?", (mid,))
     except:
         pass
     return {"status": "ok"}
-
-@app.post("/api/me/change_password")
-async def change_password(request: Request, u: dict = Depends(_auth_user)):
-    b = await request.json()
-    old_pw = str(b.get("old_password", ""))
-    new_pw = str(b.get("new_password", ""))
-    if len(new_pw) < 6:
-        raise HTTPException(400, "Password must be at least 6 characters")
-    user = db1("SELECT * FROM users WHERE id=?", (u["sub"],))
-    if not user:
-        raise HTTPException(404, "User not found")
-    import bcrypt
-    if not bcrypt.checkpw(old_pw.encode(), user["password_hash"].encode()):
-        raise HTTPException(400, "Current password is incorrect")
-    hashed = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
-    db("UPDATE users SET password_hash=? WHERE id=?", (hashed, u["sub"]))
-    _log_audit(u["sub"], "password_changed", "Password changed by user")
-    return {"status": "ok", "message": "Password updated successfully"}
 
 # ═══ SEO — Sitemap & Robots.txt ═══════════════════════════════════════════
 @app.get("/sitemap.xml", include_in_schema=False)
@@ -1952,9 +1961,30 @@ async def sync_status(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
+    return HTMLResponse(_get_landing())
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    return HTMLResponse(_get_login())
+
+@app.get("/login.html", response_class=HTMLResponse)
+async def login_page_html():
+    return HTMLResponse(_get_login())
+
+@app.get("/app", response_class=HTMLResponse)
+async def app_page():
     return HTMLResponse(_get_html())
 
+@app.get("/app.html", response_class=HTMLResponse)
+async def app_page_html():
+    return HTMLResponse(_get_html())
 
 @app.get("/{full_path:path}", response_class=HTMLResponse)
 async def spa(full_path: str):
-    return HTMLResponse(_get_html())
+    # Serve login page for auth paths
+    if full_path in ("login", "register", "forgot-password"):
+        return HTMLResponse(_get_login())
+    # Serve app for authenticated paths
+    if full_path in ("dashboard", "savings", "loans", "profile", "admin"):
+        return HTMLResponse(_get_html())
+    return HTMLResponse(_get_landing())

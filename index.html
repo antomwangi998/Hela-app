@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#030f07">
+<title>HELA SMART SACCO — Kenya's Premier Digital SACCO</title>
+<meta name="description" content="Save smarter, borrow easier, grow faster. HELA SMART SACCO brings M-Pesa-powered savings, instant loans, and fixed deposits to Kenyan professionals.">
+<link rel="canonical" href="https://hela-app-2.onrender.com/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030f07;
+  --bg2:#061409;
+  --surface:#0a1f0f;
+  --surface2:#0f2a16;
+  --border:rgba(255,255,255,.08);
+  --text:#f0fdf4;
+  --text2:#a7c4ad;
+  --text3:#5a7d61;
+  --green:#16a34a;
+  --green2:#22c55e;
+  --cyan:#00d4ff;
+  --gold:#f59e0b;
+  --violet:#8b5cf6;
+  --font:'Plus Jakarta Sans',sans-serif;
+  --mono:'DM Mono',monospace;
+  --r:16px;--r2:12px;
+  --shadow:0 8px 32px rgba(0,0,0,.6);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 40px;
+  background:rgba(3,15,7,.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-mark{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:1rem;color:#000;flex-shrink:0;
+}
+.nav-logo-text{font-size:.95rem;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.nav-logo-sub{font-size:.6rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.1em}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{
+  color:var(--text2);text-decoration:none;font-size:.87rem;font-weight:600;
+  padding:8px 16px;border-radius:8px;transition:.15s;letter-spacing:-.01em;
+}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.nav-cta{
+  background:var(--green);color:#fff !important;
+  padding:9px 22px;border-radius:10px;font-weight:700;font-size:.87rem;
+  box-shadow:0 0 20px rgba(22,163,74,.3);transition:.2s;
+  text-decoration:none;
+}
+.nav-cta:hover{background:#15803d;transform:translateY(-1px);box-shadow:0 0 30px rgba(22,163,74,.5)}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:120px 24px 80px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.hero-glow{
+  position:absolute;top:-200px;left:50%;transform:translateX(-50%);
+  width:900px;height:600px;
+  background:radial-gradient(ellipse,rgba(22,163,74,.12) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-glow2{
+  position:absolute;top:40%;right:-200px;
+  width:500px;height:500px;
+  background:radial-gradient(ellipse,rgba(0,212,255,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(22,163,74,.12);border:1px solid rgba(22,163,74,.25);
+  color:#4ade80;font-size:.78rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:6px 16px;border-radius:100px;
+  margin-bottom:28px;
+}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+h1{
+  font-size:clamp(2.8rem,6vw,5rem);font-weight:900;
+  letter-spacing:-.04em;line-height:1.05;
+  background:linear-gradient(160deg,#f0fdf4 30%,#86efac 70%,#4ade80);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  max-width:840px;margin-bottom:24px;
+}
+.hero-sub{
+  font-size:clamp(1rem,2.5vw,1.25rem);color:var(--text2);
+  max-width:560px;line-height:1.65;margin-bottom:44px;font-weight:400;
+}
+.hero-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--green);color:#fff;font-weight:700;font-size:.95rem;
+  padding:14px 32px;border-radius:12px;text-decoration:none;letter-spacing:-.01em;
+  box-shadow:0 0 30px rgba(22,163,74,.35);transition:.2s;border:none;cursor:pointer;
+}
+.btn-primary:hover{background:#15803d;transform:translateY(-2px);box-shadow:0 0 50px rgba(22,163,74,.5)}
+.btn-secondary{
+  display:inline-flex;align-items:center;gap:8px;
+  background:transparent;color:var(--text);font-weight:600;font-size:.95rem;
+  padding:14px 28px;border-radius:12px;text-decoration:none;
+  border:1px solid var(--border);transition:.2s;
+}
+.btn-secondary:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15)}
+.hero-stats{
+  display:flex;align-items:center;gap:32px;margin-top:60px;
+  padding:20px 32px;background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:16px;flex-wrap:wrap;justify-content:center;
+}
+.hero-stat-divider{width:1px;height:32px;background:var(--border)}
+.hero-stat-val{font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-.03em}
+.hero-stat-label{font-size:.72rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* ── GRID/CARDS ── */
+.section{padding:100px 24px;max-width:1140px;margin:0 auto}
+.section-label{
+  font-size:.72rem;color:var(--green2);font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;margin-bottom:12px;
+}
+.section-title{
+  font-size:clamp(1.9rem,3.5vw,2.8rem);font-weight:900;
+  letter-spacing:-.04em;color:var(--text);line-height:1.1;margin-bottom:16px;
+}
+.section-sub{color:var(--text2);font-size:1rem;max-width:520px;line-height:1.65}
+.features-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:16px;margin-top:56px;
+}
+.feature-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:28px;
+  transition:.2s;position:relative;overflow:hidden;
+}
+.feature-card:hover{border-color:rgba(22,163,74,.25);transform:translateY(-3px);box-shadow:var(--shadow)}
+.feature-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(22,163,74,.4),transparent);
+  opacity:0;transition:.2s;
+}
+.feature-card:hover::before{opacity:1}
+.feature-icon{
+  width:48px;height:48px;border-radius:12px;
+  background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;margin-bottom:18px;
+}
+.feature-title{font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.02em}
+.feature-desc{font-size:.88rem;color:var(--text2);line-height:1.6}
+.feature-tag{
+  display:inline-block;margin-top:14px;
+  font-size:.7rem;font-weight:700;color:var(--green2);
+  background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);
+  padding:4px 10px;border-radius:6px;letter-spacing:.04em;text-transform:uppercase;
+}
+
+/* ── HOW IT WORKS ── */
+.steps-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:24px;margin-top:56px;
+}
+.step-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:28px 24px;text-align:center;
+  position:relative;
+}
+.step-number{
+  width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green),#15803d);
+  color:#fff;font-weight:900;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 18px;box-shadow:0 0 20px rgba(22,163,74,.3);
+}
+.step-title{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.02em}
+.step-desc{font-size:.85rem;color:var(--text2);line-height:1.55}
+
+/* ── RATES TABLE ── */
+.rates-wrap{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;margin-top:48px;
+}
+.rate-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:28px;text-align:center;
+  transition:.2s;
+}
+.rate-card.featured{
+  background:linear-gradient(135deg,rgba(22,163,74,.08),rgba(0,212,255,.04));
+  border-color:rgba(22,163,74,.3);
+  box-shadow:0 0 40px rgba(22,163,74,.1);
+}
+.rate-card:hover{transform:translateY(-3px)}
+.rate-icon{font-size:2rem;margin-bottom:12px}
+.rate-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px}
+.rate-value{font-size:2.2rem;font-weight:900;color:var(--green2);letter-spacing:-.04em;line-height:1}
+.rate-unit{font-size:.85rem;color:var(--text3);margin-top:4px}
+.rate-desc{font-size:.82rem;color:var(--text2);margin-top:12px;line-height:1.5}
+
+/* ── TESTIMONIALS ── */
+.testimonials-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:16px;margin-top:48px;
+}
+.testimonial-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:24px;
+}
+.testi-stars{color:var(--gold);font-size:.85rem;margin-bottom:12px;letter-spacing:2px}
+.testi-text{font-size:.9rem;color:var(--text2);line-height:1.65;margin-bottom:16px;font-style:italic}
+.testi-author{display:flex;align-items:center;gap:10px}
+.testi-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:.8rem;color:#000;flex-shrink:0;
+}
+.testi-name{font-size:.85rem;font-weight:700;color:var(--text)}
+.testi-role{font-size:.75rem;color:var(--text3)}
+
+/* ── CTA BANNER ── */
+.cta-banner{
+  background:linear-gradient(135deg,rgba(22,163,74,.12),rgba(0,212,255,.06));
+  border:1px solid rgba(22,163,74,.2);border-radius:24px;
+  padding:60px 40px;text-align:center;margin:0 24px;max-width:1140px;
+  margin-left:auto;margin-right:auto;
+}
+.cta-title{
+  font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-.04em;
+  background:linear-gradient(160deg,#f0fdf4,#86efac);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:16px;
+}
+.cta-sub{color:var(--text2);font-size:1rem;max-width:480px;margin:0 auto 36px;line-height:1.65}
+.cta-actions{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);padding:48px 40px 32px;
+  margin-top:80px;
+}
+.footer-inner{
+  max-width:1140px;margin:0 auto;
+  display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;
+}
+.footer-brand .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:16px;text-decoration:none}
+.footer-brand p{font-size:.85rem;color:var(--text3);line-height:1.65;max-width:260px}
+.footer-col h4{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:16px}
+.footer-col a{display:block;color:var(--text2);text-decoration:none;font-size:.87rem;margin-bottom:10px;transition:.15s}
+.footer-col a:hover{color:var(--green2)}
+.footer-bottom{
+  max-width:1140px;margin:32px auto 0;padding-top:24px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.footer-bottom p{font-size:.78rem;color:var(--text3)}
+.footer-paybill{
+  font-size:.78rem;color:var(--text2);
+  background:var(--surface);border:1px solid var(--border);
+  padding:6px 14px;border-radius:8px;display:inline-flex;align-items:center;gap:8px;
+}
+
+/* ── MPESA BADGE ── */
+.mpesa-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(0,255,0,.07);border:1px solid rgba(0,255,0,.15);
+  color:#4ade80;font-size:.75rem;font-weight:700;letter-spacing:.04em;
+  padding:5px 12px;border-radius:8px;margin-top:16px;
+}
+
+/* Mobile */
+@media(max-width:768px){
+  nav{padding:14px 20px}
+  .nav-links .nav-link{display:none}
+  .hero{padding:100px 20px 60px}
+  .section{padding:64px 20px}
+  .footer-inner{grid-template-columns:1fr 1fr;gap:28px}
+  .cta-banner{padding:40px 24px;margin:0 16px}
+  h1{letter-spacing:-.03em}
+}
+@media(max-width:480px){
+  .hero-stats{gap:20px;padding:16px 20px}
+  .footer-inner{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-mark">H</div>
+    <div>
+      <div class="nav-logo-text">HELA SMART SACCO</div>
+      <div class="nav-logo-sub">Enterprise Platform</div>
+    </div>
+  </a>
+  <div class="nav-links">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#rates" class="nav-link">Rates</a>
+    <a href="#how-it-works" class="nav-link">How It Works</a>
+    <a href="/login" class="nav-link">Sign In</a>
+    <a href="/login#register" class="nav-cta">Open Account →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-badge">
+    🇰🇪 SASRA Licensed · Reg No. CS/SACCO/HELA/2024
+  </div>
+  <h1>Banking Built for<br>Kenyan Professionals</h1>
+  <p class="hero-sub">
+    Save, borrow, and invest with Kenya's most advanced digital SACCO.
+    M-Pesa deposits, instant loans, and up to 14% p.a. on fixed deposits.
+  </p>
+  <div class="hero-actions">
+    <a href="/login" class="btn-primary" id="hero-register-btn">
+      <span>🚀</span> Open Account — Free
+    </a>
+    <a href="/login" class="btn-secondary">
+      <span>🔐</span> Member Sign In
+    </a>
+  </div>
+  <div class="mpesa-badge">
+    <span>📱</span> Powered by M-Pesa • Africa's Talking SMS
+  </div>
+  <div class="hero-stats">
+    <div style="text-align:center">
+      <div class="hero-stat-val">KSh 500K</div>
+      <div class="hero-stat-label">Max Loan</div>
+    </div>
+    <div class="hero-stat-divider"></div>
+    <div style="text-align:center">
+      <div class="hero-stat-val">3×</div>
+      <div class="hero-stat-label">Loan Multiplier</div>
+    </div>
+    <div class="hero-stat-divider"></div>
+    <div style="text-align:center">
+      <div class="hero-stat-val">14%</div>
+      <div class="hero-stat-label">Fixed Deposit p.a.</div>
+    </div>
+    <div class="hero-stat-divider"></div>
+    <div style="text-align:center">
+      <div class="hero-stat-val">24h</div>
+      <div class="hero-stat-label">Loan Decision</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">What We Offer</div>
+  <div class="section-title">Everything in<br>One Platform</div>
+  <p class="section-sub">From savings to loans to investments — HELA gives you every financial tool you need, with M-Pesa integration built in.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <div class="feature-title">M-Pesa Savings</div>
+      <div class="feature-desc">Deposit anytime via Paybill <strong style="color:var(--cyan)">3346067</strong> or STK push right from the app. Your balance updates instantly. Earn 8% p.a. interest on savings.</div>
+      <span class="feature-tag">Instant Deposit</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💳</div>
+      <div class="feature-title">Fast Loans</div>
+      <div class="feature-desc">Borrow up to 3× your savings balance. Apply online, get a decision within 24 hours. Flexible repayment from 1 to 60 months at just 1.5% per month.</div>
+      <span class="feature-tag">Up to KSh 500K</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <div class="feature-title">Fixed Deposits</div>
+      <div class="feature-desc">Lock in your savings for guaranteed returns. Earn up to 14% per annum on fixed deposits — one of the highest rates offered by any licensed SACCO in Kenya.</div>
+      <span class="feature-tag">Up to 14% p.a.</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-title">HELA AI Assistant</div>
+      <div class="feature-desc">Ask our AI anything about your finances. Get loan eligibility estimates, savings advice, and financial planning help — available 24/7 inside the member portal.</div>
+      <span class="feature-tag">Claude-Powered</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Smart Analytics</div>
+      <div class="feature-desc">Track your savings growth, loan repayment progress, and dividend earnings with beautiful charts and detailed account statements. Stay in control of your money.</div>
+      <span class="feature-tag">Real-Time</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Bank-Grade Security</div>
+      <div class="feature-desc">PBKDF2 password hashing, JWT auth, rate limiting, brute-force protection, and full audit logging. Your money and data are protected at every layer.</div>
+      <span class="feature-tag">SASRA Regulated</span>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section style="background:var(--bg2);padding:80px 0" id="how-it-works">
+  <div class="section" style="padding-top:0;padding-bottom:0">
+    <div class="section-label">Simple Process</div>
+    <div class="section-title">Up & Running<br>in Minutes</div>
+    <p class="section-sub">No branch visits required. Open your account entirely online and start saving today.</p>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <div class="step-title">Create Account</div>
+        <div class="step-desc">Register with your name, national ID, phone number, and choose a password. Takes under 2 minutes.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <div class="step-title">Deposit via M-Pesa</div>
+        <div class="step-desc">Use Paybill <strong style="color:var(--cyan)">3346067</strong> or our in-app STK push to fund your account instantly.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <div class="step-title">Complete KYC</div>
+        <div class="step-desc">Upload your ID photos for verification. Once approved, you unlock full loan eligibility and higher limits.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <div class="step-title">Save & Borrow</div>
+        <div class="step-desc">Watch your balance grow. Apply for loans, set savings goals, and earn dividends at year-end.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RATES -->
+<section class="section" id="rates">
+  <div class="section-label">Transparent Pricing</div>
+  <div class="section-title">Competitive<br>Rates</div>
+  <p class="section-sub">No hidden fees. No surprises. HELA offers some of the best rates in the Kenyan SACCO sector.</p>
+  <div class="rates-wrap">
+    <div class="rate-card">
+      <div class="rate-icon">🏦</div>
+      <div class="rate-label">Savings Rate</div>
+      <div class="rate-value">8%</div>
+      <div class="rate-unit">per annum</div>
+      <div class="rate-desc">Earn interest on your regular savings balance, credited monthly.</div>
+    </div>
+    <div class="rate-card featured">
+      <div class="rate-icon">📈</div>
+      <div class="rate-label">Fixed Deposit</div>
+      <div class="rate-value">14%</div>
+      <div class="rate-unit">per annum</div>
+      <div class="rate-desc">Lock in your savings for the highest guaranteed return. Minimum 3 months.</div>
+    </div>
+    <div class="rate-card">
+      <div class="rate-icon">💳</div>
+      <div class="rate-label">Loan Rate</div>
+      <div class="rate-value">1.5%</div>
+      <div class="rate-unit">per month (reducing balance)</div>
+      <div class="rate-desc">Affordable personal and business loans from 1 to 60 months.</div>
+    </div>
+    <div class="rate-card">
+      <div class="rate-icon">🎁</div>
+      <div class="rate-label">Loan Multiplier</div>
+      <div class="rate-value">3×</div>
+      <div class="rate-unit">your savings balance</div>
+      <div class="rate-desc">Save KSh 100K and you can borrow up to KSh 300K — simple and transparent.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section style="background:var(--bg2);padding:80px 0">
+  <div class="section" style="padding-top:0;padding-bottom:0">
+    <div class="section-label">Member Stories</div>
+    <div class="section-title">Trusted by<br>Kenyan Professionals</div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"I applied for a loan on a Monday, got approved by Tuesday, and had the funds in my M-Pesa by Wednesday. Absolutely seamless — no paperwork, no branch visits."</div>
+        <div class="testi-author">
+          <div class="testi-avatar">JM</div>
+          <div>
+            <div class="testi-name">James M.</div>
+            <div class="testi-role">Engineer, Nairobi</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"The fixed deposit at 14% is unbeatable. I moved my savings from a traditional bank and I'm earning almost twice as much interest. The portal is beautifully designed too."</div>
+        <div class="testi-author">
+          <div class="testi-avatar">AW</div>
+          <div>
+            <div class="testi-name">Amina W.</div>
+            <div class="testi-role">Business Owner, Mombasa</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"HELA AI helped me figure out exactly how much I could borrow and what my repayments would be before I even applied. It's like having a financial advisor in your pocket."</div>
+        <div class="testi-author">
+          <div class="testi-avatar">PO</div>
+          <div>
+            <div class="testi-name">Peter O.</div>
+            <div class="testi-role">Teacher, Kisumu</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="padding:80px 0">
+  <div class="cta-banner">
+    <div class="cta-title">Start Saving Today</div>
+    <p class="cta-sub">Join hundreds of Kenyan professionals already growing their wealth with HELA SMART SACCO.</p>
+    <div class="cta-actions">
+      <a href="/login" class="btn-primary" id="cta-register-btn">
+        <span>🚀</span> Open Free Account
+      </a>
+      <a href="tel:0704363089" class="btn-secondary">
+        <span>📞</span> 0704363089
+      </a>
+    </div>
+    <p style="margin-top:20px;font-size:.78rem;color:var(--text3)">
+      SASRA Licensed · Reg No. CS/SACCO/HELA/2024 · FSID Protected Deposits
+    </p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="/" class="footer-logo">
+        <div class="nav-logo-mark" style="width:32px;height:32px;font-size:.85rem">H</div>
+        <div>
+          <div style="font-size:.9rem;font-weight:800;color:var(--text)">HELA SMART SACCO</div>
+          <div style="font-size:.6rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Enterprise Platform</div>
+        </div>
+      </a>
+      <p>Kenya's premier digital savings and credit cooperative. SASRA licensed and regulated for your protection.</p>
+      <div class="footer-paybill">📱 M-Pesa Paybill: <strong style="color:var(--cyan)">3346067</strong></div>
+    </div>
+    <div class="footer-col">
+      <h4>Products</h4>
+      <a href="#features">Savings Accounts</a>
+      <a href="#features">Personal Loans</a>
+      <a href="#rates">Fixed Deposits</a>
+      <a href="#features">HELA AI</a>
+    </div>
+    <div class="footer-col">
+      <h4>Members</h4>
+      <a href="/login">Sign In</a>
+      <a href="/login">Create Account</a>
+      <a href="/app">Dashboard</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="tel:0704363089">📞 0704363089</a>
+      <a href="mailto:helasacco@gmail.com">📧 helasacco@gmail.com</a>
+      <a href="#">🏢 Nairobi, Kenya</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 HELA SMART SACCO. All rights reserved. SASRA Licensed · Reg No. CS/SACCO/HELA/2024</p>
+    <div style="display:flex;gap:16px">
+      <a href="/app" style="font-size:.78rem;color:var(--text3);text-decoration:none;transition:.15s" onmouseover="this.style.color='var(--green2)'" onmouseout="this.style.color='var(--text3)'">Privacy Policy</a>
+      <a href="/app" style="font-size:.78rem;color:var(--text3);text-decoration:none;transition:.15s" onmouseover="this.style.color='var(--green2)'" onmouseout="this.style.color='var(--text3)'">Terms of Service</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Redirect logged-in users from landing to app
+const _t = localStorage.getItem('ht');
+const _me = (() => { try { return JSON.parse(localStorage.getItem('hm')||'null'); } catch(_) { return null; } })();
+if (_t && _me) {
+  document.getElementById('hero-register-btn').textContent = '→ Go to Dashboard';
+  document.getElementById('hero-register-btn').href = '/app';
+  const ctaBtn = document.getElementById('cta-register-btn');
+  if (ctaBtn) { ctaBtn.innerHTML = '<span>→</span> Open Dashboard'; ctaBtn.href = '/app'; }
+}
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const el = document.querySelector(a.getAttribute('href'));
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// Handle /login#register redirect
+if (window.location.hash === '#register') {
+  window.location.href = '/login';
+}
+</script>
+</body>
+</html>
